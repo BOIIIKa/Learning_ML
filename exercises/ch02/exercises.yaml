@@ -1,0 +1,71 @@
+# 第 02 章 泛化、偏差–方差与模型选择 —— 课后练习 / Chapter 02 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: mle-var
+    title: {zh: "方差的极大似然估计是有偏的", en: "The MLE of the variance is biased"}
+    prompt:
+      zh: "$Y_1, \\dots, Y_n$ 独立同分布，方差为 $s^2$。极大似然估计 $\\hat\\sigma^2 = \\frac1n\\sum_i (Y_i - \\bar Y)^2$。写出 $\\mathbb E[\\hat\\sigma^2]$。可用变量：`n, s`。"
+      en: "$Y_1, \\dots, Y_n$ are i.i.d. with variance $s^2$. The maximum-likelihood estimate is $\\hat\\sigma^2 = \\frac1n\\sum_i (Y_i - \\bar Y)^2$. Write $\\mathbb E[\\hat\\sigma^2]$. Variables: `n, s`."
+    answer: "(n - 1)/n * s^2"
+    vars: {n: [2, 40], s: [0.3, 3]}
+    solution:
+      zh: "$\\sum_i (Y_i - \\bar Y)^2 = \\sum_i (Y_i - \\mu)^2 - n(\\bar Y - \\mu)^2$。取期望：$n s^2 - n\\cdot\\frac{s^2}{n} = (n-1)s^2$，所以 $\\mathbb E[\\hat\\sigma^2] = \\frac{n-1}{n}s^2$。偏小的原因和本章主题一样：$\\bar Y$ 是**看过数据后**选出来的中心，它让样本内的平方和尽可能小——这就是“训练误差偏乐观”最简单的例子。除以 $n-1$ 恰好修正了这一点。"
+      en: "$\\sum_i (Y_i - \\bar Y)^2 = \\sum_i (Y_i - \\mu)^2 - n(\\bar Y - \\mu)^2$. Taking expectations gives $n s^2 - n\\cdot\\frac{s^2}{n} = (n-1)s^2$, so $\\mathbb E[\\hat\\sigma^2] = \\frac{n-1}{n}s^2$. It is too small for the same reason as this chapter's main theme: $\\bar Y$ is a centre chosen **after seeing the data**, which makes the in-sample sum of squares as small as possible. This is the simplest case of an optimistic training error, and dividing by $n-1$ corrects it exactly."
+
+  - id: hoeffding-finite
+    title: {zh: "有限假设空间的泛化界", en: "A generalization bound for a finite hypothesis class"}
+    prompt:
+      zh: "假设空间有 $M$ 个函数，损失取值在 $[0, 1]$。Hoeffding 不等式：对固定的 $f$，$P(|\\hat R_n(f) - R(f)| > \\varepsilon) \\le 2e^{-2n\\varepsilon^2}$。要以至少 $1-\\delta$ 的概率让**所有** $M$ 个函数同时满足 $|\\hat R_n - R| \\le \\varepsilon$，$\\varepsilon$ 最小取多少？可用变量：`M, n, d`（$d = \\delta$）。"
+      en: "A hypothesis class has $M$ functions and the loss lies in $[0, 1]$. Hoeffding's inequality says that for a fixed $f$, $P(|\\hat R_n(f) - R(f)| > \\varepsilon) \\le 2e^{-2n\\varepsilon^2}$. For **all** $M$ functions to satisfy $|\\hat R_n - R| \\le \\varepsilon$ simultaneously with probability at least $1-\\delta$, what is the smallest $\\varepsilon$? Variables: `M, n, d` ($d = \\delta$)."
+    answer: "sqrt((log(M) + log(2/d))/(2*n))"
+    vars: {M: [2, 1000], n: [10, 5000], d: [0.01, 0.2]}
+    solution:
+      zh: "用并集界：$P(\\exists f: |\\hat R_n(f) - R(f)| > \\varepsilon) \\le \\sum_f 2e^{-2n\\varepsilon^2} = 2Me^{-2n\\varepsilon^2}$。令它等于 $\\delta$，解得 $\\varepsilon = \\sqrt{\\frac{\\ln M + \\ln(2/\\delta)}{2n}}$。三点观察：误差随 $1/\\sqrt n$ 下降；假设空间大小只以 $\\ln M$ 进入；因为界对所有 $f$ **一致**成立，它对 ERM 挑出来的 $\\hat f$ 也成立。无限假设空间要把 $\\ln M$ 换成 VC 维或 Rademacher 复杂度。"
+      en: "By the union bound, $P(\\exists f: |\\hat R_n(f) - R(f)| > \\varepsilon) \\le \\sum_f 2e^{-2n\\varepsilon^2} = 2Me^{-2n\\varepsilon^2}$. Setting this equal to $\\delta$ gives $\\varepsilon = \\sqrt{\\frac{\\ln M + \\ln(2/\\delta)}{2n}}$. Three observations: the gap shrinks like $1/\\sqrt n$; the size of the class enters only through $\\ln M$; and because the bound holds **uniformly** over all $f$, it also holds for the $\\hat f$ that ERM picks. For an infinite class, $\\ln M$ is replaced by the VC dimension or the Rademacher complexity."
+
+  - id: bootstrap
+    title: {zh: "自助采样漏掉一个样本的概率", en: "The chance a bootstrap sample misses a point"}
+    prompt:
+      zh: "从 $n$ 个样本中有放回地抽 $n$ 次。某个固定样本一次也没被抽中的概率是多少？可用变量：`n`。"
+      en: "Draw $n$ times with replacement from $n$ samples. What is the probability that a given sample is never drawn? Variable: `n`."
+    answer: "(1 - 1/n)^n"
+    vars: {n: [2, 200]}
+    solution:
+      zh: "每次抽不中它的概率是 $1 - \\frac1n$，$n$ 次独立，所以是 $(1-\\frac1n)^n \\to e^{-1} \\approx 0.368$。也就是说每个自助样本大约只含 63.2% 的不同原始样本，剩下约 36.8% 的“袋外”样本可以免费当验证集——随机森林的 OOB 误差（第 08 章）和 .632 自助估计都来自这里。"
+      en: "Each draw misses it with probability $1 - \\frac1n$, and the $n$ draws are independent, so the answer is $(1-\\frac1n)^n \\to e^{-1} \\approx 0.368$. Each bootstrap sample therefore contains only about 63.2% of the distinct original points, and the remaining 36.8% or so are “out of bag”: a free validation set. The out-of-bag error of random forests (Ch. 08) and the .632 bootstrap estimator both come from this."
+
+  - id: ols-train
+    title: {zh: "最小二乘训练误差的期望", en: "The expected training error of least squares"}
+    prompt:
+      zh: "$y = X\\beta + \\varepsilon$，$X$ 为 $n\\times p$ 满秩固定矩阵，噪声独立、方差 $s^2$。最小二乘拟合后，训练均方误差 $\\frac1n\\|y - X\\hat\\beta\\|^2$ 的期望是多少？提示：残差 $= (I - H)\\varepsilon$，$H = X(X^\\top X)^{-1}X^\\top$ 的迹为 $p$。可用变量：`n, p, s`。"
+      en: "$y = X\\beta + \\varepsilon$ with $X$ a fixed full-rank $n\\times p$ matrix and independent noise of variance $s^2$. After a least-squares fit, what is the expected training mean squared error $\\frac1n\\|y - X\\hat\\beta\\|^2$? Hint: the residual is $(I - H)\\varepsilon$, and $H = X(X^\\top X)^{-1}X^\\top$ has trace $p$. Variables: `n, p, s`."
+    answer: "s^2*(1 - p/n)"
+    vars: {n: [20, 200], p: [1, 15], s: [0.3, 3]}
+    solution:
+      zh: "$I - H$ 是对称幂等矩阵，所以 $\\mathbb E\\|(I-H)\\varepsilon\\|^2 = \\mathbb E[\\varepsilon^\\top (I-H)\\varepsilon] = s^2\\,\\mathrm{tr}(I - H) = s^2(n - p)$。除以 $n$ 得 $s^2(1 - \\frac pn)$。而在同样的 $X$ 上换一批新噪声，期望测试误差是 $s^2(1 + \\frac pn)$。两者相差 $\\frac{2ps^2}{n}$——这正是 Mallows $C_p$ 和 AIC 加在训练误差上的“乐观度修正”。"
+      en: "$I - H$ is symmetric and idempotent, so $\\mathbb E\\|(I-H)\\varepsilon\\|^2 = \\mathbb E[\\varepsilon^\\top (I-H)\\varepsilon] = s^2\\,\\mathrm{tr}(I - H) = s^2(n - p)$. Dividing by $n$ gives $s^2(1 - \\frac pn)$. With fresh noise at the same $X$, the expected test error is $s^2(1 + \\frac pn)$. The gap of $\\frac{2ps^2}{n}$ is exactly the optimism correction that Mallows' $C_p$ and AIC add to the training error."
+
+code:
+  - id: cv
+    kind: implement
+    file: cv.py
+    packages: [numpy]
+    title: {zh: "从零实现 k 折交叉验证", en: "k-fold cross-validation from scratch"}
+    intro:
+      zh: "实现多项式拟合、k 折划分、交叉验证误差和按误差选次数。运行后回放次数从 1 到 12 的拟合曲线，同时看训练误差一路下降、交叉验证误差先降后升。"
+      en: "Implement the polynomial fit, the k-fold split, the cross-validation error and degree selection. Then replay the fitted curve from degree 1 to 12 while the training error keeps falling and the cross-validated error falls and then rises."
+    metrics:
+      - {key: train, label: {zh: "训练 MSE", en: "Training MSE"}}
+      - {key: cv, label: {zh: "5 折 CV MSE", en: "5-fold CV MSE"}}
+  - id: cv-library
+    kind: library
+    file: cv_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 scikit-learn 选模型：验证曲线与网格搜索", en: "Model selection in scikit-learn: validation curves and grid search"}
+    intro:
+      zh: "把手写的步骤换成库：Pipeline 组装特征与回归，validation_curve 扫次数，GridSearchCV 同时搜次数和岭回归强度。最后一帧是网格搜索选出的模型——加一点正则，更高的次数也能用。"
+      en: "Swap the hand-written pieces for the library: a Pipeline for features and regression, validation_curve to sweep the degree, GridSearchCV to search degree and ridge strength together. The last frame is the model the grid search picks: with a little regularization, a higher degree becomes usable."
+    metrics:
+      - {key: train, label: {zh: "训练 MSE", en: "Training MSE"}}
+      - {key: cv, label: {zh: "5 折 CV MSE", en: "5-fold CV MSE"}}

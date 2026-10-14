@@ -1,0 +1,52 @@
+---
+title: "Model selection in practice: CV without leaks"
+summary: "Pipelines, the right splitter for your data, nested CV, the one-standard-error rule, and go-to code."
+chapters: ["02"]
+---
+
+### The standard recipe
+
+```python
+from sklearn.model_selection import GridSearchCV, KFold, cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import Ridge
+
+pipe = make_pipeline(StandardScaler(), Ridge())
+cv = KFold(5, shuffle=True, random_state=0)
+search = GridSearchCV(pipe, {"ridge__alpha": [0.01, 0.1, 1, 10, 100]}, cv=cv,
+                      scoring="neg_mean_squared_error").fit(X_train, y_train)
+print(search.best_params_, -search.best_score_)
+print("test MSE:", -search.score(X_test, y_test))   # touch the test set once, at the very end
+```
+
+### Choosing the splitter
+
+- **i.i.d. rows**: `KFold(5 or 10, shuffle=True)`; for classification `StratifiedKFold`, which keeps class proportions in each fold.
+- **Several rows per person, patient or session**: `GroupKFold`. Otherwise the same person appears in train and validation, and the score is far too high.
+- **Time series**: `TimeSeriesSplit`, which always trains on the past and validates on the future. Never shuffle.
+- **Tiny data**: repeated k-fold (`RepeatedKFold`) to average out the luck of one split; LOO only for linear smoothers, where it is free.
+
+### Avoiding leaks
+
+- Everything that is fitted (scalers, imputers, feature selection, target encoding, PCA) goes **inside** the pipeline.
+- Deduplicate before splitting: near-duplicate rows on both sides of a split inflate the score.
+- If you tuned on it, it is not a test set any more. To both tune and report, use **nested CV**:
+
+```python
+outer = KFold(5, shuffle=True, random_state=1)
+scores = cross_val_score(search, X, y, cv=outer, scoring="neg_mean_squared_error")
+print(-scores.mean(), scores.std())   # error of the whole tuning procedure
+```
+
+### Reading the CV curve
+
+- **One-standard-error rule**: compute the mean and standard error across folds (`search.cv_results_["std_test_score"] / sqrt(k)`), then pick the simplest model within one SE of the best.
+- **Train vs CV gap**: large gap means high variance (regularize, simplify, more data); both high means high bias (richer model, better features).
+- Search on a **log scale** for regularization strengths and learning rates; refine around the best value afterwards.
+- For many hyperparameters, `RandomizedSearchCV` or `HalvingRandomSearchCV` finds good regions much faster than a full grid.
+
+### Frontier reading
+
+- Belkin et al. (2019) and Nakkiran et al. (2020) on double descent: why "more parameters" does not have to mean "more overfitting".
+- Zhang et al. (2017): networks can fit random labels, so classical capacity measures alone cannot explain their generalization.

@@ -1,0 +1,205 @@
+/* Blueprint / engineering-draft skin.
+   Loaded last; every rule is prefixed with :root so it wins over component styles regardless of bundle order.
+   Principles: ink lines instead of fills, one highlighter accent, square corners with registration marks,
+   monospace annotations, and motion that looks like a pen plotter drawing the page. */
+
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-600.css";
+@import "@fontsource/ibm-plex-sans-condensed/latin-500.css";
+@import "@fontsource/ibm-plex-sans-condensed/latin-700.css";
+
+/* ---------- typography ---------- */
+:root h1, :root h2, :root h3, :root h4 { font-family: var(--display); letter-spacing: 0; }
+:root .gradient-text {
+  background: none; color: var(--ink); -webkit-text-fill-color: currentColor;
+  background-image: linear-gradient(transparent 62%, color-mix(in srgb, var(--accent) 38%, transparent) 62%, color-mix(in srgb, var(--accent) 38%, transparent) 92%, transparent 92%);
+  background-repeat: no-repeat; background-size: 0% 100%;
+  -webkit-background-clip: border-box; background-clip: border-box;
+  animation: highlighter 1.1s 0.5s cubic-bezier(.6,0,.2,1) forwards;
+}
+@keyframes highlighter { to { background-size: 100% 100%; } }
+:root code { font-family: var(--mono); border-radius: 2px; background: transparent; border-style: dashed; }
+
+/* ---------- registration-mark cards ---------- */
+:root .card {
+  border-radius: var(--radius);
+  box-shadow: none;
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(var(--ink), var(--ink)), linear-gradient(var(--ink), var(--ink)),
+    linear-gradient(var(--ink), var(--ink)), linear-gradient(var(--ink), var(--ink)),
+    linear-gradient(var(--ink), var(--ink)), linear-gradient(var(--ink), var(--ink)),
+    linear-gradient(var(--ink), var(--ink)), linear-gradient(var(--ink), var(--ink));
+  background-repeat: no-repeat;
+  background-size: 12px 2px, 2px 12px, 12px 2px, 2px 12px, 12px 2px, 2px 12px, 12px 2px, 2px 12px;
+  background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+}
+
+/* ---------- buttons & chips ---------- */
+:root .btn {
+  border-radius: 2px; font-family: var(--mono); font-size: 0.82rem; letter-spacing: 0.02em;
+  background: transparent; border: 1px solid var(--border); color: var(--ink);
+  position: relative; overflow: hidden; transition: color 0.2s, border-color 0.2s, transform 0.15s;
+}
+:root .btn::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform: scaleX(0); transform-origin: left; transition: transform 0.28s cubic-bezier(.6,0,.2,1); z-index: -1; }
+:root .btn { z-index: 0; isolation: isolate; }
+:root .btn:hover { border-color: var(--ink); color: var(--bg); transform: none; }
+:root .btn:hover::after { transform: scaleX(1); }
+:root .btn:disabled:hover { color: var(--ink); }
+:root .btn:disabled::after { display: none; }
+:root .btn-primary { background: var(--accent); border-color: var(--accent); color: #0b2440; font-weight: 600; }
+:root[data-theme="light"] .btn-primary { color: #fff; }
+:root .btn-primary::after { background: var(--ink); }
+:root .chip { border-radius: 2px; font-family: var(--mono); font-size: 0.78rem; background: transparent; }
+:root .chip.on { border-color: var(--accent); color: var(--ink); box-shadow: inset 0 -3px 0 var(--accent); }
+
+/* ---------- header / chrome ---------- */
+:root .site-header { background: color-mix(in srgb, var(--bg) 88%, transparent); border-bottom: 1px solid var(--border); }
+:root .brand { font-family: var(--display); letter-spacing: 0.01em; }
+:root .brand-mark { background: transparent; border: 1.5px solid var(--ink); color: var(--ink); border-radius: 2px; box-shadow: none; }
+:root .progress-bar { background: var(--accent); height: 2px; }
+:root .lang-switch, :root .theme-toggle { border-radius: 2px; font-family: var(--mono); }
+
+/* ---------- reveal: pen-plotter wipe ---------- */
+:root .reveal { opacity: 0; transform: none; filter: none; clip-path: inset(-3em 100% -3em -3em); transition: clip-path 0.9s cubic-bezier(.6,0,.2,1), opacity 0.5s ease; }
+:root .reveal.in { opacity: 1; clip-path: inset(-3em -3em -3em -3em); }
+
+/* SVG strokes that draw themselves (elements carry pathLength="1" and class "draw"). */
+:root .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw-in 1.3s cubic-bezier(.6,0,.2,1) forwards; }
+@keyframes draw-in { to { stroke-dashoffset: 0; } }
+
+/* ---------- chapter page ---------- */
+:root .ch-num {
+  -webkit-text-stroke: 1.5px var(--ink); background: none; color: transparent;
+  font-family: var(--display);
+}
+:root .ch-part, :root .hero-kicker { font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.78rem; }
+:root .meta-chip { border-radius: 2px; font-family: var(--mono); font-size: 0.74rem; background: transparent; border-style: dashed; }
+:root .triad-card { border-radius: 2px; background: transparent; }
+:root .triad-card::before { background: var(--ink); width: 3px; }
+:root .triad-card:nth-child(2)::before, :root .triad-card:nth-child(3)::before { background: var(--ink); }
+:root .triad-k { font-family: var(--mono); }
+
+:root .sec-head { position: relative; border-bottom: none; padding-bottom: 0.9rem; }
+:root .sec-head::after {
+  /* a dimension line: |<———————>| that draws in with the heading */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 9px;
+  border-left: 1px solid var(--ink); border-right: 1px solid var(--ink);
+  background: linear-gradient(var(--ink), var(--ink)) center / 100% 1px no-repeat;
+  transform: scaleX(0); transform-origin: left; transition: transform 1s 0.2s cubic-bezier(.6,0,.2,1);
+}
+:root .sec-head.in::after { transform: scaleX(1); }
+:root .sec-num { font-family: var(--mono); border: 1.5px solid var(--ink); background: transparent; color: var(--ink); border-radius: 0; padding: 0.05em 0.45em; }
+
+:root .ch-rail ol { border-left: 1px dashed var(--border); }
+:root .ch-rail a { font-family: var(--mono); font-size: 0.8rem; }
+:root .ch-rail a.active { background: none; border-left-color: var(--accent); }
+:root .ch-rail a.active span::before { content: "▸ "; color: var(--accent); }
+
+/* Callouts look like title blocks on a drawing. */
+:root .box { border-radius: 2px; border-left-width: 1px; border-left-style: solid; position: relative; padding-top: 1.3rem; }
+:root .box-head { position: absolute; top: -0.75em; left: 0.8rem; background: var(--bg); padding: 0 0.5em; font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+:root .box-icon { width: auto; height: auto; background: none; border: 1px solid currentColor; padding: 0 0.35em; border-radius: 0; font-size: 0.8rem; }
+:root .box-definition, :root .box-theorem, :root .box-example { --box-c: var(--ink); }
+:root .box-insight { --box-c: var(--accent); }
+
+/* Tables: ruled like a parts list, rows slide in. */
+:root .ch-article table { border: 1px solid var(--border); }
+:root .ch-article th { font-family: var(--mono); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1.5px solid var(--ink); background: color-mix(in srgb, var(--ink) 5%, transparent); }
+:root .ch-article td + td, :root .ch-article th + th { border-left: 1px dashed var(--border); }
+:root .ch-article table tbody tr { opacity: 0; transform: translateX(-14px); transition: opacity 0.5s ease, transform 0.5s cubic-bezier(.2,.8,.2,1); }
+:root .ch-article table.in tbody tr { opacity: 1; transform: none; }
+:root .ch-article table.in tbody tr:nth-child(2) { transition-delay: 0.08s; }
+:root .ch-article table.in tbody tr:nth-child(3) { transition-delay: 0.16s; }
+:root .ch-article table.in tbody tr:nth-child(4) { transition-delay: 0.24s; }
+:root .ch-article table.in tbody tr:nth-child(5) { transition-delay: 0.32s; }
+:root .ch-article table.in tbody tr:nth-child(n+6) { transition-delay: 0.4s; }
+:root .ch-article tbody tr:hover td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* ---------- widgets = numbered figures ---------- */
+:root .ch-article { counter-reset: fig; }
+:root .widget { counter-increment: fig; border-radius: 2px; }
+:root .widget::before { height: 0; border-top: 1px dashed var(--border); background: none; opacity: 1; }
+:root .widget-dot { width: 8px; height: 8px; border-radius: 0; background: var(--accent); box-shadow: none; }
+:root .ch-article .widget-title::before { content: "FIG. " counter(fig, decimal-leading-zero) " — "; font-family: var(--mono); color: var(--accent); }
+:root .widget-title { font-family: var(--display); }
+:root .widget-tag { border-radius: 0; color: var(--ink); border-color: var(--ink); font-family: var(--mono); transform: rotate(-2deg); opacity: 0.9; }
+:root .widget-caption { font-size: 0.85rem; border-top: 1px dashed var(--border); padding-top: 0.6rem; }
+:root .widget-caption::before { content: "NOTE · "; font-family: var(--mono); color: var(--accent); }
+:root .w-stat { border-radius: 0; background: transparent; border: 1px solid var(--border); border-left: 3px solid var(--ink); }
+:root .w-stat-value { font-family: var(--mono); }
+:root .w-stat.accent .w-stat-value { color: var(--accent); }
+:root .w-slider input, :root .tp-scrub { background-color: var(--surface-2); background-image: linear-gradient(var(--accent), var(--accent)); border-radius: 0; height: 3px; }
+:root .w-slider input::-webkit-slider-thumb, :root .tp-scrub::-webkit-slider-thumb { border-radius: 0; width: 12px; height: 18px; background: var(--ink); box-shadow: none; }
+:root .w-slider input::-moz-range-thumb, :root .tp-scrub::-moz-range-thumb { border-radius: 0; width: 12px; height: 18px; background: var(--ink); box-shadow: none; }
+:root .w-slider-value, :root .w-slider-label { font-family: var(--mono); font-size: 0.78rem; }
+
+/* Plots: transparent paper, ink frame. */
+:root .plot-bg { fill: color-mix(in srgb, var(--bg) 70%, transparent); stroke: var(--border); stroke-width: 1; }
+:root .plot2d, :root .curve-plot, :root .lm-svg, :root .gf-svg, :root .jk-svg, :root .gb2-svg, :root .kkt-svg, :root .bayes-svg { border-radius: 0; }
+:root .sep-line { stroke: var(--ink); }
+:root .field-zero { stroke: var(--ink); }
+:root .sv-ring { stroke: var(--accent); }
+:root .hl-ring { stroke: var(--accent); }
+:root .pt { stroke-width: 1; }
+:root .xhair line { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.8; }
+:root .xhair text { fill: var(--accent); font-family: var(--mono); font-size: 10px; }
+:root .xhair rect { fill: var(--bg); stroke: var(--accent); stroke-width: 0.8; }
+
+/* Players */
+:root .tp-play, :root .ctl-play { background: var(--accent); border-radius: 2px; color: #0b2440; }
+:root[data-theme="light"] .tp-play, :root[data-theme="light"] .ctl-play { color: #fff; }
+:root .tp-badge { border-radius: 0; font-family: var(--mono); }
+:root .mc-dot { filter: none; }
+
+/* ---------- exercises ---------- */
+:root .ex-kind { border-radius: 0; font-family: var(--mono); }
+:root .ex-kind.implement, :root .ex-kind.library { background: transparent; border: 1px solid currentColor; }
+:root .ex-kind.implement { color: var(--accent-2); }
+:root .ex-kind.library { color: var(--accent); }
+:root .deriv-input-wrap { border-radius: 0; }
+:root .deriv-input-wrap:focus-within { background: var(--accent); }
+:root .deriv-input-wrap.typing { background: repeating-linear-gradient(90deg, var(--accent) 0 10px, transparent 10px 16px); background-size: 200% 100%; box-shadow: none; }
+:root .deriv-input { border-radius: 0; }
+:root .deriv-tab-hint, :root .cm-tab-hint { background: var(--accent); color: #0b2440; border-radius: 0; box-shadow: none; font-family: var(--mono); }
+:root .ex-summary.good { background: none; color: var(--success); -webkit-text-fill-color: currentColor; font-family: var(--mono); }
+:root .ex-tests li { border-radius: 0; background: transparent; border: 1px dashed var(--border); }
+:root .cm-filling { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, transparent) 0 6px, transparent 6px 9px); background-size: 200% 100%; text-shadow: none; }
+:root .code-ex.solved, :root .verdict-correct { box-shadow: 0 0 0 1px var(--success); }
+:root .ex-editor { border-radius: 0; }
+
+/* ---------- home ---------- */
+:root .hero-title { font-family: var(--display); }
+:root .pillar-icon, :root .mode-icon { background: transparent; border: 1.5px solid var(--ink); color: var(--ink); border-radius: 0; box-shadow: none; font-family: var(--mono); }
+:root .toc-tabs { border-radius: 0; background: transparent; }
+:root .toc-tab { border-radius: 0; font-family: var(--mono); font-size: 0.8rem; }
+:root .toc-tab.on { background: var(--ink); color: var(--bg); box-shadow: none; }
+:root .toc-card { border-radius: 2px; background: color-mix(in srgb, var(--surface) 80%, transparent); border-style: dashed; }
+:root .toc-card.ready { border-style: solid; border-color: var(--ink); }
+:root .toc-card.ready:hover { box-shadow: 4px 4px 0 var(--accent); transform: translate(-2px, -2px); }
+:root .toc-id { font-family: var(--mono); color: var(--accent); }
+:root .toc-badge.ready { color: var(--success); font-family: var(--mono); }
+
+/* ---------- course ---------- */
+:root .slide { border-radius: 2px; box-shadow: none; }
+:root .slide-bg { background: none; animation: none; }
+:root .slide-part { font-family: var(--mono); text-transform: uppercase; }
+:root .seg-track { border-radius: 0; height: 4px; }
+:root .seg-fill { background: var(--accent); }
+:root .subtitle-text { border-radius: 0; font-family: var(--font); }
+:root .slide .step.current { animation: step-mark 1.4s ease-out; }
+@keyframes step-mark { 0% { box-shadow: inset 4px 0 0 var(--accent); background-color: color-mix(in srgb, var(--accent) 16%, transparent); } 100% { box-shadow: inset 4px 0 0 transparent; background-color: transparent; } }
+:root .course { background: transparent; }
+:root .course-body { background-color: var(--bg); }
+
+/* Remaining controls: flat ink, no glow. */
+:root .cp-handle { filter: none; stroke: var(--ink); stroke-width: 1.5; }
+:root .ctl.on { box-shadow: none; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+:root .playing .ctl-play { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root .reveal { clip-path: none; opacity: 1; }
+  :root .draw { stroke-dasharray: none; animation: none; }
+  :root .gradient-text { animation: none; background-size: 100% 100%; }
+}

@@ -3,6 +3,7 @@ import { ClientRouter } from "astro:transitions";
 import "katex/dist/katex.min.css";
 import "../styles/global.css";
 import "../styles/layout.css";
+import "../styles/blueprint.css";
 import { href, otherLang, t, type Lang } from "../i18n/ui";
 
 interface Props {
@@ -60,7 +61,7 @@ const other = otherLang(lang);
           (entries) => entries.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))),
           { rootMargin: "0px 0px -8% 0px" },
         );
-        document.querySelectorAll(".reveal:not(.in)").forEach((el) => io.observe(el));
+        document.querySelectorAll(".reveal:not(.in), .ch-article table:not(.in)").forEach((el) => io.observe(el));
         // Reading progress
         const bar = document.getElementById("progress-bar");
         const onScroll = () => {

@@ -1,0 +1,24 @@
+.lr-svg { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; user-select: none; touch-action: none; cursor: grab; }
+.lr-svg:active { cursor: grabbing; }
+.lr-axis { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.lr-label { fill: var(--text-muted); font: 12px var(--mono); }
+.lr-label.strong { fill: var(--ink); font-weight: 700; font-size: 14px; }
+.lr-hint { fill: var(--text-muted); font: 11px var(--mono); opacity: 0.8; }
+.lr-plane { fill: color-mix(in srgb, var(--accent-2) 14%, transparent); stroke: var(--accent-2); stroke-width: 1.2; }
+.lr-plane-grid { fill: none; stroke: var(--accent-2); stroke-width: 0.6; opacity: 0.45; }
+.lr-col { stroke: var(--ink); stroke-width: 1.6; }
+.lr-y { stroke: var(--accent); stroke-width: 3; }
+.lr-y-dot { fill: var(--accent); }
+.lr-yhat { stroke: var(--accent-2); stroke-width: 2.6; }
+.lr-yhat-dot { fill: var(--accent-2); }
+.lr-resid { stroke: var(--ink); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.lr-right { fill: none; stroke: var(--ink); stroke-width: 1.2; }
+.l12-region { fill: color-mix(in srgb, var(--accent-2) 16%, transparent); stroke: var(--accent-2); stroke-width: 1.6; }
+.l12-level { fill: none; stroke: var(--ink); stroke-width: 1; opacity: 0.35; }
+.l12-touch { fill: none; stroke: var(--accent); stroke-width: 2; }
+.l12-sol { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+.l12-center { fill: var(--surface); stroke: var(--ink); stroke-width: 2; cursor: grab; }
+.l12-path { fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-dasharray: 4 3; opacity: 0.8; }
+.lr-svg.path { cursor: default; margin-top: 0.3rem; }
+.lr-coef { fill: none; stroke-width: 1.8; }
+.lr-sub { font: 12px var(--mono); color: var(--text-muted); margin-top: 0.6rem; }

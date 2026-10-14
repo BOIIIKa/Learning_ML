@@ -1,0 +1,6 @@
+- **The triad**: model (hypothesis space $\mathcal F$), strategy (loss and risk) and algorithm (the solver) are independent choices; every combination is a learning method.
+- **Risk**: the expected risk $R(f)=\mathbb E[L(Y,f(X))]$ is the true target; the empirical risk $\hat R_n(f)=\frac1n\sum L(y_i,f(x_i))$ is the computable stand-in.
+- **ERM and SRM**: $\min \hat R_n$; $\min \hat R_n + \lambda J(f)$. Probabilistically, the regularizer is a negative log-prior (MAP).
+- **Bayes optimal**: squared loss → the conditional mean $\mathbb E[Y\mid X]$; absolute loss → the conditional median; 0-1 loss → the class with the largest posterior. The Bayes error is a floor no classifier can break.
+- **Caveat**: for a fixed $f$, $\hat R_n \to R$, but ERM picks $\hat f$ after seeing the data, so $\hat R_n(\hat f)$ is optimistic; generalization theory deals with this (Ch. 02).
+- **Robustness**: squared loss is very sensitive to outliers (the mean); absolute and Huber losses are robust (the median).

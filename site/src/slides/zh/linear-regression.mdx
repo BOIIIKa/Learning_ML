@@ -1,0 +1,120 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import CollinearCoefs from "../../components/chapters/ch03/CollinearCoefs";
+import ProjectionViz from "../../components/chapters/ch03/ProjectionViz";
+import L1L2Geometry from "../../components/chapters/ch03/L1L2Geometry";
+import RegPath from "../../components/chapters/ch03/RegPath";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 03 章 · 动画课程" title="线性回归与正则化" say="最古老的模型，三种看法：一次投影、一个统计估计量、一个带惩罚的优化问题。">
+
+投影 · 方差 · 岭回归与 Lasso
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="功劳归谁？" say="老师加入了图书馆时长，它和学习时长几乎是同一个数。">
+
+<Step say="每个点是用新一届学生拟合的结果。两个系数沿着虚线剧烈摆动。">每个点 = 一年的拟合，沿 $w_1 + w_2 = 2$ 散开</Step>
+
+<Step say="数据能确定两者之和，却分不清怎么拆给两个特征。">数据知道“和”，不知道“怎么拆”</Step>
+
+<Step say="打开岭回归：点云立刻收拢，代价是向零略微收缩。">岭回归：点云收拢 →</Step>
+
+<div slot="visual"><CollinearCoefs client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="最小二乘与两种惩罚" say="三个目标函数。">
+
+<Step say="最小二乘最小化残差平方和，令梯度为零得到正规方程。">OLS：$X^\top X\hat\beta = X^\top y$</Step>
+
+<Step say="岭回归加上 lambda 乘以范数平方，矩阵变得可逆。">岭回归：$(X^\top X + \lambda I)^{-1}X^\top y$</Step>
+
+<Step say="Lasso 加上 lambda 乘以绝对值之和。没有闭式解，但很多系数恰好为零。">Lasso：$+\lambda\|\beta\|_1$，出现精确的零</Step>
+
+<Step say="一定要先标准化特征，截距不加惩罚。">先标准化；截距不惩罚</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="菱形与圆" say="Lasso 为什么会产生零？看约束形式。">
+
+<Step say="解位于损失等高线第一次碰到约束域的地方。">解 = 等高线与约束域的第一个接触点</Step>
+
+<Step say="圆是光滑的，接触点几乎不会恰好落在坐标轴上。">L2 圆：没有尖角，没有零</Step>
+
+<Step say="菱形的尖角在坐标轴上，椭圆往往先碰到尖角。把中心拖到靠近某条轴的位置，两种都试试。">L1 菱形：尖角在轴上 → 精确的零</Step>
+
+<div slot="visual"><L1L2Geometry client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="最小二乘就是投影" say="正规方程说的是：残差与每一列正交。">
+
+<Step say="只有三位学生时，y 是三维空间里的一个向量。各列张成一个由所有可能预测组成的平面。">$X$ 的列张成“所有可能预测”的平面</Step>
+
+<Step say="拟合向量是平面上离 y 最近的点，残差与平面垂直。">$\hat y = Hy$，残差 $\perp$ 平面</Step>
+
+<Step say="H 是帽子矩阵：对称、幂等、迹为 p。">$H = X(X^\top X)^{-1}X^\top$，$H^2 = H$，$\mathrm{tr}\,H = p$</Step>
+
+<div slot="visual"><ProjectionViz client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="方差，以及岭回归怎样把它买回来" say="现在看统计。">
+
+<Step say="在高斯噪声下，最小二乘是极大似然估计，协方差是西格玛平方乘以 X 转置 X 的逆。">$\mathrm{Cov}(\hat\beta) = \sigma^2(X^\top X)^{-1}$</Step>
+
+<Step say="列之间共线时，X 转置 X 有一个很小的特征值，那个方向上的方差爆炸。">共线 ⇒ 极小特征值 ⇒ 巨大方差</Step>
+
+<Step say="在 SVD 基下，岭回归把每个方向乘以 d 方除以 d 方加 lambda。奇异值越小，收缩越多。">岭回归：$u_j$ 方向乘以 $\dfrac{d_j^2}{d_j^2+\lambda}$</Step>
+
+<Step say="惩罚就是先验：高斯先验对应岭回归，拉普拉斯先验对应 Lasso。">高斯先验 → 岭回归 · 拉普拉斯先验 → Lasso</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="软阈值" say="Lasso 到底怎么解？">
+
+<Step say="最优性条件：每个非零特征与残差的相关恰好等于 lambda，每个零特征不超过 lambda。">KKT：$|x_j^\top r|/n \le \lambda$，$\beta_j \ne 0$ 时取等号</Step>
+
+<Step say="每次只优化一个坐标，解就是软阈值：减去 lambda，不够减就归零。">
+
+$$
+S(z, \lambda) = \mathrm{sign}(z)\max(|z| - \lambda, 0)
+$$
+
+</Step>
+
+<Step say="依次循环所有坐标，从大 lambda 到小 lambda 热启动，就得到整条路径。">坐标下降 + 热启动 = 整条路径</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：正交设计" say="特征正交且标准化时，每种估计都逐个坐标作用。取 z 等于三、零点八、负零点三，lambda 等于二分之一。">
+
+<Step say="岭回归除以一点五：二、零点五三、负零点二。">岭回归 $z/(1+\lambda)$：$(2,\ 0.53,\ -0.2)$</Step>
+
+<Step say="Lasso 减去二分之一并截断：二点五、零点三、零。">Lasso $S(z, \lambda)$：$(2.5,\ 0.3,\ 0)$</Step>
+
+<Step say="最优子集只保留大于一的：三、零、零。">最优子集（硬阈值）：$(3,\ 0,\ 0)$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="正则化路径" say="实践中跟踪整条路径，让交叉验证来选。">
+
+<Step say="拖动 lambda。岭回归的系数一起平滑收缩。">岭回归：所有系数一起收缩</Step>
+
+<Step say="切换到 Lasso：系数一个接一个进场，进场之前恰好为零。">Lasso：系数一个个进场</Step>
+
+<Step say="下方的交叉验证曲线标出了推荐的 lambda。">CV 选出 $\lambda$ →</Step>
+
+<div slot="visual"><RegPath client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现岭回归和 Lasso 坐标下降，再用 scikit-learn 的 RidgeCV 和 LassoCV。">
+
+<Step say="代码运行后，回放 Lasso 路径，看系数一个个进场。">✎ 4 道推导 · ⌨ Lasso 坐标下降 · ⚙ RidgeCV + LassoCV</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/linear-regression/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

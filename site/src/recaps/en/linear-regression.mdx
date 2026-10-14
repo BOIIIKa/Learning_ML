@@ -1,0 +1,7 @@
+- **Least squares**: normal equations $X^\top X\hat\beta = X^\top y$. Solve with QR/SVD (`lstsq`), never by forming the inverse.
+- **Geometry**: $\hat y = Hy$ is the orthogonal projection onto the column space; $H = X(X^\top X)^{-1}X^\top$ is idempotent with trace $p$; the residual is orthogonal to every column.
+- **Statistics**: OLS is the Gaussian MLE; $\mathrm{Cov}(\hat\beta) = \sigma^2(X^\top X)^{-1}$; Gauss–Markov gives the best linear *unbiased* estimator. Collinearity makes the variance blow up.
+- **Ridge**: $(X^\top X + \lambda I)^{-1}X^\top y$; shrinks direction $u_j$ by $d_j^2/(d_j^2+\lambda)$; effective df $= \sum_j d_j^2/(d_j^2+\lambda)$. Gaussian prior, $\lambda = \sigma^2/\tau^2$.
+- **Lasso**: KKT $|x_j^\top r|/n \le \lambda$, with equality when $\beta_j \ne 0$; coordinate descent with soft thresholding $S(z,\lambda)$; warm-started paths. Laplace prior (MAP).
+- **Orthonormal design**: ridge $z/(1+\lambda)$ (proportional), lasso $S(z,\lambda)$ (soft threshold), best subset (hard threshold).
+- **Practice**: standardize, don't penalize the intercept, choose $\lambda$ by CV; elastic net for correlated groups; as $\lambda\to 0$ with $p \gt n$, ridge → minimum-norm interpolation.

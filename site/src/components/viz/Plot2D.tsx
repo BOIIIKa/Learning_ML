@@ -1,6 +1,7 @@
 import { contours } from "d3-contour";
 import { scaleLinear } from "d3-scale";
-import { useId, useMemo, useRef } from "react";
+import { useId, useMemo, useRef, useState } from "react";
+import { Crosshair } from "./Crosshair";
 import type { TraceStep } from "../../engines/trace";
 import { useTween } from "./useTween";
 import "./plot.css";
@@ -51,7 +52,15 @@ function clipLine(w: [number, number], c: number, [x0, x1]: [number, number], [y
       if (x >= x0 - 1e-9 && x <= x1 + 1e-9) pts.push([x, y]);
     }
   }
-  return pts.length >= 2 ? [pts[0], pts[pts.length - 1]] : null;
+  if (pts.length < 2) return null;
+  // Pick the two intersections farthest apart (a line through a corner yields duplicates).
+  let best: [[number, number], [number, number]] = [pts[0], pts[1]];
+  let dmax = -1;
+  for (const a of pts) for (const b of pts) {
+    const d = (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
+    if (d > dmax) { dmax = d; best = [a, b]; }
+  }
+  return best;
 }
 
 export default function Plot2D({
@@ -60,6 +69,7 @@ export default function Plot2D({
   const uid = useId().replace(/:/g, "");
   const svgRef = useRef<SVGSVGElement>(null);
   const dragging = useRef<number | null>(null);
+  const [hover, setHover] = useState<[number, number] | null>(null);
 
   const dom = useMemo(() => {
     if (domain) return domain;
@@ -124,18 +134,16 @@ export default function Plot2D({
       viewBox={`0 0 ${W} ${H}`}
       role="img"
       onPointerMove={(e) => {
+        const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(svgRef.current!.getScreenCTM()!.inverse());
+        setHover([pt.x, pt.y]);
         if (dragging.current !== null && onDragPoint) onDragPoint(dragging.current, toData(e));
       }}
       onPointerUp={() => (dragging.current = null)}
-      onPointerLeave={() => (dragging.current = null)}
+      onPointerLeave={() => { dragging.current = null; setHover(null); }}
     >
       <defs>
-        <filter id={`glow-${uid}`} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="3" result="b" />
-          <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
         <pattern id={`dots-${uid}`} width="23" height="23" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="1" className="plot-griddot" />
+          <path d="M23 0H0V23" className="plot-gridline" />
         </pattern>
       </defs>
       <rect width={W} height={H} className="plot-bg" />
@@ -145,7 +153,7 @@ export default function Plot2D({
         <g className="plot-field">
           {fieldPaths.neg.map((d, i) => <path key={`n${i}`} d={d} className="field-neg" />)}
           {fieldPaths.pos.map((d, i) => <path key={`p${i}`} d={d} className="field-pos" />)}
-          <path d={fieldPaths.zero} className="field-zero" filter={`url(#glow-${uid})`} />
+          <path d={fieldPaths.zero} className="field-zero" />
         </g>
       )}
 
@@ -180,7 +188,7 @@ export default function Plot2D({
               <path d={linePath([line[0], line[1]], line[2] + 1)} className="margin-line neg" />
             </>
           )}
-          <path d={linePath([line[0], line[1]], line[2])} className="sep-line" filter={`url(#glow-${uid})`} />
+          <path d={linePath([line[0], line[1]], line[2])} pathLength={1} className="sep-line draw" />
         </g>
       )}
 
@@ -209,6 +217,7 @@ export default function Plot2D({
           </g>
         );
       })}
+      <Crosshair p={hover} W={W} H={H} label={hover ? `(${sx.invert(hover[0]).toFixed(2)}, ${sy.invert(hover[1]).toFixed(2)})` : ""} />
     </svg>
   );
 }

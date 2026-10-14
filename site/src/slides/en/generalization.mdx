@@ -1,0 +1,122 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import OverfitDegree from "../../components/chapters/ch02/OverfitDegree";
+import BiasVarianceViz from "../../components/chapters/ch02/BiasVarianceViz";
+import CVFolds from "../../components/chapters/ch02/CVFolds";
+import DoubleDescent from "../../components/chapters/ch02/DoubleDescent";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 02 · Animated course" title="Generalization, Bias–Variance and Model Selection" say="A model that is perfect on last year's data can be terrible on next year's. This chapter explains why, and how to catch it with only the data you have.">
+
+Why the training error lies, and how to catch it
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Which degree?" say="Scores rise fast and then level off, so the teacher tries polynomials instead of a line. But of which degree?">
+
+<Step say="Drag the degree up. The training error only goes down; at degree eleven the curve passes through every point.">Higher degree → training error ↓ to 0</Step>
+
+<Step say="Now show next year's students. The high-degree curve swings between the points, and the test error explodes.">Turn on next year's students: test error ↑↑</Step>
+
+<Step effect="focus" say="So the training error cannot tell us which degree to use. We need another way to estimate the error on new data.">
+<p class="big-q sm">The training error can't choose the model</p>
+</Step>
+
+<div slot="visual"><OverfitDegree client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="k-fold cross-validation" say="The most widely used fix is cross-validation.">
+
+<Step say="Split the data into k folds. Each round holds one fold out as next year's students and fits on the rest.">Each fold takes a turn as "next year's students"</Step>
+
+<Step say="Average the k held-out errors. That is the CV error, an estimate of the test error.">Average the $k$ held-out errors = $\mathrm{CV}_k$</Step>
+
+<Step say="Repeat for every degree and pick the minimum. Try different k on the right.">Repeat for each degree, pick the minimum →</Step>
+
+<Step say="One rule: anything that learns from data, even standardization, must happen inside the loop, or the validation folds leak into training.">Every data-dependent step goes inside the loop</Step>
+
+<div slot="visual"><CVFolds client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Three ways to estimate test error" say="There are three standard tools.">
+
+<Step say="Hold-out: train, validation and test sets. Simple, but wasteful when data are scarce.">**Hold-out**: train / validation / test, simple but wasteful</Step>
+
+<Step say="k-fold cross-validation: every point validates once. Five or ten folds is the usual choice.">**k-fold CV**: $k = 5$ or $10$; $k = n$ is leave-one-out</Step>
+
+<Step say="The bootstrap: resample with replacement. About thirty-seven percent of the points are left out each time and can be used for validation.">**Bootstrap**: about 36.8% out-of-bag for free</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Bias–variance decomposition" say="Why is there a U at all? Split the expected test error at one point into three parts.">
+
+<Step say="Noise is the floor. Bias is how far the average fit is from the truth. Variance is how much the fit moves between training sets.">
+
+$$
+\mathbb E(Y - \hat f)^2 = \sigma^2 + \text{bias}^2 + \text{variance}
+$$
+
+</Step>
+
+<Step say="On the right, thirty training sets. At low degree the curves agree but miss the truth.">Low degree: lines agree (low variance) but miss (high bias)</Step>
+
+<Step say="At high degree the average is right, but the individual curves scatter everywhere.">High degree: average is right (low bias), lines scatter (high variance)</Step>
+
+<div slot="visual"><BiasVarianceViz client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="How optimistic is the training error?" say="For least squares we can compute the optimism exactly.">
+
+<Step say="With p parameters, the expected training error is sigma squared times one minus p over n.">$\mathbb E[\text{train}] = \sigma^2(1 - p/n)$</Step>
+
+<Step say="The expected test error at the same inputs is sigma squared times one plus p over n.">$\mathbb E[\text{test}] = \sigma^2(1 + p/n)$</Step>
+
+<Step say="Mallows' Cp and AIC simply add the gap back to the training error.">$C_p$, AIC: add back $2p\sigma^2/n$</Step>
+
+<Step say="For a finite class of M models, a union bound gives a gap of order the square root of log M over n, valid even for the model ERM picks.">Uniform bound: gap $\lesssim \sqrt{(\ln M + \ln(2/\delta))/(2n)}$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: leave-one-out by hand" say="Three students: hours one, two, three; scores two, four, nine.">
+
+<Step say="The constant model has training error 8.67, but leave-one-out error 19.5.">Constant: train $8.67$ → LOO $19.5$</Step>
+
+<Step say="The line has training error 0.5, but leave-one-out error 6.75. The line still wins.">Line: train $0.5$ → LOO $6.75$, the line wins</Step>
+
+<Step say="For linear smoothers, divide each residual by one minus its leverage and you get the leave-one-out error without refitting.">
+
+$$
+\mathrm{LOO} = \frac1n\sum_i \Big(\frac{e_i}{1 - H_{ii}}\Big)^2
+$$
+
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Double descent" say="Modern models break the U. Here the model fits thirty points with p of a hundred features, using the minimum-norm solution.">
+
+<Step say="Below thirty features, the classical U.">$p \lt n$: the classical U</Step>
+
+<Step say="At thirty features the model can just interpolate, and the risk spikes.">$p = n$: just enough to interpolate, risk spikes</Step>
+
+<Step say="Beyond that, the minimum-norm interpolant spreads out, variance falls, and the risk descends a second time.">$p \gt n$: minimum norm, second descent</Step>
+
+<Step effect="focus" say="Parameter count is not capacity. What matters is what the algorithm actually uses.">
+<p class="big-q sm">Parameter count ≠ capacity</p>
+</Step>
+
+<div slot="visual"><DoubleDescent client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, k-fold cross-validation from scratch, and model selection with scikit-learn.">
+
+<Step say="After running the code, replay the degree sweep and watch the two errors part ways.">✎ 4 derivations · ⌨ k-fold CV from scratch · ⚙ validation_curve + GridSearchCV</Step>
+
+<Step effect="pop" say="Use the button to start practising.">
+<a class="btn btn-primary btn-xl" href="../../chapters/generalization/#s-practice">Start practising →</a>
+</Step>
+
+</Slide>

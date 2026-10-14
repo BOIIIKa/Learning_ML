@@ -1,0 +1,52 @@
+---
+title: "模型选择实战：不泄漏的交叉验证"
+summary: "管道、按数据结构选划分方式、嵌套 CV、一倍标准误法则，以及常用代码。"
+chapters: ["02"]
+---
+
+### 标准流程
+
+```python
+from sklearn.model_selection import GridSearchCV, KFold, cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import Ridge
+
+pipe = make_pipeline(StandardScaler(), Ridge())
+cv = KFold(5, shuffle=True, random_state=0)
+search = GridSearchCV(pipe, {"ridge__alpha": [0.01, 0.1, 1, 10, 100]}, cv=cv,
+                      scoring="neg_mean_squared_error").fit(X_train, y_train)
+print(search.best_params_, -search.best_score_)
+print("test MSE:", -search.score(X_test, y_test))   # 测试集只在最后碰一次
+```
+
+### 选择划分方式
+
+- **样本独立同分布**：`KFold(5 或 10, shuffle=True)`；分类用 `StratifiedKFold`，每折保持类别比例。
+- **同一个人、病人或会话有多行**：用 `GroupKFold`。否则同一个人同时出现在训练和验证中，分数会虚高。
+- **时间序列**：用 `TimeSeriesSplit`，始终用过去训练、用未来验证。绝不打乱。
+- **数据极少**：用重复 k 折（`RepeatedKFold`）平均掉单次划分的运气；LOO 只在线性平滑器上用，因为它几乎免费。
+
+### 避免泄漏
+
+- 所有需要拟合的步骤（标准化、缺失值填补、特征选择、目标编码、PCA）都放进管道**里面**。
+- 划分前先去重：近似重复的行出现在两边会抬高分数。
+- 调过参的数据就不再是测试集。既要调参又要报告，用**嵌套 CV**：
+
+```python
+outer = KFold(5, shuffle=True, random_state=1)
+scores = cross_val_score(search, X, y, cv=outer, scoring="neg_mean_squared_error")
+print(-scores.mean(), scores.std())   # “整个调参过程”的误差
+```
+
+### 读 CV 曲线
+
+- **一倍标准误法则**：算出各折的均值和标准误（`search.cv_results_["std_test_score"] / sqrt(k)`），在与最优值相差一倍标准误以内的模型里选最简单的。
+- **训练与 CV 的差距**：差距大说明方差大（加正则、简化模型、加数据）；两者都高说明偏差大（更丰富的模型、更好的特征）。
+- 正则强度和学习率在**对数刻度**上搜索，找到最优后再在附近细化。
+- 超参数多时，`RandomizedSearchCV` 或 `HalvingRandomSearchCV` 比完整网格快得多。
+
+### 前沿阅读
+
+- Belkin 等（2019）与 Nakkiran 等（2020）的双下降研究：为什么“参数更多”不一定意味着“更过拟合”。
+- Zhang 等（2017）：神经网络能拟合随机标签，所以仅靠经典容量度量解释不了它们的泛化。

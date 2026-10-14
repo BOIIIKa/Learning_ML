@@ -1,0 +1,145 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import CollinearCoefs from "../../components/chapters/ch03/CollinearCoefs";
+import ProjectionViz from "../../components/chapters/ch03/ProjectionViz";
+import L1L2Geometry from "../../components/chapters/ch03/L1L2Geometry";
+import RegPath from "../../components/chapters/ch03/RegPath";
+
+<Section lang="zh" k="scenario">
+
+老师现在给每位学生记录了更多信息：学习时长、**泡图书馆的时长**、睡眠时长、上学期成绩。她用最小二乘拟合一个线性模型，想告诉学生哪个习惯最重要。可是对大多数学生来说，“学习时长”和“图书馆时长”几乎是同一个数。她每年用新一届学生重新拟合，两个系数每年都差得离谱，有时其中一个甚至是负的：
+
+<CollinearCoefs client:visible lang="zh" />
+
+预测本身没问题，不稳定的只是**功劳分配**：数据能很好地确定 $w_1 + w_2$，却分不清怎么拆。这一章从三个角度研究线性模型：
+
+1. **几何**：最小二乘是一次正交投影，它的公式和弱点都由此而来。
+2. **统计**：$y$ 中的噪声怎样变成 $\hat w$ 的不确定性，为什么相关特征会让它爆炸。
+3. **正则化**：岭回归让估计稳定下来；Lasso 还会挑特征，把一些系数恰好设为 0。
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 线性模型与最小二乘
+
+<Box kind="definition" title="线性回归">
+
+设计矩阵 $X$ 为 $n\times p$（每行一个样本，含一列全 1 作截距），目标 $y\in\mathbb R^n$，模型为 $f(x) = x^\top\beta$。最小二乘选择
+
+$$
+\hat\beta = \arg\min_\beta \|y - X\beta\|^2.
+$$
+
+令梯度 $-2X^\top(y - X\beta)$ 为零，得到**正规方程** $X^\top X\hat\beta = X^\top y$；$X$ 列满秩时 $\hat\beta = (X^\top X)^{-1}X^\top y$。
+
+</Box>
+
+“线性”指的是对参数线性，而不是对输入线性：多项式、样条、交互项、独热编码的类别，在合适构造的特征上都是线性模型。写代码时用基于 QR 或 SVD 的求解器（`np.linalg.lstsq`），不要显式构造 $(X^\top X)^{-1}$，那会把条件数平方。
+
+### 两种惩罚
+
+当 $X^\top X$ 病态（特征相关，或 $p$ 接近甚至超过 $n$）时，对 $\beta$ 的大小加惩罚。先把特征标准化，让惩罚一视同仁；截距不加惩罚。
+
+- **岭回归（L2）**：$\min_\beta \|y - X\beta\|^2 + \lambda\|\beta\|_2^2$，闭式解 $\hat\beta = (X^\top X + \lambda I)^{-1}X^\top y$。加上的 $\lambda I$ 让矩阵可逆且条件良好。
+- **Lasso（L1）**：$\min_\beta \frac1{2n}\|y - X\beta\|^2 + \lambda\|\beta\|_1$。没有闭式解，但用带软阈值的坐标下降很快就能解出，而且很多系数**恰好**为零。
+
+每个惩罚形式都等价于一个约束形式：在 $\|\beta\|_2 \le t$ 或 $\|\beta\|_1 \le t$ 的约束下最小化损失。约束的几何图像解释了两者的区别：
+
+<L1L2Geometry client:visible lang="zh" />
+
+<Box kind="insight" title="为什么尖角带来零">
+
+解位于损失等高线第一次碰到约束域的地方。L1 球是菱形（$p$ 维时是正轴形），它的顶点和棱都落在坐标子空间上，不断扩大的椭圆往往先碰到顶点。L2 球是圆的，要恰好在坐标轴上相切，需要椭圆碰巧对齐。维数越高，菱形的低维面越多，所以 Lasso 的解通常是稀疏的。
+
+</Box>
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 最小二乘就是投影
+
+正规方程说的是 $X^\top(y - X\hat\beta) = 0$：残差与 $X$ 的每一列正交。所以 $\hat y = X\hat\beta$ 是 $y$ 在 $X$ 列空间（模型能给出的所有预测构成的集合）上的**正交投影**：
+
+$$
+\hat y = Hy, \qquad H = X(X^\top X)^{-1}X^\top, \qquad H^2 = H = H^\top, \qquad \mathrm{tr}\,H = p.
+$$
+
+$H$ 叫**帽子矩阵**（它给 $y$ 戴上了帽子）。它的对角元 $H_{ii}$ 就是第 02 章的杠杆值。只有三位学生时，$y$ 在 $\mathbb R^3$ 里，可以直接看到：
+
+<ProjectionViz client:visible lang="zh" />
+
+### 统计视角
+
+设 $y = X\beta + \varepsilon$，$\varepsilon \sim \mathcal N(0, \sigma^2 I)$。对数似然是 $-\frac{1}{2\sigma^2}\|y - X\beta\|^2$ 加常数，所以**最小二乘就是高斯噪声下的极大似然估计**。进一步，
+
+$$
+\hat\beta = \beta + (X^\top X)^{-1}X^\top\varepsilon \ \Rightarrow\ \mathbb E\hat\beta = \beta, \qquad \mathrm{Cov}(\hat\beta) = \sigma^2 (X^\top X)^{-1}.
+$$
+
+即使没有正态假设，**高斯–马尔可夫定理**也保证：在所有线性无偏估计中，最小二乘的方差最小。但问题恰恰出在“无偏”上。两列接近共线时，$X^\top X$ 有一个很小的特征值，$(X^\top X)^{-1}$ 就有一个巨大的特征值，这个方向上的方差爆炸——正是情景中的 $w_1 - w_2$ 方向。岭回归放弃无偏，换回方差。
+
+### SVD 基下的岭回归
+
+记 $X = UDV^\top$，则（推导题 2）
+
+$$
+X\hat\beta^{\text{ridge}}_\lambda = \sum_{j=1}^p u_j\, \frac{d_j^2}{d_j^2 + \lambda}\, u_j^\top y.
+$$
+
+最小二乘把 $y$ 在每个 $u_j$ 上的分量原样保留；岭回归把它乘以 $d_j^2/(d_j^2+\lambda)$。奇异值小的方向——输入几乎不变化、数据说明不了什么的方向——收缩得最多。和式 $\mathrm{df}(\lambda) = \sum_j d_j^2/(d_j^2+\lambda)$ 是**有效参数个数**：$\lambda = 0$ 时为 $p$，$\lambda \to\infty$ 时趋于 $0$。
+
+### Lasso：次梯度与软阈值
+
+$|w|$ 在 0 处不可导，但有**次微分**：$w \neq 0$ 时 $\partial|w| = \{\mathrm{sign}(w)\}$，$w = 0$ 时为 $[-1, 1]$。$\frac1{2n}\|y - X\beta\|^2 + \lambda\|\beta\|_1$ 的最优性条件是
+
+$$
+\frac1n x_j^\top (y - X\hat\beta) \in \lambda\,\partial|\hat\beta_j| \quad\text{对每个 } j,
+$$
+
+即：每个非零特征满足 $|x_j^\top r|/n = \lambda$，每个为零的特征满足 $|x_j^\top r|/n \le \lambda$。一个特征只有在它与残差的相关达到 $\lambda$ 时才会进入模型。固定其他坐标、只对一个坐标最小化，有闭式解
+
+$$
+\hat\beta_j \leftarrow \frac{S\big(\tfrac1n x_j^\top r^{(j)}, \lambda\big)}{\tfrac1n\|x_j\|^2}, \qquad S(z, \lambda) = \mathrm{sign}(z)\max(|z| - \lambda, 0),
+$$
+
+其中 $r^{(j)}$ 是去掉特征 $j$ 后的残差。依次循环所有坐标就是**坐标下降**。每个 $\lambda$ 都从上一个解出发（热启动，$\lambda$ 从大到小），算完整条路径只需几次拟合的时间。
+
+### 惩罚就是先验
+
+回顾第 00 章：MAP 估计最小化“负对数似然 + 负对数先验”。高斯先验 $\beta_j\sim\mathcal N(0, \tau^2)$ 给出 $\lambda = \sigma^2/\tau^2$ 的岭回归（推导题 4）；拉普拉斯先验 $p(\beta_j)\propto e^{-|\beta_j|/b}$ 给出 Lasso。拉普拉斯密度在 0 处有尖峰，所以 MAP 估计可以恰好停在 0；而同一先验下的后验**均值**永远不会恰好为 0。稀疏性来自众数，而不是来自信念本身。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题：正交设计下的三种估计
+
+<Box kind="example" title="收缩、阈值还是挑选">
+
+设标准化后的特征相互正交，$X^\top X/n = I$。此时各坐标互不影响，每种估计都是最小二乘系数 $z_j$ 的简单函数。取 $z = (3,\ 0.8,\ -0.3)$，$\lambda = 0.5$。
+
+| | 规则 | $\beta_1$ | $\beta_2$ | $\beta_3$ |
+|---|---|---|---|---|
+| 最小二乘 | $z_j$ | $3$ | $0.8$ | $-0.3$ |
+| 岭回归，$(\lambda/2)\|\beta\|^2$ | $z_j/(1 + \lambda)$ | $2$ | $0.533$ | $-0.2$ |
+| Lasso，$\lambda\|\beta\|_1$ | $S(z_j, \lambda)$ | $2.5$ | $0.3$ | $0$ |
+| 最优子集，$\lambda\cdot\#\text{非零}$ | $\lvert z_j\rvert \gt \sqrt{2\lambda}$ 才保留 | $3$ | $0$ | $0$ |
+
+岭回归把每个系数**按比例**缩小，永远到不了零。Lasso 减去一个**常数**，把小的直接砍成零（软阈值）。最优子集只决定留或不留，不收缩（硬阈值）。Lasso 是一个凸的折中：它像最优子集一样挑选特征，但解随数据连续变化。
+
+</Box>
+
+### 拓展：跟踪整条路径
+
+实践中从来不只拟合一个 $\lambda$，而是跟踪整条路径，再让交叉验证来选。这里用 9 次多项式拟合第 02 章的 30 位学生：
+
+<RegPath client:visible lang="zh" />
+
+- **弹性网** $\lambda\big(\alpha\|\beta\|_1 + \frac{1-\alpha}{2}\|\beta\|_2^2\big)$ 修正了 Lasso 的一个已知弱点：在一组相关特征里，Lasso 往往随意挑一个，弹性网会把它们一起保留。
+- **组 Lasso** 惩罚 $\sum_g \|\beta_g\|_2$，按组挑选，例如一个类别变量的全部独热列。
+- **高维**（$p \gg n$）：最小二乘没有唯一解，岭回归和 Lasso 有。$\lambda\to 0$ 时，岭回归收敛到**最小范数**插值解——正是第 02 章中风险呈现双下降的那个估计。Hastie、Montanari、Rosset 与 Tibshirani（2022）精确算出了它的风险。
+- 解释结果时要小心：Lasso 用数据挑完特征之后，被保留系数的常规置信区间会偏窄。选择后推断（post-selection inference）专门处理这个问题。
+
+</Section>

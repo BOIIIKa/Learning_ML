@@ -1,0 +1,160 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import DrawYourLine from "../../components/chapters/ch01/DrawYourLine";
+import TriadComposer from "../../components/chapters/ch01/TriadComposer";
+import RiskGap from "../../components/chapters/ch01/RiskGap";
+import BayesClassifier from "../../components/chapters/ch01/BayesClassifier";
+
+<Section lang="en" k="scenario">
+
+A teacher wants to warn students who are likely to fail well before the final exam. She collects last year's **weekly study hours** and **final scores** for 40 students; four of them missed the exam and were recorded as 0. She wants a "rule" that takes study hours and outputs an expected score.
+
+Before reaching for a formula, try drawing a line yourself:
+
+<DrawYourLine client:visible lang="en" />
+
+Once you have tried, you will notice that "finding a good line" involves three independent decisions:
+
+1. **Which rules are allowed?** Only straight lines, or curves too? This is the **model**: the hypothesis space.
+2. **What counts as "good"?** A small squared error? A small absolute error? The two criteria pick different lines, and the absentees affect them very differently. This is the **strategy**: the loss function and the risk.
+3. **How do we find the best one?** Is there a formula? Do we improve step by step? Try at random? This is the **algorithm**.
+
+And there is a deeper question. The teacher does not really care about last year's 40 students; she cares about **next year's**. Is the rule that is best on the data in hand also good for people it has never seen?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### The triad: model, strategy, algorithm
+
+<Box kind="definition" title="The learning problem">
+
+Given a training set $\{(x_i, y_i)\}_{i=1}^n$ drawn independently from an unknown distribution $P(X, Y)$, choose a function $f$ from a **hypothesis space** $\mathcal F$ whose average loss on **new samples** is as small as possible.
+
+- **Loss function** $L(y, f(x))$: the cost of one prediction, such as the squared loss $(y-f(x))^2$, the absolute loss $|y - f(x)|$ or the 0-1 loss $\mathbb 1[y \ne f(x)]$.
+- **Expected risk** $R(f) = \mathbb E_{(X,Y)\sim P}\big[L(Y, f(X))\big]$: what we really want to minimize, but $P$ is unknown.
+- **Empirical risk** $\hat R_n(f) = \frac1n\sum_{i=1}^n L(y_i, f(x_i))$: a computable stand-in from the data we have.
+
+</Box>
+
+This gives two basic strategies:
+
+- **Empirical risk minimization (ERM)**: $\hat f = \arg\min_{f\in\mathcal F} \hat R_n(f)$. Least squares and maximum likelihood belong here.
+- **Structural risk minimization (SRM)**: $\hat f = \arg\min_{f\in\mathcal F} \hat R_n(f) + \lambda J(f)$, where $J(f)$ penalizes model complexity. Ridge, lasso and the SVM belong here.
+
+The **algorithm** solves the resulting optimization problem. A few cases have a closed form (squared loss with a linear model); most need iterative methods such as gradient descent. The three can be combined freely:
+
+<TriadComposer client:visible lang="en" />
+
+<Box kind="insight" title="Why keep the three apart">
+
+Many seemingly different algorithms are just different combinations of the triad. "The average" is a constant model with squared loss; "the median" is a constant model with absolute loss. Keeping the three apart also tells you, when reading a paper, exactly what it changes: the model, the strategy or the algorithm.
+
+</Box>
+
+### Two axes for learning problems
+
+| | Labels $y$ given | No labels | Rewards from interacting with an environment |
+|---|---|---|---|
+| **Problem type** | Supervised: regression ($y$ continuous), classification ($y$ discrete) | Unsupervised: clustering, dimensionality reduction, density estimation | Reinforcement learning |
+| **In this course** | Ch. 03–09, 14–21 | Ch. 10–13, 22–25 | Ch. 26 |
+
+The other axis is **parametric vs non-parametric**. A parametric model has a fixed number of parameters regardless of the amount of data, as in linear regression. A non-parametric model grows in complexity with the data, as do k-nearest neighbours, decision trees and kernel methods.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Under squared loss the best prediction is the conditional mean
+
+If we knew the true distribution, what would the best predictor be? Under squared loss, fix an $x$: the problem becomes predicting the random variable $Y \mid X = x$ with a constant $c$. With conditional mean $\mu(x)$,
+
+$$
+\mathbb E\big[(Y - c)^2 \mid X = x\big] = \underbrace{\mathrm{Var}(Y\mid X=x)}_{\text{irreducible noise}} + \big(\mu(x) - c\big)^2
+$$
+
+(see derivation exercise 2). The first term does not depend on $c$, and the second vanishes at $c = \mu(x)$, so
+
+<Box kind="theorem" title="The Bayes-optimal predictor under squared loss">
+
+$$
+f^*(x) = \mathbb E[Y \mid X = x], \qquad R(f^*) = \mathbb E\big[\mathrm{Var}(Y\mid X)\big].
+$$
+
+No learner's expected risk can go below this floor: it is the **irreducible error** in the data.
+
+</Box>
+
+The same argument under absolute loss gives the **conditional median**. That is why the two lines in the scenario differ: the absentees stretch the left tail of the conditional distribution, which drags the mean far down but barely moves the median.
+
+### The optimal classifier under 0-1 loss
+
+In classification, $Y\in\{1, \dots, K\}$ and the loss is 0-1. At a fixed $x$, predicting $k$ has expected loss $1 - P(Y = k \mid X = x)$, so we should pick **the class with the largest posterior**:
+
+$$
+f^*(x) = \arg\max_k P(Y = k \mid X = x) = \arg\max_k\ p(x \mid Y = k)\,P(Y = k).
+$$
+
+This is the **Bayes classifier**. Its error rate $R^* = \mathbb E\big[1 - \max_k P(Y=k\mid X)\big]$ is the **Bayes error**, a floor that no classifier can break.
+
+<BayesClassifier client:visible lang="en" />
+
+In practice $P(Y\mid X)$ is unknown, and many later methods approximate it in different ways. Discriminative methods model $P(Y\mid X)$ directly (Ch. 04); generative methods model $p(x\mid y)P(y)$ and apply Bayes' rule (Ch. 05); k-nearest neighbours approximates the posterior by a vote of the neighbours (Ch. 06).
+
+### Why can the empirical risk stand in for the expected risk?
+
+For a **fixed** $f$, the losses $L(Y_i, f(X_i))$ are i.i.d., so by the law of large numbers
+
+$$
+\hat R_n(f) \xrightarrow{\ n\to\infty\ } R(f),\qquad \mathrm{Var}\big[\hat R_n(f)\big] = \frac{\mathrm{Var}[L(Y, f(X))]}{n}.
+$$
+
+<RiskGap client:visible lang="en" />
+
+There is a subtlety, though. ERM picks $\hat f$ **after looking at the data**, choosing exactly the function that makes $\hat R_n$ smallest, so $\hat R_n(\hat f)$ systematically **underestimates** $R(\hat f)$. The larger the hypothesis space, the stronger this optimism. Making ERM reliable requires $\hat R_n$ to be close to $R$ **uniformly** over all of $\mathcal F$, which is the subject of the next chapter on generalization.
+
+### Structural risk and priors
+
+The $\lambda J(f)$ term in structural risk has a probabilistic reading (recall Ch. 00). If the loss is a negative log-likelihood and $J$ a negative log-prior, then
+
+$$
+\arg\min_\theta \Big[\sum_i -\log p(y_i\mid x_i, \theta) - \log p(\theta)\Big]
+$$
+
+is the MAP estimate. A Gaussian prior $p(\theta)\propto e^{-\lambda\|\theta\|^2}$ gives L2 regularization; a Laplace prior $p(\theta) \propto e^{-\lambda\|\theta\|_1}$ gives L1.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: how far one absentee moves the "best constant"
+
+<Box kind="example" title="Mean vs median">
+
+Five students' scores: $52, 60, 64, 70, 0$ (the last one was absent). Predict them with a constant $c$.
+
+| | Best $c$ under squared loss (mean) | Best $c$ under absolute loss (median) |
+|---|---|---|
+| With the absentee | $246/5 = 49.2$ | $60$ |
+| Without the absentee | $61.5$ | $62$ |
+| Shift caused by the absentee | $12.3$ | $2$ |
+
+Now cross-check the two risks. At $c = 49.2$ the squared risk is $639.36$ (the minimum) and the absolute risk is $19.68$. At $c = 60$ the squared risk is $756$ and the absolute risk is $16.4$ (the minimum). **Each $c$ is optimal only under its own loss.**
+
+</Box>
+
+A single sample moves the mean by 12 points because squared loss penalizes large residuals **quadratically**; absolute loss is linear, so one sample's influence is bounded. This is where **robust statistics** starts. The Huber loss compromises between the two: quadratic for small residuals, absolute for large ones.
+
+### Extension: the algorithms ahead, through the triad
+
+| Algorithm | Model | Strategy | Algorithm |
+|---|---|---|---|
+| Least squares (Ch. 03) | Linear function | Squared loss | Normal equations |
+| Ridge / lasso (Ch. 03) | Linear function | Squared loss + L2 / L1 | Closed form / coordinate descent |
+| Logistic regression (Ch. 04) | Linear + sigmoid | Cross-entropy (Bernoulli likelihood) | Newton / gradient descent |
+| SVM (Ch. 07) | Linear / kernel | Hinge loss + L2 | Dual + SMO |
+| AdaBoost (Ch. 08) | Weighted sum of stumps | Exponential loss | Forward stagewise |
+| k-means (Ch. 10) | Cluster centres | Within-cluster sum of squares | Alternating minimization |
+| Neural networks (Ch. 14 on) | Composed functions | Cross-entropy etc. | Backprop + SGD / Adam |
+
+</Section>

@@ -1,0 +1,155 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import OverfitDegree from "../../components/chapters/ch02/OverfitDegree";
+import BiasVarianceViz from "../../components/chapters/ch02/BiasVarianceViz";
+import CVFolds from "../../components/chapters/ch02/CVFolds";
+import DoubleDescent from "../../components/chapters/ch02/DoubleDescent";
+
+<Section lang="en" k="scenario">
+
+The teacher from Chapter 01 noticed that scores do not grow along a straight line: they rise quickly at first and then level off. So she replaces the line with a polynomial. But which degree? A higher degree bends more freely and always fits last year's data better. Is it better for next year's students?
+
+Twelve students are the training set. Drag the degree up and watch both errors:
+
+<OverfitDegree client:visible lang="en" />
+
+The training error only goes down; at degree 11 the curve passes through every point and the training error is zero. Turn on next year's students and the picture flips: the high-degree curve swings wildly between training points and the test error explodes. This chapter answers three questions:
+
+1. **Why** does the training error lie, and by how much? (bias, variance and optimism)
+2. **How** can we estimate the error on new data using only the data we have? (hold-out, cross-validation, the bootstrap)
+3. **When** does the classical story break? (double descent in over-parametrized models)
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Training error, test error, generalization gap
+
+<Box kind="definition" title="Generalization">
+
+For a learned $\hat f$, the **training error** is $\hat R_n(\hat f)$ on the data used to fit it, and the **test error** (generalization error) is $R(\hat f) = \mathbb E\,L(Y, \hat f(X))$ on new data from the same distribution. Their difference $R(\hat f) - \hat R_n(\hat f)$ is the **generalization gap**. A model **overfits** when it lowers the training error by fitting noise, which raises the test error; it **underfits** when it is too simple to capture the signal.
+
+</Box>
+
+As complexity grows, the training error falls monotonically, while the test error usually traces a **U**. Picking the bottom of the U is **model selection**. Reporting how well the final model will do is **model assessment**. The two need separate data: once a set of data has been used to choose, its error is optimistic too.
+
+### Hold-out: train / validation / test
+
+The simplest approach splits the data three ways: fit candidates on the **training** set, choose among them on the **validation** set, and report once on the **test** set, which stays untouched until the end. It is simple and fast, but with little data each piece is small. The estimate depends heavily on which points landed where, and the model is trained on only part of the data.
+
+### k-fold cross-validation
+
+Split the data into $k$ folds of about equal size. In round $j$, fit on all folds except fold $j$ and measure the error on fold $j$; then average:
+
+$$
+\mathrm{CV}_k = \frac1k\sum_{j=1}^k \frac{1}{|F_j|}\sum_{i\in F_j} L\big(y_i, \hat f^{(-j)}(x_i)\big).
+$$
+
+Every point is used for validation exactly once and for training $k-1$ times. With $k = n$ this is **leave-one-out** (LOO).
+
+<CVFolds client:visible lang="en" />
+
+<Box kind="insight" title="Everything that learns from data goes inside the loop">
+
+Standardization, feature selection and imputation all "look at" the data. If they are fitted on the full data set before cross-validation, information from the validation folds leaks into training and the CV error comes out too optimistic. In scikit-learn, put every step in a `Pipeline` and cross-validate the whole pipeline.
+
+</Box>
+
+### The bootstrap
+
+Draw $n$ points **with replacement** from the $n$ we have, and repeat this $B$ times. Each bootstrap sample is a plausible "other data set", so the spread of a statistic across bootstrap samples estimates its standard error. About 36.8% of points are left out of each sample (derivation exercise 3), and they serve as a free validation set: the **out-of-bag** error used by random forests.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### The bias–variance decomposition
+
+Let $Y = f(x) + \varepsilon$ with $\mathbb E\varepsilon = 0$ and $\mathrm{Var}\,\varepsilon = \sigma^2$. The fit $\hat f$ depends on the random training set $D$. Fix a test point $x_0$ and write $\bar f(x_0) = \mathbb E_D \hat f(x_0)$. Add and subtract $f(x_0)$ and $\bar f(x_0)$; the cross terms vanish because the new noise is independent of $D$ and $\hat f - \bar f$ has mean zero:
+
+$$
+\mathbb E_{D,\varepsilon}\big[(Y - \hat f(x_0))^2\big] = \underbrace{\sigma^2}_{\text{noise}} + \underbrace{\big(\bar f(x_0) - f(x_0)\big)^2}_{\text{bias}^2} + \underbrace{\mathbb E_D\big[(\hat f(x_0) - \bar f(x_0))^2\big]}_{\text{variance}}.
+$$
+
+<Box kind="theorem" title="Bias–variance decomposition (squared loss)">
+
+Expected test error at $x_0$ = irreducible noise + squared bias + variance. A richer model class lowers the bias (its average fit can follow $f$) and raises the variance (each fit chases the noise of its own training set).
+
+</Box>
+
+Bias and variance are properties of the **procedure across training sets**, not of one fitted curve. The simulator draws 30 training sets and shows them all:
+
+<BiasVarianceViz client:visible lang="en" />
+
+### How optimistic is the training error?
+
+For least squares with $p$ parameters and fixed inputs, derivation exercise 4 shows
+
+$$
+\mathbb E\big[\text{train MSE}\big] = \sigma^2\Big(1 - \frac pn\Big), \qquad \mathbb E\big[\text{test MSE at the same } x_i\big] = \sigma^2\Big(1 + \frac pn\Big).
+$$
+
+The gap $2p\sigma^2/n$ grows with the number of parameters and shrinks with the data. Adding it back gives Mallows' $C_p = \text{train MSE} + 2p\hat\sigma^2/n$; AIC and BIC are the likelihood versions of the same idea. These corrections are cheap, but they rely on a parameter count that means something; cross-validation does not.
+
+### A bound that holds for the chosen model
+
+Why should ERM generalize at all? For a single fixed $f$ with losses in $[0, 1]$, Hoeffding's inequality says $\hat R_n(f)$ is within $\varepsilon$ of $R(f)$ except with probability $2e^{-2n\varepsilon^2}$. ERM picks $\hat f$ after looking at the data, so we need the statement to hold for **every** $f$ at once. For a finite class of size $M$, the union bound gives, with probability at least $1 - \delta$,
+
+$$
+R(\hat f) \le \hat R_n(\hat f) + \sqrt{\frac{\ln M + \ln(2/\delta)}{2n}}.
+$$
+
+The penalty grows only logarithmically in $M$. For infinite classes, $\ln M$ is replaced by a capacity measure such as the VC dimension or the Rademacher complexity; the shape of the result stays the same: **gap ≈ √(capacity / n)**.
+
+### How good is the CV estimate itself?
+
+CV estimates the error of a model trained on $(1 - 1/k)n$ points, slightly fewer than $n$, so it is **slightly pessimistic**, more so for small $k$. LOO is nearly unbiased, but its $n$ fits share almost all their training data, so their errors are highly correlated and the average can have **high variance**. $k = 5$ or $10$ is the usual compromise. For linear smoothers $\hat y = Hy$, which include least squares and ridge, LOO needs no refitting at all:
+
+$$
+\mathrm{LOO} = \frac1n\sum_{i=1}^n \Big(\frac{y_i - \hat y_i}{1 - H_{ii}}\Big)^2.
+$$
+
+A point with high leverage $H_{ii}$ pulls the fit towards itself, so its training residual understates how far off a prediction for it would be. The formula inflates exactly those residuals.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: constant or line? Leave-one-out by hand
+
+<Box kind="example" title="Three students">
+
+Study hours $x = 1, 2, 3$, scores $y = 2, 4, 9$. Compare a constant model and a line by LOO.
+
+| | Constant (mean) | Line |
+|---|---|---|
+| Fit on all three | $\hat y = 5$ | $\hat y = -2 + 3.5x$ |
+| Training MSE | $(9 + 1 + 16)/3 \approx 8.67$ | $(0.25 + 1 + 0.25)/3 = 0.5$ |
+| Leave out $x=1$: prediction, squared error | $6.5$, $20.25$ | line through $(2,4),(3,9)$ gives $-1$, $9$ |
+| Leave out $x=2$ | $5.5$, $2.25$ | line through $(1,2),(3,9)$ gives $5.5$, $2.25$ |
+| Leave out $x=3$ | $3$, $36$ | line through $(1,2),(2,4)$ gives $6$, $9$ |
+| **LOO error** | $58.5/3 = 19.5$ | $20.25/3 = 6.75$ |
+
+The line wins. Note how much the training errors understate: by a factor of 2.25 for the constant and 13.5 for the line. Check with the shortcut: for the constant, $H_{ii} = 1/3$, so each residual is divided by $2/3$, and $8.67 \times 2.25 = 19.5$. For the line at $x = 1$, $H_{11} = 5/6$, so the residual $0.5$ becomes $0.5/(1/6) = 3$, matching the error of $9$ above.
+
+</Box>
+
+### Extension: double descent
+
+The U-shaped curve assumes that more capacity means more variance. Modern models (wide networks, random-feature models, kernel machines) often have **more parameters than data points** and still generalize. Here the model uses the first $p$ of 100 features to fit $n = 30$ points by **minimum-norm** least squares:
+
+<DoubleDescent client:visible lang="en" />
+
+- For $p \lt n$ we see the classical U.
+- At $p = n$ the model can just interpolate the training data, the solution is forced to be large and unstable, and the risk spikes.
+- For $p \gt n$ there are infinitely many interpolating solutions. The minimum-norm one spreads the fit thinly across many directions, the variance falls, and the risk descends a **second** time.
+
+The lesson is not that complexity is free, but that **parameter count is the wrong measure of capacity**. What matters is the effective capacity the algorithm actually uses, here controlled by the implicit bias towards small norm. The same peak appears for neural networks as width, data size or training time vary; it can be removed by tuning a ridge penalty.
+
+### Rules of thumb for model selection
+
+- **One-standard-error rule**: among models whose CV error is within one standard error of the best, pick the simplest. CV curves are noisy near the minimum.
+- **Nested CV** when you both tune and report: an inner loop chooses hyperparameters, an outer loop estimates the error of the whole tuning procedure.
+- **Respect the structure of the data**: group k-fold when several rows come from the same student or patient, and forward-chaining splits for time series. Random folds would leak the future into the past.
+
+</Section>

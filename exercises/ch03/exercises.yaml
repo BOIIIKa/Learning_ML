@@ -1,0 +1,69 @@
+# 第 03 章 线性回归与正则化 —— 课后练习 / Chapter 03 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: slope-var
+    title: {zh: "最小二乘斜率的方差", en: "The variance of the least-squares slope"}
+    prompt:
+      zh: "一元回归 $y_i = b + w x_i + \\varepsilon_i$，噪声独立、方差 $s^2$，$x_i$ 固定。记 $v = \\frac1n\\sum_i (x_i - \\bar x)^2$。写出 $\\mathrm{Var}(\\hat w)$。可用变量：`n, v, s`。"
+      en: "Simple regression $y_i = b + w x_i + \\varepsilon_i$ with independent noise of variance $s^2$ and fixed $x_i$. Let $v = \\frac1n\\sum_i (x_i - \\bar x)^2$. Write $\\mathrm{Var}(\\hat w)$. Variables: `n, v, s`."
+    answer: "s^2/(n*v)"
+    vars: {n: [5, 200], v: [0.2, 5], s: [0.3, 3]}
+    solution:
+      zh: "$\\hat w = \\frac{\\sum_i (x_i - \\bar x) y_i}{\\sum_i (x_i - \\bar x)^2}$ 是 $y_i$ 的线性组合，系数为 $c_i = \\frac{x_i - \\bar x}{nv}$。所以 $\\mathrm{Var}(\\hat w) = s^2\\sum_i c_i^2 = \\frac{s^2}{nv}$。三个结论：噪声越大越不稳；样本越多越稳；$x$ 越分散越稳。多元情形是 $\\mathrm{Var}(\\hat\\beta) = s^2 (X^\\top X)^{-1}$，两列高度相关时 $X^\\top X$ 接近奇异，方差爆炸——这就是情景里系数乱跳的原因。"
+      en: "$\\hat w = \\frac{\\sum_i (x_i - \\bar x) y_i}{\\sum_i (x_i - \\bar x)^2}$ is a linear combination of the $y_i$ with weights $c_i = \\frac{x_i - \\bar x}{nv}$, so $\\mathrm{Var}(\\hat w) = s^2\\sum_i c_i^2 = \\frac{s^2}{nv}$. Three conclusions: more noise means less stability, more samples mean more, and a wider spread of $x$ means more. In the multivariate case $\\mathrm{Var}(\\hat\\beta) = s^2 (X^\\top X)^{-1}$, and when two columns are highly correlated $X^\\top X$ is nearly singular and the variance explodes. That is why the coefficients jump around in the scenario."
+
+  - id: shrinkage
+    title: {zh: "岭回归的收缩因子", en: "Ridge shrinkage factors"}
+    prompt:
+      zh: "设 $X = UDV^\\top$ 为奇异值分解。岭回归 $\\hat\\beta_\\lambda = (X^\\top X + \\lambda I)^{-1}X^\\top y$ 的拟合值是 $\\hat y = \\sum_j u_j\\, \\gamma_j\\, u_j^\\top y$。写出奇异值为 $d$ 的方向上的收缩因子 $\\gamma$。可用变量：`d, lam`。"
+      en: "Let $X = UDV^\\top$ be the SVD. The ridge fit $\\hat\\beta_\\lambda = (X^\\top X + \\lambda I)^{-1}X^\\top y$ gives fitted values $\\hat y = \\sum_j u_j\\, \\gamma_j\\, u_j^\\top y$. Write the shrinkage factor $\\gamma$ for a direction with singular value $d$. Variables: `d, lam`."
+    answer: "d^2/(d^2 + lam)"
+    vars: {d: [0.1, 4], lam: [0.01, 5]}
+    solution:
+      zh: "$X^\\top X + \\lambda I = V(D^2 + \\lambda I)V^\\top$，所以 $X\\hat\\beta_\\lambda = UD(D^2+\\lambda I)^{-1}DU^\\top y = \\sum_j u_j\\frac{d_j^2}{d_j^2+\\lambda}u_j^\\top y$。$\\lambda = 0$ 时因子全为 1，就是最小二乘的投影；$\\lambda > 0$ 时，奇异值小的方向（数据在那个方向上变化很小、最不可靠）被收缩得最多。把这些因子加起来，$\\sum_j \\frac{d_j^2}{d_j^2+\\lambda}$ 就是岭回归的**有效自由度**。"
+      en: "$X^\\top X + \\lambda I = V(D^2 + \\lambda I)V^\\top$, so $X\\hat\\beta_\\lambda = UD(D^2+\\lambda I)^{-1}DU^\\top y = \\sum_j u_j\\frac{d_j^2}{d_j^2+\\lambda}u_j^\\top y$. At $\\lambda = 0$ every factor is 1 and we recover the least-squares projection; for $\\lambda > 0$ the directions with small singular values, where the data vary least and the estimate is least reliable, are shrunk the most. The sum $\\sum_j \\frac{d_j^2}{d_j^2+\\lambda}$ is the **effective degrees of freedom** of ridge."
+
+  - id: soft
+    title: {zh: "一维 Lasso 与软阈值", en: "One-dimensional lasso and soft thresholding"}
+    prompt:
+      zh: "求 $\\min_w \\ \\tfrac12 (w - z)^2 + \\lambda |w|$ 的解，假设 $z > \\lambda > 0$。可用变量：`z, lam`。"
+      en: "Solve $\\min_w \\ \\tfrac12 (w - z)^2 + \\lambda |w|$, assuming $z > \\lambda > 0$. Variables: `z, lam`."
+    answer: "z - lam"
+    vars: {z: [2, 5], lam: [0.1, 1.9]}
+    solution:
+      zh: "次梯度条件：$0 \\in w - z + \\lambda\\,\\partial|w|$。若 $w > 0$，则 $w = z - \\lambda$，需要 $z > \\lambda$——成立。一般地，若 $|z| \\le \\lambda$，$w = 0$ 满足 $0 \\in -z + \\lambda[-1, 1]$。合起来就是软阈值 $S(z, \\lambda) = \\mathrm{sign}(z)\\max(|z| - \\lambda, 0)$：小的直接砍成 0，大的统一往 0 收 $\\lambda$。坐标下降的每一步正是对一个坐标做这个运算。"
+      en: "The subgradient condition is $0 \\in w - z + \\lambda\\,\\partial|w|$. If $w > 0$ then $w = z - \\lambda$, which requires $z > \\lambda$, as assumed. In general, if $|z| \\le \\lambda$ then $w = 0$ satisfies $0 \\in -z + \\lambda[-1, 1]$. Together this is soft thresholding, $S(z, \\lambda) = \\mathrm{sign}(z)\\max(|z| - \\lambda, 0)$: small values are cut to exactly 0 and large ones are pulled towards 0 by $\\lambda$. Each step of coordinate descent applies exactly this to one coordinate."
+
+  - id: map
+    title: {zh: "高斯先验就是岭惩罚", en: "A Gaussian prior is a ridge penalty"}
+    prompt:
+      zh: "$y \\mid w \\sim \\mathcal N(Xw, s^2 I)$，先验 $w \\sim \\mathcal N(0, t^2 I)$。MAP 估计等价于最小化 $\\|y - Xw\\|^2 + \\lambda\\|w\\|^2$，求 $\\lambda$。可用变量：`s, t`。"
+      en: "$y \\mid w \\sim \\mathcal N(Xw, s^2 I)$ with prior $w \\sim \\mathcal N(0, t^2 I)$. The MAP estimate minimizes $\\|y - Xw\\|^2 + \\lambda\\|w\\|^2$. Find $\\lambda$. Variables: `s, t`."
+    answer: "s^2/t^2"
+    vars: {s: [0.2, 3], t: [0.2, 3]}
+    solution:
+      zh: "负对数后验（去掉常数）：$\\frac{1}{2s^2}\\|y - Xw\\|^2 + \\frac{1}{2t^2}\\|w\\|^2$。乘以 $2s^2$ 得 $\\|y - Xw\\|^2 + \\frac{s^2}{t^2}\\|w\\|^2$，所以 $\\lambda = s^2/t^2$。噪声越大、或先验越“窄”（越相信系数小），惩罚越强。把先验换成拉普拉斯分布 $p(w)\\propto e^{-|w|/b}$，得到的就是 Lasso。"
+      en: "The negative log-posterior, up to constants, is $\\frac{1}{2s^2}\\|y - Xw\\|^2 + \\frac{1}{2t^2}\\|w\\|^2$. Multiplying by $2s^2$ gives $\\|y - Xw\\|^2 + \\frac{s^2}{t^2}\\|w\\|^2$, so $\\lambda = s^2/t^2$. The noisier the data, or the narrower the prior (the more strongly we believe coefficients are small), the stronger the penalty. Replacing the prior with a Laplace distribution $p(w)\\propto e^{-|w|/b}$ gives the lasso."
+
+code:
+  - id: lasso-cd
+    kind: implement
+    file: lasso_cd.py
+    packages: [numpy]
+    title: {zh: "从零实现岭回归与 Lasso 坐标下降", en: "Ridge and lasso coordinate descent from scratch"}
+    intro:
+      zh: "写出岭回归闭式解、软阈值和坐标下降的一步。检查用的是最优性（KKT）条件，而不是和库对答案。运行后回放 Lasso 路径：λ 从大到小，系数一个个进场，曲线从一条水平线长成弯曲的拟合。"
+      en: "Write the ridge closed form, soft thresholding and one coordinate-descent step. The checks use the optimality (KKT) conditions rather than comparing with a library. Then replay the lasso path: as λ shrinks, coefficients enter one at a time and the curve grows from a flat line into a bent fit."
+    metrics:
+      - {key: nnz, label: {zh: "非零系数个数", en: "Nonzero coefficients"}}
+  - id: sparse-library
+    kind: library
+    file: sparse_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "RidgeCV 与 LassoCV：让交叉验证选 λ", en: "RidgeCV and LassoCV: let cross-validation choose λ"}
+    intro:
+      zh: "在糖尿病数据（442 位病人、10 项指标）上组装两条带标准化的管道，比较测试误差，并看 Lasso 丢掉了哪些特征。回放的是 sklearn 的 lasso_path，应与你手写的路径一致。"
+      en: "On the diabetes data (442 patients, 10 measurements), assemble two pipelines with standardization, compare their test errors, and see which features the lasso drops. The replay uses sklearn's lasso_path and should match the path you wrote by hand."
+    metrics:
+      - {key: nnz, label: {zh: "非零系数个数", en: "Nonzero coefficients"}}
