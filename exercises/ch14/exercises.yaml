@@ -1,0 +1,68 @@
+# 第 14 章 从浅层到深层网络 —— 课后练习 / Chapter 14 exercises
+
+derivation:
+  - id: hinge
+    title: {zh: "铰链在哪里", en: "Where is the hinge"}
+    prompt:
+      zh: "一维输入的隐单元 $h = \\max(0, \\theta_0 + \\theta_1 x)$，$\\theta_1 \\gt 0$。它在哪个 $x$ 处拐弯？可用变量：`t0, t1`（即 $\\theta_0, \\theta_1$）。"
+      en: "A hidden unit on one input, $h = \\max(0, \\theta_0 + \\theta_1 x)$ with $\\theta_1 \\gt 0$. At which $x$ does it bend? Variables: `t0, t1` (for $\\theta_0, \\theta_1$)."
+    answer: "-t0/t1"
+    vars: {t0: [-2, 2], t1: [0.5, 3]}
+    solution:
+      zh: "拐点是 ReLU 的输入为零处：$\\theta_0 + \\theta_1 x = 0$，即 $x = -\\theta_0/\\theta_1$。$\\theta_1 \\gt 0$ 时单元在它右边“开”、左边“关”；$\\theta_1 \\lt 0$ 时反过来。所以 $D$ 个单元至多带来 $D$ 个拐点、$D + 1$ 段——“浅层网络 = 折线”组件里的竖线就是这些拐点。"
+      en: "The bend is where the ReLU's input is zero: $\\theta_0 + \\theta_1 x = 0$, i.e. $x = -\\theta_0/\\theta_1$. With $\\theta_1 \\gt 0$ the unit is on to the right and off to the left; with $\\theta_1 \\lt 0$ the other way round. So $D$ units give at most $D$ kinks and $D + 1$ pieces: the vertical lines in the \"broken line\" widget are these kinks."
+
+  - id: beyond
+    title: {zh: "两个铰链之后的值", en: "The value past two hinges"}
+    prompt:
+      zh: "$f(x) = p_0 + p_1 \\max(0, x - a) + p_2 \\max(0, x - b)$，$a \\lt b \\lt x$。求 $f(x)$。可用变量：`p0, p1, p2, a, b, x`。"
+      en: "$f(x) = p_0 + p_1 \\max(0, x - a) + p_2 \\max(0, x - b)$ with $a \\lt b \\lt x$. Find $f(x)$. Variables: `p0, p1, p2, a, b, x`."
+    answer: "p0 + p1*(x - a) + p2*(x - b)"
+    vars: {p0: [-2, 2], p1: [-2, 2], p2: [-2, 2], a: [-2, -1], b: [0, 1], x: [1.5, 3]}
+    solution:
+      zh: "$x$ 在两个拐点右边，两个单元都“开”，$\\max(0, x - a) = x - a$，$\\max(0, x - b) = x - b$，于是 $f(x) = p_0 + p_1(x - a) + p_2(x - b)$，斜率 $p_1 + p_2$。从左往右，每过一个拐点斜率就加上对应的输出权重——例题一的表格就是这样逐段读出来的。"
+      en: "$x$ lies to the right of both kinks, so both units are on: $\\max(0, x - a) = x - a$ and $\\max(0, x - b) = x - b$, giving $f(x) = p_0 + p_1(x - a) + p_2(x - b)$ with slope $p_1 + p_2$. Moving right, each kink adds its output weight to the slope; that is how the table of example 1 is read off."
+
+  - id: params
+    title: {zh: "深层网络的参数个数", en: "Parameters of a deep network"}
+    prompt:
+      zh: "输入 $D_i$ 维、输出 $D_o$ 维，$K$ 个隐层，每层 $W$ 个单元（全连接、带偏置）。共有多少个参数？可用变量：`Di, Do, K, W`。"
+      en: "$D_i$ inputs, $D_o$ outputs, $K$ hidden layers of $W$ units each (fully connected, with biases). How many parameters? Variables: `Di, Do, K, W`."
+    answer: "(Di + 1)*W + (K - 1)*(W + 1)*W + (W + 1)*Do"
+    vars: {Di: [1, 10], Do: [1, 5], K: [1, 8], W: [2, 64]}
+    solution:
+      zh: "一层从 $m$ 个输入到 $n$ 个输出有 $mn$ 个权重和 $n$ 个偏置，共 $(m + 1)n$。第一层 $(D_i + 1)W$，中间 $K - 1$ 层各 $(W + 1)W$，输出层 $(W + 1)D_o$。例如月牙数据上的 (16, 16) 网络：$3 \\cdot 16 + 17 \\cdot 16 + 17 = 337$。宽度翻倍，中间层参数约变成 4 倍；层数加倍，参数只约翻倍——而区域数可以随层数指数增长。"
+      en: "A layer from $m$ inputs to $n$ outputs has $mn$ weights and $n$ biases, $(m + 1)n$ in all. The first layer has $(D_i + 1)W$, each of the $K - 1$ middle layers $(W + 1)W$, and the output layer $(W + 1)D_o$. For example the (16, 16) net on the moons: $3 \\cdot 16 + 17 \\cdot 16 + 17 = 337$. Doubling the width roughly quadruples the middle layers; doubling the depth only roughly doubles the parameters, while the number of regions can grow exponentially with depth."
+
+  - id: regions
+    title: {zh: "D 条直线切平面", en: "D lines cut the plane"}
+    prompt:
+      zh: "两个输入的单隐层 ReLU 网络有 $D$ 个单元，它们的分界线处于一般位置。输入平面最多被切成几个线性区域？可用变量：`D`。"
+      en: "A one-hidden-layer ReLU network on two inputs has $D$ units whose boundary lines are in general position. At most how many linear regions does the input plane have? Variables: `D`."
+    answer: "1 + D + D*(D - 1)/2"
+    vars: {D: [1, 30]}
+    solution:
+      zh: "逐条加线：第 $k$ 条线与前 $k - 1$ 条交于 $k - 1$ 点，被切成 $k$ 段，每段把一个区域一分为二，新增 $k$ 个区域。总数 $1 + (1 + 2 + \\dots + D) = 1 + D + \\binom{D}{2}$。$D = 3$ 时为 7，$D = 5$ 时为 16——与“线性区域”组件里换到默认权重时看到的一致。区域数随 $D$ 平方增长，而参数只随 $D$ 线性增长。"
+      en: "Add the lines one at a time: line $k$ crosses the previous $k - 1$ lines at $k - 1$ points, is cut into $k$ segments, and each segment splits a region in two, adding $k$ regions. The total is $1 + (1 + 2 + \\dots + D) = 1 + D + \\binom{D}{2}$: 7 for $D = 3$ and 16 for $D = 5$, matching what the \"linear regions\" widget shows with its default weights. Regions grow quadratically in $D$ while the parameters grow only linearly."
+
+code:
+  - id: relu-net
+    kind: implement
+    file: relu_net.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现 ReLU 网络、激活模式与折叠", en: "ReLU networks, activation patterns and folding from scratch"}
+    intro:
+      zh: "补全前向传播、激活模式、帐篷网络和“铰链网络”。检查会把 scikit-learn 训练好的权重交给你的前向传播对拍，确认 L 次折叠恰好产生 2^L 个线性区域，并用铰链精确拼出例题一的折线和一条随机折线。运行后可以回放：每加一层，二维的决策区域就对折一次。"
+      en: "Fill in the forward pass, the activation patterns, the tent network and the hinge network. The checks feed weights trained by scikit-learn to your forward pass, confirm that L folds give exactly 2^L linear regions, and rebuild the broken line of example 1 and a random one exactly from hinges. Afterwards, replay how every extra layer folds the 2-D decision regions once more."
+    metrics:
+      - {key: regions, label: {zh: "线性区域数", en: "Linear regions"}}
+  - id: nn-library
+    kind: library
+    file: nn_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 scikit-learn 搭 MLP 并数它的区域", en: "Build an MLP in scikit-learn and count its regions"}
+    intro:
+      zh: "用 MLPClassifier 在月牙数据上训练一个两层 ReLU 网络，数出它的参数，再数它在一张网格上实际用到了多少个线性区域（单层 8 个单元时不会超过 37）。运行后可以回放训练过程：决策边界是一段段直线拼起来的。"
+      en: "Train a two-layer ReLU network on the moons with MLPClassifier, count its parameters, then count how many linear regions it actually uses on a grid (a single layer of 8 units never exceeds 37). Afterwards, replay the training: the decision boundary is made of straight pieces."
+    metrics:
+      - {key: acc, label: {zh: "训练准确率", en: "Training accuracy"}}

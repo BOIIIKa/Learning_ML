@@ -1,0 +1,214 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import ShallowFit from "../../components/chapters/ch14/ShallowFit";
+import ReluRegions from "../../components/chapters/ch14/ReluRegions";
+import DepthFolding from "../../components/chapters/ch14/DepthFolding";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 14 · Animated course" title="From Shallow to Deep Networks" say="What does a neural network actually compute? The answer is surprisingly plain: broken lines. And depth makes those broken lines exponentially more intricate.">
+
+Hinges · Linear regions · Universal approximation · Depth as folding
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Building a curve from hinges" say="The teacher's students: scores rise with study time, then level off. A straight line cannot make that bend.">
+
+<Step drive="s1=1/0.6" say="One hidden unit is one hinge that bends somewhere. With just one, all we get is a slope.">$D = 1$: one hinge, one slope</Step>
+
+<Step drive="s1=3/2" say="Three hinges, three bends, added with weights: the broken line starts to curve towards the plateau.">$D = 3$: three bends, at most $4$ pieces</Step>
+
+<Step drive="s1=12/4" say="With twelve hinges the broken line hugs the curved trend.">$D = 12$: the broken line hugs the curve</Step>
+
+<Step drive="click:chip1; wait:1.2; click:chip1" say="The dashed lines are each unit's own contribution; the output is their weighted sum.">Output = weighted sum of the hinges</Step>
+
+<div slot="visual"><ShallowFit client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions for this chapter" say="Three questions.">
+
+<Step effect="focus" say="First: what kind of function does a ReLU network compute?">
+<p class="big-q sm">What function does a ReLU network compute?</p>
+</Step>
+
+<Step say="Second: neural networks can approximate any function. What does that say, and what does it not say?">Universal approximation: what it says, what it doesn't</Step>
+
+<Step say="Third: if one layer can approximate anything, why go deep?">One layer suffices, so why go deep?</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="One hidden unit = one hinge" say="Start with a single hidden unit.">
+
+<Step say="An affine map, then cut off the negative part. That is a ReLU unit.">$h = \max(0,\ \theta_0 + \theta_1 x)$</Step>
+
+<Step say="It bends where theta zero plus theta one x equals zero: off on one side, on on the other.">Kink at $x = -\theta_0/\theta_1$: "off" on one side, "on" on the other</Step>
+
+<Step say="The network's output is a weighted sum of these units.">$y = \phi_0 + \sum_d \phi_d h_d$</Step>
+
+<Step effect="focus" say="Once the on/off pattern is fixed, the network is linear. So a ReLU network is piecewise linear.">
+<p class="big-q sm">Fixed on/off pattern ⇒ linear: ReLU nets are piecewise linear</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Two inputs: lines carve polygons" say="With two inputs, each unit draws a line on the plane.">
+
+<Step drive="s1=1/0.6" say="One unit, one line, two regions; on each the network is a single linear function.">$D = 1$: two regions</Step>
+
+<Step drive="s1=3/2" say="Three units, three lines, at most seven regions.">$D = 3$: at most $7$</Step>
+
+<Step drive="s1=5/2" say="Five units, sixteen regions. The count grows quadratically with the units.">$D = 5$: $16$</Step>
+
+<Step drive="click:chip1; wait:1.5" say="With new weights some crossings fall outside the window and fewer regions show. The bound is one plus D plus D choose two.">Bound $1 + D + \binom{D}{2}$</Step>
+
+<div slot="visual"><ReluRegions client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="One input: at most D + 1 pieces" say="Why do D units give at most D plus one pieces?">
+
+<Morph>
+
+<Step effect="morph" say="The output is a weighted sum of the units.">
+
+$$
+f(x) = \phi_0 + \sum_{d=1}^{D} \phi_d \max(0,\ \theta_{d0} + \theta_{d1} x)
+$$
+
+</Step>
+
+<Step effect="morph" say="Each unit changes the slope only at its own kink.">
+
+$$
+f'(x) \text{ changes only at } x_d = -\theta_{d0}/\theta_{d1}
+$$
+
+</Step>
+
+<Step effect="morph" say="D points cut the real line into at most D plus one pieces.">
+
+$$
+\#\text{pieces} \le D + 1
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="Conversely, any broken line can be written this way: the output weights are the changes of slope at the kinks.">Conversely: $\phi_d$ = change of slope at kink $d$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Two inputs: counting regions" say="How do we count regions in two dimensions? Add the lines one at a time.">
+
+<Morph>
+
+<Step effect="morph" say="Line k crosses the previous k minus one lines at k minus one points, is cut into k segments, and each segment adds a region.">
+
+$$
+\#\text{regions} = 1 + \sum_{k=1}^{D} k
+$$
+
+</Step>
+
+<Step effect="morph" say="Sum it up.">
+
+$$
+\#\text{regions} = 1 + D + \frac{D(D-1)}{2}
+$$
+
+</Step>
+
+<Step effect="morph" say="That is one plus D plus D choose two.">
+
+$$
+\#\text{regions} = 1 + D + \binom{D}{2}
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="With D i inputs it is the sum of D choose j for j up to D i: higher dimension, more regions.">$D_i$ inputs: $\sum_{j=0}^{D_i} \binom{D}{j}$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="The universal approximation theorem" say="A single hidden layer can approximate any continuous function. How?">
+
+<Step say="Interpolate with a broken line at equally spaced knots: that broken line is itself a one-hidden-layer ReLU network.">Broken-line interpolant = one-hidden-layer ReLU net</Step>
+
+<Step say="For an L-Lipschitz function with knot spacing h, the error is at most L times h over two.">Error $\le Lh/2$, $h = (b - a)/D$</Step>
+
+<Step effect="focus" say="But it does not say how many units, exponentially many in high dimension; nor how to find the parameters; nor whether it generalizes.">
+<p class="big-q sm">Silent on: how many units · how to train · generalization</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Depth as folding" say="The tent map uses two ReLUs to fold the interval in half.">
+
+<Step drive="s1=1/0.6" say="One layer: one fold, two pieces.">$L = 1$: $2$ pieces</Step>
+
+<Step drive="s1=2/1.5" say="Two layers: two folds, four pieces.">$L = 2$: $4$ pieces</Step>
+
+<Step drive="s1=3/1.5" say="Three layers: eight pieces. A shallow net with the same parameters has at most seven: it already falls behind.">$L = 3$: $8 \gt 7$</Step>
+
+<Step drive="s1=6/3" say="Six layers: sixty-four pieces, against at most thirteen for the shallow net of the same size.">$L = 6$: $64$ against $13$</Step>
+
+<div slot="visual"><DepthFolding client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Why folding gives 2^L pieces" say="Write the tent map out.">
+
+<Morph>
+
+<Step effect="morph" say="Two ReLU units.">
+
+$$
+t(x) = 2\max(0, x) - 4\max\!\left(0, x - \tfrac12\right)
+$$
+
+</Step>
+
+<Step effect="morph" say="It maps each half one-to-one onto the whole interval.">
+
+$$
+t:\ [0, \tfrac12] \to [0, 1],\quad [\tfrac12, 1] \to [0, 1]
+$$
+
+</Step>
+
+<Step effect="morph" say="So every composition doubles the number of pieces.">
+
+$$
+\#\text{pieces}\big(t^{(L)}\big) = 2 \cdot \#\text{pieces}\big(t^{(L-1)}\big) = 2^L
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="The deep net has six L plus one parameters; a shallow net of the same size has only two L units, so at most two L plus one pieces.">Deep: $6L + 1$ parameters → $2^L$ pieces; shallow: at most $2L + 1$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked example: reading off a broken line" say="A three-unit network by hand.">
+
+<Step say="Three hinges, with kinks at zero, one and two.">$f = 1 + 2\,\mathrm{ReLU}(x) - 3\,\mathrm{ReLU}(x - 1) + 2\,\mathrm{ReLU}(x - 2)$</Step>
+
+<Step say="Accumulate the slopes from left to right: zero, two, minus one, one.">Slopes: $0 \to 2 \to -1 \to 1$</Step>
+
+<Step say="The values at zero, one, two and three are one, three, two, three. Four pieces: exactly D plus one.">$f(0, 1, 2, 3) = 1, 3, 2, 3$: $4 = D + 1$ pieces</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, a ReLU network, its activation patterns and the tent network from scratch, then an MLP in scikit-learn and a count of the linear regions it uses.">
+
+<Step say="After running your code you can replay how every extra layer folds the decision regions once more.">✎ 4 derivations · ⌨ forward pass + folding + hinges · ⚙ MLPClassifier + region count</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/neural-networks/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

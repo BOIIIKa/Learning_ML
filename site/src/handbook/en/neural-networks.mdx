@@ -1,0 +1,39 @@
+---
+title: "MLPs in practice: architecture, scaling, and common scikit-learn / PyTorch patterns"
+summary: "How to pick width and depth, why inputs must be standardized, how to count parameters, and the usual traps in scikit-learn and PyTorch."
+chapters: ["14"]
+---
+
+### Go-to code
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+
+mlp = make_pipeline(StandardScaler(),
+                    MLPClassifier(hidden_layer_sizes=(64, 64), activation="relu",
+                                  alpha=1e-4, early_stopping=True, random_state=0))
+
+# The same network in PyTorch
+import torch.nn as nn
+net = nn.Sequential(nn.Linear(d_in, 64), nn.ReLU(), nn.Linear(64, 64), nn.ReLU(), nn.Linear(64, d_out))
+n_params = sum(p.numel() for p in net.parameters())
+```
+
+### Traps
+
+- **Always standardize the inputs**: a ReLU's kink sits at $-\theta_0/\theta_1$; when feature scales differ by orders of magnitude, many units start out always on or always off, and training crawls.
+- **Pass the layer sizes by keyword**: since scikit-learn 1.7 the first positional parameter of `MLPRegressor` is `loss`, so `MLPRegressor((64, 64))` fails; write `hidden_layer_sizes=(64, 64)`.
+- **Depth before width**: on tabular data 2–4 layers of 64–256 units are usually enough; depth is cheaper in parameters than width, but very deep nets need residual connections and normalization (chapters 17 and 18).
+- **On tables, try trees first**: gradient boosting (chapter 08) still often beats MLPs on small and medium tabular data; neural networks shine on structured data such as images, text and audio.
+- **Dead ReLUs**: with too large a learning rate some units switch off for every sample, their gradient is zero and they never recover. Lower the learning rate, or use Leaky ReLU / GELU.
+- **Universal approximation is not usefulness**: being able to represent a function does not mean the net will learn it or generalize; keep a validation set and early stopping (`early_stopping=True`).
+
+### Frontier reading
+
+- Montúfar, Pascanu, Cho and Bengio (2014): theory of linear-region counts in deep nets.
+- Hanin and Rolnick (2019): trained networks use far fewer regions than the bound.
+- Eldan and Shamir (2016): depth separation, functions easy at depth 3 but needing exponentially many units at depth 2.
+- Telgarsky (2016): compositions of tent maps prove the benefit of depth.
+- Jacot, Gabriel and Hongler (2018): the neural tangent kernel and infinitely wide networks.
