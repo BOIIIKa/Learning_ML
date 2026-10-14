@@ -111,3 +111,20 @@
 .kkt-target { fill: var(--class-pos); stroke: var(--bg); stroke-width: 2; cursor: grab; }
 .kkt-lab { fill: var(--text); font-size: 13px; font-weight: 700; font-family: var(--mono); }
 .kkt-lab.muted { fill: var(--text-muted); font-weight: 400; }
+
+/* chapter 01 */
+.triad-pickers { display: grid; gap: 0.5rem; }
+.triad-pickers > div { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.tp-k { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); min-width: 7.5em; }
+.chip:disabled { opacity: 0.4; cursor: not-allowed; }
+.bayes-svg { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; }
+.bc-curve { fill: none; stroke-width: 2.6; }
+.bc-curve.neg { stroke: var(--class-neg); }
+.bc-curve.pos { stroke: var(--class-pos); }
+.bc-err { opacity: 0.35; }
+.bc-err.neg { fill: var(--class-neg); }
+.bc-err.pos { fill: var(--class-pos); }
+.bc-bayes { stroke: var(--success); stroke-width: 2; stroke-dasharray: 5 4; }
+.bc-thr { stroke: var(--text); stroke-width: 2.5; }
+.bc-lab { font-size: 11px; font-weight: 700; font-family: var(--mono); }
+.bc-lab.bayes { fill: var(--success); }
