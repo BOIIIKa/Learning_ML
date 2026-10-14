@@ -1,0 +1,35 @@
+---
+title: "损失函数实战：稳定的交叉熵、类别不平衡与不确定性"
+summary: "PyTorch / scikit-learn 里损失的正确写法，logits 与概率的坑，类别权重，异方差与分位数预测，以及校准。"
+chapters: ["15"]
+---
+
+### 常用代码
+
+```python
+import torch, torch.nn as nn
+loss_bin = nn.BCEWithLogitsLoss()        # 输入 logits，不要先过 sigmoid
+loss_cls = nn.CrossEntropyLoss()         # 输入 logits 和类别下标，不要先过 softmax
+loss_het = nn.GaussianNLLLoss()          # 输入 均值、方差（不是标准差）、目标
+loss_cnt = nn.PoissonNLLLoss(log_input=True)
+
+from sklearn.metrics import log_loss                  # 评估：需要 predict_proba
+from sklearn.linear_model import PoissonRegressor, QuantileRegressor
+```
+
+### 容易踩的坑
+
+- **logits 还是概率**：`CrossEntropyLoss` 和 `BCEWithLogitsLoss` 内部自带 softmax / sigmoid 和 log-sum-exp 技巧；先手动做一次 softmax 再传进去是最常见的错误，训练会变慢甚至不收敛。
+- **永远不要写 `log(softmax(x))`**：用 `log_softmax`，否则 logit 很大时得到 `log(0) = -inf`。
+- **类别不平衡**：用 `weight=` / `class_weight="balanced"` 或重采样；只看准确率会被多数类骗。评估用交叉熵、PR 曲线。
+- **`GaussianNLLLoss` 的第二个参数是方差**：网络最好输出 log 方差再取指数，并加一个下限防止方差塌到 0（`eps`）。
+- **异方差训练不稳**：一开始就同时学均值和方差，模型可能用“放大方差”来逃避拟合。可以先用平方损失训练均值，再放开方差；或用 β-NLL 加权。
+- **概率要校准**：深网络常过度自信。用验证集做温度缩放（把 logits 除以 $T$，选使 NLL 最小的 $T$），再用可靠性图检查。
+
+### 前沿阅读
+
+- Nix 与 Weigend（1994）：同时估计均值与方差的网络。
+- Kendall 与 Gal（2017）：深度学习中的偶然不确定性与认知不确定性。
+- Guo 等（2017）：现代神经网络的校准与温度缩放。
+- Lin 等（2017）：焦点损失（Focal Loss），处理极度不平衡的检测问题。
+- Seitzer 等（2022）：β-NLL，缓解异方差回归训练中的病态。

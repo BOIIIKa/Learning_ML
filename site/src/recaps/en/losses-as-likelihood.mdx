@@ -1,0 +1,8 @@
+- **The recipe**: choose an output distribution $\Pr(y \mid \theta)$ → the network outputs $\theta = f(x; \phi)$ → minimise $-\sum_i \log \Pr(y_i \mid f(x_i; \phi))$.
+- **Gaussian ⇒ squared loss**: $\frac{(y - \mu)^2}{2\sigma^2} + \log \sigma + $ const; Laplace ⇒ absolute loss (the median, robust).
+- **Bernoulli ⇒ binary cross-entropy**: $\ell = \log(1 + e^f) - yf$ with gradient $\sigma(f) - y$; compute it with `logaddexp` for stability.
+- **Categorical ⇒ softmax cross-entropy**: $\ell = \log\sum_k e^{f_k} - f_y$ with gradient $p - e_y$; Poisson ⇒ $e^f - yf + \log y!$.
+- **One gradient**: with canonical links the gradient is always "predicted mean − observation".
+- **Heteroscedastic regression**: output $\mu$ and $\log\sigma$ together; the best $\sigma^2$ is the squared residual; the band widens with the noise and covers both ends close to 95%.
+- **Cross-entropy = entropy + KL**: $H(p, q) = H(p) + \mathrm{KL}(p\|q)$ with $\mathrm{KL} \ge 0$ (Jensen); maximum likelihood = minimising the KL from the empirical distribution.
+- **Examples**: BCE $0.1269 / 2.1269$ at $f = 2$; CE $0.4076$ for logits $(2, 1, 0)$; for $r = 8$ the best $\sigma$ is $8$ ($3.498$); $\mathrm{KL}(0.7\|0.5) = 0.082$.

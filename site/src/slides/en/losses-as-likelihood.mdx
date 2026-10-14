@@ -1,0 +1,244 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import LossRecipe from "../../components/chapters/ch15/LossRecipe";
+import HeteroBand from "../../components/chapters/ch15/HeteroBand";
+import CrossEntropyKL from "../../components/chapters/ch15/CrossEntropyKL";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 15 · Animated course" title="Loss Functions as Maximum Likelihood" say="Squared loss, cross-entropy, absolute loss: they are not a scattered menu but dishes from one recipe.">
+
+Choose a distribution · Negative log-likelihood · Heteroscedasticity · Cross-entropy and KL
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="One network, four questions" say="The teacher wants to predict the score, pass or fail, the grade and the absences, all at once. The body of the network is shared; only the last layer differs. Where do the losses come from?">
+
+<Step drive="click:chip1; s1=-1.5/2" say="The score is a real number: choose a Gaussian, and the negative log-likelihood is the squared loss, with its minimum at the observation.">Gaussian → squared loss</Step>
+
+<Step drive="click:chip2" say="Pass or fail: a Bernoulli gives binary cross-entropy. With y equal to one, larger f is always better, by less and less.">Bernoulli → binary cross-entropy</Step>
+
+<Step drive="click:chip3" say="Grade A, B or C: a categorical distribution gives softmax cross-entropy.">Categorical → softmax cross-entropy</Step>
+
+<Step drive="click:chip5; s1=5/2" say="Absences: a Poisson, minimised where e to the f equals the observation.">Poisson → Poisson loss</Step>
+
+<div slot="visual"><LossRecipe client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions for this chapter" say="Three questions.">
+
+<Step effect="focus" say="First: where do loss functions come from?">
+<p class="big-q sm">Where do loss functions come from?</p>
+</Step>
+
+<Step say="Second: how do the losses of earlier chapters fit into one recipe?">How do all the earlier losses fit together?</Step>
+
+<Step say="Third: can a network tell us how uncertain it is? And how are cross-entropy and the KL divergence related?">Uncertainty; cross-entropy and KL</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="The maximum-likelihood recipe" say="The recipe has three steps.">
+
+<Step say="Step one: choose a distribution for the output y.">① Choose a distribution $\Pr(y \mid \theta)$</Step>
+
+<Step say="Step two: let the network output its parameters, through a head that maps real numbers into the valid range where needed.">② The network outputs $\theta = f(x; \phi)$ (sigmoid, softmax, exp)</Step>
+
+<Step say="Step three: minimise the negative log-likelihood.">③ Minimise $-\sum_i \log \Pr(y_i \mid f(x_i; \phi))$</Step>
+
+<Step effect="focus" say="The strategy is the negative log-likelihood.">
+<p class="big-q sm">Strategy = negative log-likelihood</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="One recipe, a whole menu" say="Change the distribution, and out comes a classical model.">
+
+<Step say="Gaussian with an identity head: squared loss, the linear regression of chapter three.">Gaussian · $\mu = f$ → squared loss (chapter 03)</Step>
+
+<Step say="Laplace: the absolute loss, robust regression.">Laplace → absolute loss (chapter 03)</Step>
+
+<Step say="Bernoulli with a sigmoid head: binary cross-entropy, logistic regression.">Bernoulli · $p = \sigma(f)$ → logistic regression (chapter 04)</Step>
+
+<Step say="Categorical with a softmax head: multinomial logistic regression.">Categorical · $p = \mathrm{softmax}(f)$ → multinomial logistic (chapter 04)</Step>
+
+<Step say="Poisson with an exponential head: generalized linear models for counts.">Poisson · $\lambda = e^f$ → GLMs for counts</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Gaussian ⇒ squared loss" say="Write out the Gaussian's negative log-likelihood.">
+
+<Morph>
+
+<Step effect="morph" say="The Gaussian density.">
+
+$$
+\Pr(y \mid \mu, \sigma) = \frac{1}{\sqrt{2\pi}\,\sigma} e^{-(y - \mu)^2 / 2\sigma^2}
+$$
+
+</Step>
+
+<Step effect="morph" say="Take minus the log.">
+
+$$
+-\log \Pr = \frac{(y - \mu)^2}{2\sigma^2} + \log \sigma + \tfrac12 \log 2\pi
+$$
+
+</Step>
+
+<Step effect="morph" say="With sigma fixed only the squared term matters: least squares is maximum likelihood under Gaussian noise.">
+
+$$
+-\log \Pr \;\propto\; (y - \mu)^2 + \text{const}
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Bernoulli ⇒ binary cross-entropy" say="Now the Bernoulli.">
+
+<Morph>
+
+<Step effect="morph" say="p is sigmoid of f.">
+
+$$
+\ell = -y \log \sigma(f) - (1 - y) \log\big(1 - \sigma(f)\big)
+$$
+
+</Step>
+
+<Step effect="morph" say="Simplify, into a numerically stable form.">
+
+$$
+\ell = \log(1 + e^{f}) - y f
+$$
+
+</Step>
+
+<Step effect="morph" say="Differentiate: predicted probability minus observation.">
+
+$$
+\frac{\partial \ell}{\partial f} = \sigma(f) - y
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="One gradient for all" say="Put the gradients of the different heads side by side.">
+
+<Step say="Gaussian: mu minus y.">Gaussian: $\mu - y$</Step>
+
+<Step say="Bernoulli: sigma of f minus y. Softmax: p minus the one-hot. Poisson: e to the f minus y.">Bernoulli $\sigma(f) - y$ · softmax $p - e_y$ · Poisson $e^f - y$</Step>
+
+<Step effect="focus" say="The gradient is always the predicted mean minus the observation: the shared trait of the exponential family with its canonical links.">
+<p class="big-q sm">Gradient = predicted mean − observation</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Predicting uncertainty" say="The more the students study, the more their scores spread. The squared loss assumes the noise variance is the same everywhere.">
+
+<Step drive="click:chip1; wait:1" say="Constant variance: the band is too wide on the left and too narrow on the right.">Constant variance: wide left, narrow right</Step>
+
+<Step drive="click:chip2; wait:1" say="Let the network output a log sigma too: the band widens with the noise, and both sides are covered close to ninety-five percent.">Output $\mu$ and $\log\sigma$: the band follows the noise</Step>
+
+<Step say="And the average negative log-likelihood drops.">Average NLL: $3.378 \to 3.272$</Step>
+
+<div slot="visual"><HeteroBand client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="The best variance" say="What variance does the network learn?">
+
+<Morph>
+
+<Step effect="morph" say="Let s be log sigma and write the loss.">
+
+$$
+\ell = \frac{(y - \mu)^2}{2 e^{2s}} + s
+$$
+
+</Step>
+
+<Step effect="morph" say="Differentiate in s.">
+
+$$
+\frac{\partial \ell}{\partial s} = 1 - \frac{(y - \mu)^2}{e^{2s}}
+$$
+
+</Step>
+
+<Step effect="morph" say="Set it to zero: the variance equals the squared residual.">
+
+$$
+\sigma^2 = (y - \mu)^2
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Cross-entropy = entropy + KL" say="The average negative log-likelihood tends to the cross-entropy.">
+
+<Morph>
+
+<Step effect="morph" say="The definition of cross-entropy.">
+
+$$
+H(p, q) = -\sum_y p(y) \log q(y)
+$$
+
+</Step>
+
+<Step effect="morph" say="Add and subtract a term: the entropy, plus the KL divergence.">
+
+$$
+H(p, q) = H(p) + \mathrm{KL}(p \,\|\, q)
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="By Jensen's inequality the KL is at least zero, and zero only when q equals p.">$\mathrm{KL}(p\|q) \ge 0$, with equality iff $q = p$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The part that won't go away" say="Drag the model's prediction q and watch the cross-entropy split in two.">
+
+<Step drive="s2=0.15/2" say="q far from p: a large KL.">$q$ far from $p$: large KL</Step>
+
+<Step drive="s2=0.7/2" say="q equals p: the KL is zero and the cross-entropy drops to the entropy, a floor no model can go below.">$q = p$: cross-entropy = entropy</Step>
+
+<Step drive="s1=0.95/2; s2=0.95/1.5" say="The more certain the data, the smaller the entropy and the lower the floor.">$p$ near $0$ or $1$: small entropy</Step>
+
+<div slot="visual"><CrossEntropyKL client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked examples: the numbers" say="A few numbers by hand.">
+
+<Step say="A Bernoulli head with f equal to two: the loss is zero point one two seven for y equal to one, two point one two seven for y equal to zero, and the difference is exactly two.">$f = 2$: $0.1269$ / $2.1269$, difference $= f$</Step>
+
+<Step say="Three classes with logits two, one and zero, the first one correct: probability zero point six six five, loss zero point four zero eight.">Logits $(2, 1, 0)$: $p_1 = 0.665$, $\ell = 0.4076$</Step>
+
+<Step say="A residual of eight: sigma five is overconfident, sigma ten too vague, and sigma eight is best.">$r = 8$: $\ell(\sigma{=}5, 8, 10) = 3.808,\ 3.498,\ 3.542$</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, stable cross-entropy and heteroscedastic regression from scratch, then Poisson regression and quantile prediction intervals in scikit-learn.">
+
+<Step say="After running your code you can replay the plus-minus two sigma band learning to widen with x.">✎ 4 derivations · ⌨ stable cross-entropy + heteroscedastic fit · ⚙ Poisson regression + quantile intervals</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/losses-as-likelihood/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

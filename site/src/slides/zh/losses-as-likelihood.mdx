@@ -1,0 +1,244 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import LossRecipe from "../../components/chapters/ch15/LossRecipe";
+import HeteroBand from "../../components/chapters/ch15/HeteroBand";
+import CrossEntropyKL from "../../components/chapters/ch15/CrossEntropyKL";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 15 章 · 动画课程" title="损失函数即最大似然" say="平方损失、交叉熵、绝对值损失……它们不是一份零散的菜单，而是同一个配方做出来的。">
+
+选分布 · 写负对数似然 · 异方差 · 交叉熵与 KL
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="一个网络，四个问题" say="老师想同时预测：成绩、能否及格、等级、缺勤次数。网络主体共用，只有最后一层不同。损失从哪里来？">
+
+<Step drive="click:chip1; s1=-1.5/2" say="成绩是实数：选高斯分布，负对数似然就是平方损失，最小点就在观测值处。">高斯 → 平方损失</Step>
+
+<Step drive="click:chip2" say="及格与否：选伯努利分布，得到二元交叉熵。y 等于一时，f 越大越好，但好处越来越小。">伯努利 → 二元交叉熵</Step>
+
+<Step drive="click:chip3" say="等级 A、B、C：分类分布，得到 softmax 交叉熵。">分类分布 → softmax 交叉熵</Step>
+
+<Step drive="click:chip5; s1=5/2" say="缺勤次数：泊松分布，最小点在 e 的 f 次方等于观测值处。">泊松 → 泊松损失</Step>
+
+<div slot="visual"><LossRecipe client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="第一，损失函数从哪里来？">
+<p class="big-q sm">损失函数从哪里来？</p>
+</Step>
+
+<Step say="第二，前面各章的损失，怎样统一到一个配方里？">怎样统一前面所有的损失？</Step>
+
+<Step say="第三，网络能不能告诉我们它有多不确定？交叉熵和 KL 散度又是什么关系？">不确定性；交叉熵与 KL</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="最大似然的配方" say="配方只有三步。">
+
+<Step say="第一步，为输出 y 选一个分布。">① 选分布 $\Pr(y \mid \theta)$</Step>
+
+<Step say="第二步，让网络输出这个分布的参数，必要时经过一个头，把实数映到合法范围。">② 网络输出参数 $\theta = f(x; \phi)$（sigmoid、softmax、exp）</Step>
+
+<Step say="第三步，最小化负对数似然。">③ 最小化 $-\sum_i \log \Pr(y_i \mid f(x_i; \phi))$</Step>
+
+<Step effect="focus" say="策略就是负对数似然。">
+<p class="big-q sm">策略 = 负对数似然</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="一个配方，一整张菜单" say="换一个分布，就得到一个经典模型。">
+
+<Step say="高斯，恒等头：平方损失，第三章的线性回归。">高斯 · $\mu = f$ → 平方损失（第 03 章）</Step>
+
+<Step say="拉普拉斯：绝对值损失，稳健回归。">拉普拉斯 → 绝对值损失（第 03 章）</Step>
+
+<Step say="伯努利，sigmoid 头：二元交叉熵，逻辑回归。">伯努利 · $p = \sigma(f)$ → 逻辑回归（第 04 章）</Step>
+
+<Step say="分类分布，softmax 头：多类逻辑回归。">分类 · $p = \mathrm{softmax}(f)$ → 多类逻辑回归（第 04 章）</Step>
+
+<Step say="泊松，指数头：计数的广义线性模型。">泊松 · $\lambda = e^f$ → 计数的广义线性模型</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="高斯 ⇒ 平方损失" say="写出高斯分布的负对数似然。">
+
+<Morph>
+
+<Step effect="morph" say="高斯密度。">
+
+$$
+\Pr(y \mid \mu, \sigma) = \frac{1}{\sqrt{2\pi}\,\sigma} e^{-(y - \mu)^2 / 2\sigma^2}
+$$
+
+</Step>
+
+<Step effect="morph" say="取负对数。">
+
+$$
+-\log \Pr = \frac{(y - \mu)^2}{2\sigma^2} + \log \sigma + \tfrac12 \log 2\pi
+$$
+
+</Step>
+
+<Step effect="morph" say="sigma 固定，只剩平方项：最小二乘就是高斯噪声下的最大似然。">
+
+$$
+-\log \Pr \;\propto\; (y - \mu)^2 + \text{常数}
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="伯努利 ⇒ 二元交叉熵" say="再看伯努利。">
+
+<Morph>
+
+<Step effect="morph" say="p 等于 sigmoid f。">
+
+$$
+\ell = -y \log \sigma(f) - (1 - y) \log\big(1 - \sigma(f)\big)
+$$
+
+</Step>
+
+<Step effect="morph" say="化简，得到一个数值稳定的形式。">
+
+$$
+\ell = \log(1 + e^{f}) - y f
+$$
+
+</Step>
+
+<Step effect="morph" say="求导：预测的概率减去观测。">
+
+$$
+\frac{\partial \ell}{\partial f} = \sigma(f) - y
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="同一个梯度" say="把几种头的梯度放在一起看。">
+
+<Step say="高斯：mu 减 y。">高斯：$\mu - y$</Step>
+
+<Step say="伯努利：sigma f 减 y。softmax：p 减 one-hot。泊松：e 的 f 次方减 y。">伯努利 $\sigma(f) - y$ · softmax $p - e_y$ · 泊松 $e^f - y$</Step>
+
+<Step effect="focus" say="梯度总是预测的均值减去观测值：这是指数族配上典范连接函数的共同特点。">
+<p class="big-q sm">梯度 = 预测均值 − 观测</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="预测不确定性" say="学得越多的学生，成绩分得越开。平方损失假设噪声方差处处相同。">
+
+<Step drive="click:chip1; wait:1" say="方差恒定：左边带子太宽，右边太窄。">常数方差：左宽右窄</Step>
+
+<Step drive="click:chip2; wait:1" say="让网络再输出一个 log sigma：带子跟着噪声变宽，两边的覆盖率都接近百分之九十五。">输出 $\mu$ 和 $\log\sigma$：带子随噪声变宽</Step>
+
+<Step say="平均负对数似然也更低。">平均负对数似然：$3.378 \to 3.272$</Step>
+
+<div slot="visual"><HeteroBand client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="最优的方差" say="网络学到的方差是什么？">
+
+<Morph>
+
+<Step effect="morph" say="令 s 等于 log sigma，写出损失。">
+
+$$
+\ell = \frac{(y - \mu)^2}{2 e^{2s}} + s
+$$
+
+</Step>
+
+<Step effect="morph" say="对 s 求导。">
+
+$$
+\frac{\partial \ell}{\partial s} = 1 - \frac{(y - \mu)^2}{e^{2s}}
+$$
+
+</Step>
+
+<Step effect="morph" say="令其为零：方差等于残差的平方。">
+
+$$
+\sigma^2 = (y - \mu)^2
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="交叉熵 = 熵 + KL" say="平均负对数似然的极限是交叉熵。">
+
+<Morph>
+
+<Step effect="morph" say="交叉熵的定义。">
+
+$$
+H(p, q) = -\sum_y p(y) \log q(y)
+$$
+
+</Step>
+
+<Step effect="morph" say="加一项减一项：熵，加上 KL 散度。">
+
+$$
+H(p, q) = H(p) + \mathrm{KL}(p \,\|\, q)
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="由 Jensen 不等式，KL 大于等于零，只在 q 等于 p 时为零。">$\mathrm{KL}(p\|q) \ge 0$，当且仅当 $q = p$ 取等</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="降不下去的部分" say="拖动模型的预测 q，看交叉熵怎样分成两部分。">
+
+<Step drive="s2=0.15/2" say="q 离 p 很远，KL 很大。">$q$ 偏离 $p$：KL 大</Step>
+
+<Step drive="s2=0.7/2" say="q 等于 p，KL 为零，交叉熵降到熵：这是任何模型都降不下去的下限。">$q = p$：交叉熵 = 熵</Step>
+
+<Step drive="s1=0.95/2; s2=0.95/1.5" say="数据越确定，熵越小，下限越低。">$p$ 接近 $0$ 或 $1$：熵小</Step>
+
+<div slot="visual"><CrossEntropyKL client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：交叉熵的数" say="手算几个数。">
+
+<Step say="伯努利头，f 等于二：y 等于一时损失零点一二七，y 等于零时二点一二七，差正好是二。">$f = 2$：$0.1269$ / $2.1269$，差 $= f$</Step>
+
+<Step say="三个类，logits 二、一、零，正确类是第一类：概率零点六六五，损失零点四零八。">logits $(2, 1, 0)$：$p_1 = 0.665$，$\ell = 0.4076$</Step>
+
+<Step say="残差为八：sigma 等于五太自信，等于十太含糊，等于八最好。">$r = 8$：$\ell(\sigma{=}5, 8, 10) = 3.808,\ 3.498,\ 3.542$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现稳定的交叉熵和异方差回归，再用 scikit-learn 做泊松回归和分位数预测区间。">
+
+<Step say="代码运行后，可以回放正负两个 sigma 的带子怎样学会随 x 变宽。">✎ 4 道推导 · ⌨ 稳定交叉熵 + 异方差回归 · ⚙ 泊松回归 + 分位数区间</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/losses-as-likelihood/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>
