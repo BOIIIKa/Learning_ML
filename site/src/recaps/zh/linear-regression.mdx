@@ -1,0 +1,7 @@
+- **最小二乘**：正规方程 $X^\top X\hat\beta = X^\top y$。用 QR/SVD（`lstsq`）求解，不要显式求逆。
+- **几何**：$\hat y = Hy$ 是到列空间的正交投影；$H = X(X^\top X)^{-1}X^\top$ 幂等、迹为 $p$；残差与每一列正交。
+- **统计**：OLS 是高斯噪声下的 MLE；$\mathrm{Cov}(\hat\beta) = \sigma^2(X^\top X)^{-1}$；高斯–马尔可夫：最优线性*无偏*估计。共线性让方差爆炸。
+- **岭回归**：$(X^\top X + \lambda I)^{-1}X^\top y$；方向 $u_j$ 收缩 $d_j^2/(d_j^2+\lambda)$；有效自由度 $= \sum_j d_j^2/(d_j^2+\lambda)$。高斯先验，$\lambda = \sigma^2/\tau^2$。
+- **Lasso**：KKT 条件 $|x_j^\top r|/n \le \lambda$，$\beta_j \ne 0$ 时取等号；坐标下降 + 软阈值 $S(z,\lambda)$；热启动算路径。拉普拉斯先验（MAP）。
+- **正交设计**：岭回归 $z/(1+\lambda)$（按比例），Lasso $S(z,\lambda)$（软阈值），最优子集（硬阈值）。
+- **实践**：先标准化，截距不惩罚，用 CV 选 $\lambda$；相关特征成组时用弹性网；$p \gt n$ 且 $\lambda\to 0$ 时岭回归 → 最小范数插值。

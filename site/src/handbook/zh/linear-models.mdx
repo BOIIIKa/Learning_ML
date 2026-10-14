@@ -1,0 +1,43 @@
+---
+title: "线性模型实战：岭回归、Lasso 与弹性网"
+summary: "缩放与截距、先用哪种惩罚、怎样安全地解读系数，以及常用代码。"
+chapters: ["03"]
+---
+
+### 常用代码
+
+```python
+import numpy as np
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import RidgeCV, LassoCV, ElasticNetCV
+
+ridge = make_pipeline(StandardScaler(), RidgeCV(alphas=np.logspace(-3, 3, 50))).fit(X_train, y_train)
+lasso = make_pipeline(StandardScaler(), LassoCV(cv=5, random_state=0)).fit(X_train, y_train)
+enet  = make_pipeline(StandardScaler(), ElasticNetCV(l1_ratio=[.1, .5, .9, .99], cv=5)).fit(X_train, y_train)
+```
+
+### 先用哪种惩罚？
+
+- **岭回归**是稳妥的默认选择：大多数特征都带一点信号，或特征之间强相关时尤其如此。`RidgeCV` 用了高效的留一法捷径，几乎不花时间。
+- **Lasso**：相信只有少数特征起作用，或者需要一个简短的特征清单时用。它在一组相关特征里会有些随意地挑一个。
+- **弹性网**：想要稀疏、又有成组的相关特征时用；`l1_ratio` 接近 1 时像 Lasso，接近 0 时像岭回归。
+
+### 容易踩的坑
+
+- **先缩放。** 惩罚比较的是系数大小，而系数大小取决于单位。把 `StandardScaler` 放进管道。
+- **截距**在 scikit-learn 中从不被惩罚（`fit_intercept=True`）；自己写代码时，改为先把 `y` 和特征中心化。
+- **`alpha` 的含义**：scikit-learn 的 `alpha` 就是我们的 $\lambda$。`Lasso` 用的是 $\frac1{2n}\|y-X\beta\|^2 + \alpha\|\beta\|_1$；`Ridge` 用的是 $\|y - X\beta\|^2 + \alpha\|\beta\|^2$，没有 $1/n$，所以两者的 alpha 量级不可比。
+- **类别变量**：独热编码；岭回归可以保留全部水平，普通 OLS 要去掉一个，避免完全共线。
+- **特征远多于样本**：`LassoCV` 设 `selection="random"` 提速；数据极大时用 `SGDRegressor(penalty="elasticnet")`。
+
+### 解读系数
+
+- 标准化后的系数可以在特征之间比较，原始系数不行。
+- 系数是*条件*效应：“其他特征保持不变时”。特征相关时，这种反事实在数据里可能根本不存在。
+- 想要诚实的不确定性，就对整条管道做自助法，看每个系数的波动。只在部分自助样本中被 Lasso 保留的特征，是不稳定的选择。
+
+### 前沿阅读
+
+- Tibshirani（1996）：Lasso 原始论文，至今依然好读。
+- Hastie、Montanari、Rosset、Tibshirani（2022）：高维无岭最小二乘的精确风险，最简单模型里的双下降。

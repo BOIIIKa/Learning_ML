@@ -1,0 +1,43 @@
+---
+title: "Linear models in practice: ridge, lasso, elastic net"
+summary: "Scaling and intercepts, which penalty to start with, reading coefficients safely, and go-to code."
+chapters: ["03"]
+---
+
+### Go-to code
+
+```python
+import numpy as np
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import RidgeCV, LassoCV, ElasticNetCV
+
+ridge = make_pipeline(StandardScaler(), RidgeCV(alphas=np.logspace(-3, 3, 50))).fit(X_train, y_train)
+lasso = make_pipeline(StandardScaler(), LassoCV(cv=5, random_state=0)).fit(X_train, y_train)
+enet  = make_pipeline(StandardScaler(), ElasticNetCV(l1_ratio=[.1, .5, .9, .99], cv=5)).fit(X_train, y_train)
+```
+
+### Which penalty first?
+
+- **Ridge** is the safe default when most features carry some signal, or when features are strongly correlated. `RidgeCV` uses an efficient leave-one-out shortcut, so it is almost free.
+- **Lasso** when you believe only a few features matter, or you need a short list. Expect it to pick one feature out of a correlated group somewhat arbitrarily.
+- **Elastic net** when you want sparsity but have correlated groups; `l1_ratio` near 1 behaves like the lasso, near 0 like ridge.
+
+### Details that bite
+
+- **Scale first.** Penalties compare coefficient sizes, which depend on units. Put `StandardScaler` inside the pipeline.
+- **Intercept** is never penalized in scikit-learn (`fit_intercept=True`); with your own code, centre `y` and the features instead.
+- **`alpha` naming**: scikit-learn's `alpha` is our $\lambda$. `Lasso` uses $\frac1{2n}\|y-X\beta\|^2 + \alpha\|\beta\|_1$; `Ridge` uses $\|y - X\beta\|^2 + \alpha\|\beta\|^2$ without the $1/n$, so the scales of the two alphas are not comparable.
+- **Categorical variables**: one-hot encode; with ridge keep all levels, with plain OLS drop one to avoid perfect collinearity.
+- **Many more features than rows**: use `LassoCV` with `selection="random"` for speed, or `SGDRegressor(penalty="elasticnet")` for very large data.
+
+### Reading coefficients
+
+- Standardized coefficients are comparable across features; raw ones are not.
+- A coefficient is a *conditional* effect: "holding the other features fixed". With correlated features that counterfactual may never happen in the data.
+- For honest uncertainty, bootstrap the whole pipeline and look at the spread of each coefficient. Features that the lasso keeps in only some bootstrap samples are unstable choices.
+
+### Frontier reading
+
+- Tibshirani (1996): the original lasso paper, still very readable.
+- Hastie, Montanari, Rosset, Tibshirani (2022): exact risk of ridgeless least squares in high dimensions, double descent in the simplest model.

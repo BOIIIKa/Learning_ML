@@ -1,0 +1,145 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import CollinearCoefs from "../../components/chapters/ch03/CollinearCoefs";
+import ProjectionViz from "../../components/chapters/ch03/ProjectionViz";
+import L1L2Geometry from "../../components/chapters/ch03/L1L2Geometry";
+import RegPath from "../../components/chapters/ch03/RegPath";
+
+<Section lang="en" k="scenario">
+
+The teacher now records more about each student: hours studied, **hours spent in the library**, hours of sleep, last term's score. She fits a linear model by least squares and wants to tell the students which habit matters most. But "hours studied" and "hours in the library" are almost the same number for most students. Every year she refits on a new class, and every year the two coefficients come out wildly different, sometimes one of them even negative:
+
+<CollinearCoefs client:visible lang="en" />
+
+The predictions stay fine; only the **credit assignment** is unstable. The data determine $w_1 + w_2$ well, but not how to split it. This chapter studies the linear model from three angles:
+
+1. **Geometry**: least squares is an orthogonal projection, which explains both its formula and its weaknesses.
+2. **Statistics**: how the noise in $y$ turns into uncertainty in $\hat w$, and why correlated features make it blow up.
+3. **Regularization**: ridge stabilizes the estimate; the lasso also chooses features, setting some coefficients exactly to zero.
+
+</Section>
+
+<Section lang="en" k="method">
+
+### The linear model and least squares
+
+<Box kind="definition" title="Linear regression">
+
+With an $n\times p$ design matrix $X$ (one row per sample, a column of ones for the intercept) and targets $y\in\mathbb R^n$, the model is $f(x) = x^\top\beta$. Least squares chooses
+
+$$
+\hat\beta = \arg\min_\beta \|y - X\beta\|^2.
+$$
+
+Setting the gradient $-2X^\top(y - X\beta)$ to zero gives the **normal equations** $X^\top X\hat\beta = X^\top y$, so $\hat\beta = (X^\top X)^{-1}X^\top y$ when $X$ has full column rank.
+
+</Box>
+
+"Linear" refers to the parameters, not the inputs: polynomials, splines, interactions and one-hot categories are all linear models in suitably built features. In code, solve with a QR or SVD-based routine (`np.linalg.lstsq`) rather than forming $(X^\top X)^{-1}$, which squares the condition number.
+
+### Two penalties
+
+When $X^\top X$ is ill-conditioned (correlated features, $p$ close to or larger than $n$), add a penalty on the size of $\beta$. Standardize the features first so that the penalty treats them equally, and leave the intercept unpenalized.
+
+- **Ridge (L2)**: $\min_\beta \|y - X\beta\|^2 + \lambda\|\beta\|_2^2$, with closed form $\hat\beta = (X^\top X + \lambda I)^{-1}X^\top y$. The added $\lambda I$ makes the matrix invertible and well conditioned.
+- **Lasso (L1)**: $\min_\beta \frac1{2n}\|y - X\beta\|^2 + \lambda\|\beta\|_1$. No closed form, but coordinate descent with soft thresholding solves it quickly, and many coefficients come out **exactly** zero.
+
+Each penalized problem is equivalent to a constrained one: minimize the loss subject to $\|\beta\|_2 \le t$ or $\|\beta\|_1 \le t$. The constraint picture explains the difference:
+
+<L1L2Geometry client:visible lang="en" />
+
+<Box kind="insight" title="Why corners give zeros">
+
+The solution sits where a loss contour first touches the constraint set. The L1 ball is a diamond (a cross-polytope in $p$ dimensions) whose corners and edges lie on coordinate subspaces, so a growing ellipse often touches a corner first. The L2 ball is round, and touching exactly on an axis would require the ellipse to be aligned by coincidence. In high dimensions the diamond has very many low-dimensional faces, which is why lasso solutions are typically sparse.
+
+</Box>
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Least squares is a projection
+
+The normal equations say $X^\top(y - X\hat\beta) = 0$: the residual is orthogonal to every column of $X$. So $\hat y = X\hat\beta$ is the **orthogonal projection** of $y$ onto the column space of $X$, the set of all predictions the model can make:
+
+$$
+\hat y = Hy, \qquad H = X(X^\top X)^{-1}X^\top, \qquad H^2 = H = H^\top, \qquad \mathrm{tr}\,H = p.
+$$
+
+$H$ is the **hat matrix** ("it puts the hat on $y$"). Its diagonal entries $H_{ii}$ are the leverages from Chapter 02. With three students, $y$ lives in $\mathbb R^3$ and we can see it:
+
+<ProjectionViz client:visible lang="en" />
+
+### The statistical view
+
+Assume $y = X\beta + \varepsilon$ with $\varepsilon \sim \mathcal N(0, \sigma^2 I)$. The log-likelihood is $-\frac{1}{2\sigma^2}\|y - X\beta\|^2$ plus constants, so **least squares is the maximum-likelihood estimate** under Gaussian noise. Moreover
+
+$$
+\hat\beta = \beta + (X^\top X)^{-1}X^\top\varepsilon \ \Rightarrow\ \mathbb E\hat\beta = \beta, \qquad \mathrm{Cov}(\hat\beta) = \sigma^2 (X^\top X)^{-1}.
+$$
+
+Even without normality, the **Gauss–Markov theorem** says that among all linear unbiased estimators, least squares has the smallest variance. But "unbiased" is the catch. If two columns are nearly collinear, $X^\top X$ has a tiny eigenvalue, $(X^\top X)^{-1}$ has a huge one, and the variance along that direction explodes. That is exactly the $w_1 - w_2$ direction in the scenario. Ridge gives up unbiasedness to buy back variance.
+
+### Ridge in the SVD basis
+
+Write $X = UDV^\top$. Then (derivation exercise 2)
+
+$$
+X\hat\beta^{\text{ridge}}_\lambda = \sum_{j=1}^p u_j\, \frac{d_j^2}{d_j^2 + \lambda}\, u_j^\top y.
+$$
+
+Least squares keeps every component of $y$ along $u_j$; ridge shrinks it by $d_j^2/(d_j^2+\lambda)$. Directions with small singular values, where the inputs barely vary and the data say little, are shrunk the most. The sum $\mathrm{df}(\lambda) = \sum_j d_j^2/(d_j^2+\lambda)$ is the **effective number of parameters**: it falls from $p$ at $\lambda = 0$ towards $0$ as $\lambda \to\infty$.
+
+### The lasso: subgradients and soft thresholding
+
+$|w|$ is not differentiable at 0, but it has a **subdifferential**: $\partial|w| = \{\mathrm{sign}(w)\}$ for $w \neq 0$ and $[-1, 1]$ at $0$. The optimality condition for $\frac1{2n}\|y - X\beta\|^2 + \lambda\|\beta\|_1$ is
+
+$$
+\frac1n x_j^\top (y - X\hat\beta) \in \lambda\,\partial|\hat\beta_j| \quad\text{for every } j,
+$$
+
+that is, $|x_j^\top r|/n = \lambda$ for every active feature and $|x_j^\top r|/n \le \lambda$ for every zero one. A feature enters the model only once its correlation with the residual reaches $\lambda$. Minimizing over one coordinate with the others fixed has the closed form
+
+$$
+\hat\beta_j \leftarrow \frac{S\big(\tfrac1n x_j^\top r^{(j)}, \lambda\big)}{\tfrac1n\|x_j\|^2}, \qquad S(z, \lambda) = \mathrm{sign}(z)\max(|z| - \lambda, 0),
+$$
+
+where $r^{(j)}$ is the residual without feature $j$. Cycling through coordinates is **coordinate descent**. Starting each $\lambda$ from the previous solution (warm start, from large $\lambda$ to small) computes the whole path in about the time of a few fits.
+
+### Penalties are priors
+
+From Chapter 00: the MAP estimate minimizes negative log-likelihood plus negative log-prior. A Gaussian prior $\beta_j\sim\mathcal N(0, \tau^2)$ gives ridge with $\lambda = \sigma^2/\tau^2$ (derivation exercise 4). A Laplace prior $p(\beta_j)\propto e^{-|\beta_j|/b}$ gives the lasso. The Laplace density has a sharp peak at 0, so the MAP estimate can sit exactly there; the posterior **mean** under the same prior is never exactly 0. Sparsity comes from the mode, not from the belief.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: three estimators on an orthonormal design
+
+<Box kind="example" title="Shrink, threshold or select">
+
+Suppose the standardized features are orthogonal, $X^\top X/n = I$. Then each coordinate decouples and every estimator is a simple function of the least-squares coefficient $z_j$. Take $z = (3,\ 0.8,\ -0.3)$ and $\lambda = 0.5$.
+
+| | Rule | $\beta_1$ | $\beta_2$ | $\beta_3$ |
+|---|---|---|---|---|
+| Least squares | $z_j$ | $3$ | $0.8$ | $-0.3$ |
+| Ridge, $(\lambda/2)\|\beta\|^2$ | $z_j/(1 + \lambda)$ | $2$ | $0.533$ | $-0.2$ |
+| Lasso, $\lambda\|\beta\|_1$ | $S(z_j, \lambda)$ | $2.5$ | $0.3$ | $0$ |
+| Best subset, $\lambda\cdot\#\text{nonzero}$ | keep if $\lvert z_j\rvert \gt \sqrt{2\lambda}$ | $3$ | $0$ | $0$ |
+
+Ridge shrinks every coefficient **proportionally** and never reaches zero. The lasso subtracts a **constant** and cuts the small ones to zero (soft thresholding). Best subset keeps or kills without shrinking (hard thresholding). The lasso is a convex compromise: it selects like best subset, but its solution varies continuously with the data.
+
+</Box>
+
+### Extension: following the whole path
+
+In practice we never fit one $\lambda$; we trace the whole path and let cross-validation choose. Here a degree-9 polynomial is fitted to the 30 students of Chapter 02:
+
+<RegPath client:visible lang="en" />
+
+- The **elastic net**, $\lambda\big(\alpha\|\beta\|_1 + \frac{1-\alpha}{2}\|\beta\|_2^2\big)$, fixes a known weakness of the lasso: among a group of correlated features it tends to pick one arbitrarily, while the elastic net keeps them together.
+- The **group lasso** penalizes $\sum_g \|\beta_g\|_2$ to select whole groups, for example all one-hot columns of a categorical variable.
+- **High dimensions** ($p \gg n$): least squares has no unique solution, but ridge and the lasso do. As $\lambda\to 0$, ridge converges to the **minimum-norm** interpolant, the same estimator whose risk showed double descent in Chapter 02. Hastie, Montanari, Rosset and Tibshirani (2022) compute its risk exactly.
+- A warning for interpretation: after the lasso has chosen features using the data, the usual confidence intervals for the kept coefficients are too narrow. Post-selection inference handles this properly.
+
+</Section>

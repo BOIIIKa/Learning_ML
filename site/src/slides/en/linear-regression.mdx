@@ -1,0 +1,120 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import CollinearCoefs from "../../components/chapters/ch03/CollinearCoefs";
+import ProjectionViz from "../../components/chapters/ch03/ProjectionViz";
+import L1L2Geometry from "../../components/chapters/ch03/L1L2Geometry";
+import RegPath from "../../components/chapters/ch03/RegPath";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 03 · Animated course" title="Linear Regression and Regularization" say="The oldest model in the book, seen three ways: as a projection, as a statistical estimator, and as an optimization problem with a penalty.">
+
+Projection · variance · ridge and lasso
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Who gets the credit?" say="The teacher adds hours in the library, which is almost the same as hours studied.">
+
+<Step say="Each dot is a fit on a new class. The two coefficients swing wildly along the dashed line.">Each dot = one year's fit; they spread along $w_1 + w_2 = 2$</Step>
+
+<Step say="The data pin down the sum, but not how to split it between the two features.">The data know the sum, not the split</Step>
+
+<Step say="Turn on ridge: the cloud collapses, at the cost of a little shrinkage towards zero.">Ridge: the cloud collapses →</Step>
+
+<div slot="visual"><CollinearCoefs client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Least squares and two penalties" say="Three objective functions.">
+
+<Step say="Least squares minimizes the squared residuals. The gradient gives the normal equations.">OLS: $X^\top X\hat\beta = X^\top y$</Step>
+
+<Step say="Ridge adds lambda times the squared norm. The matrix becomes invertible.">Ridge: $(X^\top X + \lambda I)^{-1}X^\top y$</Step>
+
+<Step say="The lasso adds lambda times the absolute values. There is no closed form, but many coefficients become exactly zero.">Lasso: $+\lambda\|\beta\|_1$, exact zeros</Step>
+
+<Step say="Always standardize features first and leave the intercept unpenalized.">Standardize first; don't penalize the intercept</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Diamond versus disc" say="Why does the lasso give zeros? Look at the constraint form.">
+
+<Step say="The solution is where the loss contour first touches the constraint region.">Solution = first contact of contour and region</Step>
+
+<Step say="The disc is round, so contact is almost never exactly on an axis.">L2 disc: no corners, no zeros</Step>
+
+<Step say="The diamond has corners on the axes, and the ellipse often hits a corner first. Drag the centre near an axis and try both.">L1 diamond: corners on the axes → exact zeros</Step>
+
+<div slot="visual"><L1L2Geometry client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Least squares is a projection" say="The normal equations say the residual is orthogonal to every column.">
+
+<Step say="With three students, y is a vector in three dimensions. The columns span a plane of possible predictions.">Columns of $X$ span the plane of possible predictions</Step>
+
+<Step say="The fitted vector is the point on the plane closest to y; the residual is perpendicular.">$\hat y = Hy$, residual $\perp$ plane</Step>
+
+<Step say="H is the hat matrix: symmetric, idempotent, with trace p.">$H = X(X^\top X)^{-1}X^\top$, $H^2 = H$, $\mathrm{tr}\,H = p$</Step>
+
+<div slot="visual"><ProjectionViz client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Variance, and how ridge buys it back" say="Now the statistics.">
+
+<Step say="Under Gaussian noise, least squares is the maximum-likelihood estimator, with covariance sigma squared times X transpose X inverse.">$\mathrm{Cov}(\hat\beta) = \sigma^2(X^\top X)^{-1}$</Step>
+
+<Step say="Collinear columns give X transpose X a tiny eigenvalue, so the variance explodes along that direction.">Collinear ⇒ tiny eigenvalue ⇒ huge variance</Step>
+
+<Step say="In the SVD basis, ridge shrinks each direction by d squared over d squared plus lambda. Small singular values shrink most.">Ridge: shrink $u_j$ by $\dfrac{d_j^2}{d_j^2+\lambda}$</Step>
+
+<Step say="Penalties are priors: Gaussian gives ridge, Laplace gives the lasso.">Gaussian prior → ridge · Laplace prior → lasso</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Soft thresholding" say="How do we actually solve the lasso?">
+
+<Step say="Optimality: every active feature has correlation with the residual exactly lambda; every zero feature at most lambda.">KKT: $|x_j^\top r|/n \le \lambda$, $=$ if $\beta_j \ne 0$</Step>
+
+<Step say="One coordinate at a time, the solution is soft thresholding: subtract lambda, and clip to zero.">
+
+$$
+S(z, \lambda) = \mathrm{sign}(z)\max(|z| - \lambda, 0)
+$$
+
+</Step>
+
+<Step say="Cycle through the coordinates, warm-start from large lambda to small, and you have the whole path.">Coordinate descent + warm start = the whole path</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked example: orthonormal design" say="With orthogonal standardized features, each estimator acts coordinate by coordinate. Take z equals three, zero point eight, minus zero point three, and lambda one half.">
+
+<Step say="Ridge divides by one point five: two, zero point five three, minus zero point two.">Ridge $z/(1+\lambda)$: $(2,\ 0.53,\ -0.2)$</Step>
+
+<Step say="The lasso subtracts one half and clips: two point five, zero point three, zero.">Lasso $S(z, \lambda)$: $(2.5,\ 0.3,\ 0)$</Step>
+
+<Step say="Best subset keeps only values above one: three, zero, zero.">Best subset (hard threshold): $(3,\ 0,\ 0)$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="The regularization path" say="In practice we follow the whole path and let cross-validation choose.">
+
+<Step say="Slide lambda. Ridge coefficients shrink smoothly together.">Ridge: all coefficients shrink together</Step>
+
+<Step say="Switch to the lasso: coefficients enter one at a time, and are exactly zero before they do.">Lasso: coefficients enter one by one</Step>
+
+<Step say="The cross-validation curve below marks the recommended lambda.">CV picks $\lambda$ →</Step>
+
+<div slot="visual"><RegPath client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, ridge and lasso coordinate descent from scratch, and RidgeCV and LassoCV in scikit-learn.">
+
+<Step say="After running the code, replay the lasso path and watch the coefficients enter.">✎ 4 derivations · ⌨ lasso coordinate descent · ⚙ RidgeCV + LassoCV</Step>
+
+<Step effect="pop" say="Use the button to start practising.">
+<a class="btn btn-primary btn-xl" href="../../chapters/linear-regression/#s-practice">Start practising →</a>
+</Step>
+
+</Slide>

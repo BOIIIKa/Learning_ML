@@ -52,7 +52,15 @@ function clipLine(w: [number, number], c: number, [x0, x1]: [number, number], [y
       if (x >= x0 - 1e-9 && x <= x1 + 1e-9) pts.push([x, y]);
     }
   }
-  return pts.length >= 2 ? [pts[0], pts[pts.length - 1]] : null;
+  if (pts.length < 2) return null;
+  // Pick the two intersections farthest apart (a line through a corner yields duplicates).
+  let best: [[number, number], [number, number]] = [pts[0], pts[1]];
+  let dmax = -1;
+  for (const a of pts) for (const b of pts) {
+    const d = (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
+    if (d > dmax) { dmax = d; best = [a, b]; }
+  }
+  return best;
 }
 
 export default function Plot2D({
