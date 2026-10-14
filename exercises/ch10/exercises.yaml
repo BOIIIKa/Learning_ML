@@ -1,0 +1,68 @@
+# 第 10 章 聚类 —— 课后练习 / Chapter 10 exercises
+
+derivation:
+  - id: centroid
+    title: {zh: "更新步取均值", en: "The update step takes the mean"}
+    prompt:
+      zh: "一维的一簇有三个点 $x_1, x_2, x_3$。使 $\\sum_i (x_i - c)^2$ 最小的 $c$ 是多少？可用变量：`x1, x2, x3`。"
+      en: "A one-dimensional cluster has three points $x_1, x_2, x_3$. Which $c$ minimizes $\\sum_i (x_i - c)^2$? Variables: `x1, x2, x3`."
+    answer: "(x1 + x2 + x3)/3"
+    vars: {x1: [-3, 3], x2: [-3, 3], x3: [-3, 3]}
+    solution:
+      zh: "对 $c$ 求导：$-2\\sum_i (x_i - c) = 0$，得 $c = \\bar x = (x_1 + x_2 + x_3)/3$；二阶导数为 $2n \\gt 0$，是最小值。这就是 Lloyd 更新步把中心移到簇均值的原因。"
+      en: "Differentiate in $c$: $-2\\sum_i (x_i - c) = 0$ gives $c = \\bar x = (x_1 + x_2 + x_3)/3$; the second derivative is $2n \\gt 0$, so it is a minimum. That is why Lloyd's update moves each centre to its cluster mean."
+
+  - id: decomposition
+    title: {zh: "用错中心的代价", en: "The cost of the wrong centre"}
+    prompt:
+      zh: "一簇有 $n$ 个点、均值为 $m$。用中心 $c$ 而不是 $m$ 时，$\\sum_i (x_i - c)^2$ 比 $\\sum_i (x_i - m)^2$ 多出多少？可用变量：`n, m, c`。"
+      en: "A cluster has $n$ points with mean $m$. Using the centre $c$ instead of $m$, how much larger is $\\sum_i (x_i - c)^2$ than $\\sum_i (x_i - m)^2$? Variables: `n, m, c`."
+    answer: "n*(m - c)^2"
+    vars: {n: [1, 20], m: [-3, 3], c: [-3, 3]}
+    solution:
+      zh: "$\\sum_i (x_i - c)^2 = \\sum_i (x_i - m + m - c)^2 = \\sum_i (x_i - m)^2 + 2(m - c)\\sum_i (x_i - m) + n(m - c)^2$，中间项为 0（$\\sum_i (x_i - m) = 0$）。所以多出 $n(m - c)^2 \\ge 0$：更新步至少把目标降低这么多，这是 Lloyd 单调性证明的一半。"
+      en: "$\\sum_i (x_i - c)^2 = \\sum_i (x_i - m + m - c)^2 = \\sum_i (x_i - m)^2 + 2(m - c)\\sum_i (x_i - m) + n(m - c)^2$, and the middle term is 0 since $\\sum_i (x_i - m) = 0$. The excess is $n(m - c)^2 \\ge 0$: the update step lowers the objective by at least this much, half of the proof that Lloyd never goes uphill."
+
+  - id: kmeanspp
+    title: {zh: "k-means++ 的抽样概率", en: "k-means++ sampling probability"}
+    prompt:
+      zh: "三个候选点到已选中心的最近距离分别为 $d_1, d_2, d_3$。k-means++ 选中第 1 个点的概率是多少？可用变量：`d1, d2, d3`。"
+      en: "Three candidate points are at distances $d_1, d_2, d_3$ from their nearest chosen centre. With what probability does k-means++ pick point 1? Variables: `d1, d2, d3`."
+    answer: "d1^2/(d1^2 + d2^2 + d3^2)"
+    vars: {d1: [0.1, 3], d2: [0.1, 3], d3: [0.1, 3]}
+    solution:
+      zh: "k-means++ 以 $D(x)^2$ 为权重抽样：$P = d_1^2/(d_1^2 + d_2^2 + d_3^2)$。用平方而不是距离本身，让远处的点更占优势，中心因此分散；已被选为中心的点 $D = 0$，不会被重复选中。Arthur 与 Vassilvitskii 证明这样的初始化在期望上是 $O(\\log K)$ 近似。"
+      en: "k-means++ samples with weight $D(x)^2$: $P = d_1^2/(d_1^2 + d_2^2 + d_3^2)$. Squaring rather than using the distance itself favours far points more, so the centres spread out; points already chosen have $D = 0$ and are never picked twice. Arthur and Vassilvitskii proved this seeding is an $O(\\log K)$ approximation in expectation."
+
+  - id: silhouette
+    title: {zh: "轮廓系数", en: "Silhouette"}
+    prompt:
+      zh: "某点到本簇其他点的平均距离为 $a$，到最近的其他簇的平均距离为 $b$。写出它的轮廓系数。可用变量：`a, b`（可以用 `max`）。"
+      en: "A point's mean distance to the rest of its cluster is $a$ and to the nearest other cluster $b$. Write its silhouette. Variables: `a, b` (you may use `max`)."
+    answer: "(b - a)/max(a, b)"
+    vars: {a: [0.1, 3], b: [0.1, 3]}
+    solution:
+      zh: "$s = \\frac{b - a}{\\max(a, b)} \\in [-1, 1]$。$a \\ll b$ 时接近 1（分得好），$a \\approx b$ 时接近 0（在两簇边界上），$a \\gt b$ 时为负（可能分错了）。对所有点取平均就是组件里的曲线；它在真实簇数 3 处最高。"
+      en: "$s = \\frac{b - a}{\\max(a, b)} \\in [-1, 1]$. It is close to 1 when $a \\ll b$ (well clustered), near 0 when $a \\approx b$ (on the border between two clusters), and negative when $a \\gt b$ (probably in the wrong cluster). Averaging over points gives the widget's curve, which peaks at the true 3 clusters."
+
+code:
+  - id: kmeans
+    kind: implement
+    file: kmeans.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现 k 均值与 k-means++", en: "k-means and k-means++ from scratch"}
+    intro:
+      zh: "补全分配、更新和 k-means++ 的 D² 抽样。检查会重现讲义例题（收敛到 7/3 与 9），验证目标单调不增，并与 scikit-learn 的最优目标值对拍。运行后可以回放 k = 2 时两个中心从糟糕起点出发、边界（两中心的垂直平分线）一步步移到正确位置的过程。"
+      en: "Fill in the assignment, the update and k-means++'s D² sampling. The checks reproduce the worked example (convergence to 7/3 and 9), verify that the objective never increases, and match scikit-learn's best objective. Afterwards, replay how, with k = 2, two badly placed centres move and the boundary (their perpendicular bisector) slides into place."
+    metrics:
+      - {key: wcss, label: {zh: "簇内平方和", en: "Within-cluster SS"}}
+  - id: cluster-library
+    kind: library
+    file: cluster_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 scikit-learn 聚类葡萄酒", en: "Cluster wines with scikit-learn"}
+    intro:
+      zh: "在葡萄酒数据上：先体会标准化对聚类的巨大影响，再用轮廓系数选 k，最后比较四种链接的层次聚类与真实品种的一致程度（ARI）。运行后可以看到两簇之间有一座“桥”时，单链接怎样被链式效应拖垮。"
+      en: "On the wine data: first see how much standardization changes a clustering, then choose k by silhouette, and finally compare four linkages of hierarchical clustering with the true cultivars (ARI). Afterwards, watch single linkage get dragged down by chaining when a bridge connects two groups."
+    metrics:
+      - {key: ari, label: {zh: "调整兰德指数", en: "Adjusted Rand index"}}

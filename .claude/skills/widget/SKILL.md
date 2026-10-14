@@ -51,6 +51,8 @@ Both plots draw a CAD crosshair with coordinates on hover and "draw in" their cu
    - Round generated data with `r6()`; use seeded `rng(seed)`, never `Math.random()` in render.
    - Never put a multi-value `style` (e.g. `backgroundSize: "a, b"`) or CSS custom properties in SSR
      style props — set them in `useEffect` via a ref.
+   - Don't use `<table>` inside a widget: the notes page decorates tables after load (adds a class),
+     which breaks hydration. Lay matrices out with CSS grid `div`s.
    - Don't mutate island DOM before hydration (the course's animations use the Web Animations API
      and CSS for exactly this reason).
 2. **Colours only from CSS variables**: `var(--accent)`, `--accent-2`, `--accent-3`, `--ink`,

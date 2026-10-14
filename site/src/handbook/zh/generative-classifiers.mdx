@@ -1,0 +1,41 @@
+---
+title: "生成式分类实战：LDA、QDA 与朴素贝叶斯"
+summary: "什么时候先试 LDA 或朴素贝叶斯、各个类的参数名、文本分类的标准管道，以及概率校准。"
+chapters: ["05"]
+---
+
+### 常用代码
+
+```python
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_score
+
+lda = LinearDiscriminantAnalysis(solver="lsqr", shrinkage="auto")   # 收缩协方差，p 接近 n 时也稳
+qda = QuadraticDiscriminantAnalysis(reg_param=0.1)                   # 向单位阵收缩
+text = make_pipeline(CountVectorizer(min_df=2), MultinomialNB(alpha=1.0))
+print(cross_val_score(lda, X, y, cv=5).mean())
+```
+
+### 什么时候先试它们
+
+- **样本少、特征适中**：LDA 往往和逻辑回归一样好，而且是闭式解、没有超参数。`shrinkage="auto"`（Ledoit–Wolf）几乎总是值得开。
+- **文本、计数特征、特征极多**：多项式朴素贝叶斯是几秒钟就能跑完的强基线；先用它确定“及格线”，再上更复杂的模型。
+- **各类形状明显不同**（例如一类很分散、一类很集中）：试 QDA，并用 `reg_param` 防止协方差奇异。
+
+### 容易踩的坑
+
+- **`alpha` 不能为 0**：MultinomialNB/BernoulliNB 的 `alpha` 就是拉普拉斯平滑；设为 0 会重现零概率问题。
+- **GaussianNB 的 `var_smoothing`**：给每个方差加上最大方差的一个小比例，防止某个特征在某类里方差为 0。
+- **先验**：`priors=`（LDA、QDA、GaussianNB）或 `class_prior=`（MultinomialNB）可以直接换先验；部署到复查率不同的医院时，比重新训练更合适。
+- **概率不可信**：朴素贝叶斯的 `predict_proba` 常常接近 0 或 1。需要概率时用 `CalibratedClassifierCV` 校准。
+- **LDA 也能降维**：`LinearDiscriminantAnalysis(n_components=K-1).fit_transform(X, y)` 得到有监督的低维投影，适合画图。
+
+### 前沿阅读
+
+- Ng 与 Jordan（2001）：判别式与生成式分类器的比较——学习曲线交叉的经典论文。
+- Friedman（1989）：正则化判别分析，在 LDA 与 QDA 之间连续插值。
+- Ledoit 与 Wolf（2004）：大维协方差矩阵的收缩估计，sklearn 中 `shrinkage="auto"` 的来源。
+- Rennie 等（2003）：修补朴素贝叶斯在文本分类中的几个系统性偏差（补集朴素贝叶斯，sklearn 中的 `ComplementNB`）。

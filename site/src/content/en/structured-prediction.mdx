@@ -1,0 +1,152 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import Trellis from "../../components/chapters/ch09/Trellis";
+import BaumWelchFit from "../../components/chapters/ch09/BaumWelchFit";
+import HmmVsCrf from "../../components/chapters/ch09/HmmVsCrf";
+
+<Section lang="en" k="scenario">
+
+Every chapter so far predicted one $y$ from one $x$. But a hospitalized patient's condition is not independent from day to day: worse yesterday, probably still worse today. The condition itself is hidden; each day the doctors only get a test result, normal or abnormal. The question becomes about **a whole sequence**:
+
+<Trellis client:visible lang="en" />
+
+When the output is a sequence (or a tree, or a graph) whose parts depend on each other, we are doing **structured prediction**. This chapter answers three questions:
+
+1. How likely is a sequence of test results? (**Evaluation**: the forward–backward algorithm.)
+2. What is the most likely sequence of conditions? (**Decoding**: the Viterbi algorithm.)
+3. With test results but no condition labels, how can we learn the model's parameters? (**Learning**: the Baum–Welch algorithm.)
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Hidden Markov models
+
+<Box kind="definition" title="Hidden Markov model (HMM)">
+
+**Model**: hidden states $s_1, \dots, s_T$ take one of $N$ values and observations $o_1, \dots, o_T$ one of $M$ symbols. The parameters $\lambda = (\pi, A, B)$ are the initial distribution $\pi_i = P(s_1 = i)$, the transition matrix $A_{ij} = P(s_{t+1} = j \mid s_t = i)$ and the emission matrix $B_j(o) = P(o_t = o \mid s_t = j)$. Two assumptions:
+
+- **Homogeneous Markov property**: $s_{t+1}$ depends only on $s_t$;
+- **Observation independence**: $o_t$ depends only on $s_t$.
+
+The joint distribution is therefore
+
+$$
+P(o, s \mid \lambda) = \pi_{s_1}B_{s_1}(o_1)\prod_{t=2}^T A_{s_{t-1}s_t}B_{s_t}(o_t).
+$$
+
+**Strategy**: maximum likelihood (learning), maximum posterior (decoding). **Algorithms**: forward–backward, Viterbi, Baum–Welch (EM).
+
+</Box>
+
+This chapter's example has states $\{$stable, worse$\}$, observations $\{$normal, abnormal$\}$, $\pi = (0.6, 0.4)$ and
+
+$$
+A = \begin{pmatrix} 0.7 & 0.3 \\ 0.4 & 0.6 \end{pmatrix}, \qquad B = \begin{pmatrix} 0.9 & 0.1 \\ 0.2 & 0.8 \end{pmatrix}.
+$$
+
+### The three basic problems
+
+- **Evaluation**: $P(o \mid \lambda) = \sum_s P(o, s \mid \lambda)$. The direct sum has $N^T$ terms; the **forward algorithm** needs only $O(TN^2)$ by dynamic programming.
+- **Decoding**: $\arg\max_s P(s \mid o, \lambda)$. The **Viterbi algorithm** replaces the forward algorithm's sum by a max and reads the path off the back-pointers.
+- **Learning**: with observations but no states, maximize $P(o \mid \lambda)$. **Baum–Welch** is an EM algorithm: forward–backward gives state posteriors to use as soft counts, which are then counted as if they were labels.
+
+<BaumWelchFit client:visible lang="en" />
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Forward and backward recursions
+
+Define the **forward variable** $\alpha_t(i) = P(o_1, \dots, o_t, s_t = i)$. Start from $\alpha_1(i) = \pi_i B_i(o_1)$ and condition on yesterday's state:
+
+$$
+\alpha_{t+1}(j) = \Big[\sum_{i=1}^N \alpha_t(i)A_{ij}\Big]B_j(o_{t+1}), \qquad P(o \mid \lambda) = \sum_i \alpha_T(i).
+$$
+
+Each step does an $N$-term sum for each of the $N$ values of $j$, for a total cost of $O(TN^2)$ (derivation exercise 4). Symmetrically, the **backward variable** $\beta_t(i) = P(o_{t+1}, \dots, o_T \mid s_t = i)$ has $\beta_T(i) = 1$ and
+
+$$
+\beta_t(i) = \sum_{j=1}^N A_{ij}B_j(o_{t+1})\beta_{t+1}(j).
+$$
+
+Their product gives the **state posteriors** (derivation exercise 2):
+
+$$
+\gamma_t(i) = P(s_t = i \mid o) = \frac{\alpha_t(i)\beta_t(i)}{\sum_j \alpha_t(j)\beta_t(j)}, \qquad \xi_t(i, j) = \frac{\alpha_t(i)A_{ij}B_j(o_{t+1})\beta_{t+1}(j)}{P(o \mid \lambda)}.
+$$
+
+On long sequences $\alpha$ shrinks exponentially; implementations normalize $\alpha_t$ at every step and keep the scaling factors $c_t$, with $\log P(o) = \sum_t \log c_t$.
+
+### The Viterbi algorithm
+
+Let $\delta_t(j)$ be the probability of the most probable path that reaches state $j$ at time $t$:
+
+$$
+\delta_{t+1}(j) = \max_i\big[\delta_t(i)A_{ij}\big]B_j(o_{t+1}), \qquad \psi_{t+1}(j) = \arg\max_i \delta_t(i)A_{ij}
+$$
+
+(derivation exercise 3). At the end take $s_T^* = \arg\max_i \delta_T(i)$ and backtrack with $s_t^* = \psi_{t+1}(s_{t+1}^*)$. Correctness rests on **optimal substructure**: every prefix of an optimal path is itself an optimal path to its endpoint.
+
+### Baum–Welch is a special case of EM
+
+Treat the state sequence as missing data. EM's E-step takes the expectation of the complete-data log-likelihood under the posterior. For an HMM the complete-data likelihood is made of counts, so the expectation simply replaces counts by their posterior expectations $\gamma$ and $\xi$. The M-step has the closed form
+
+$$
+\hat\pi_i = \gamma_1(i), \qquad \hat A_{ij} = \frac{\sum_{t=1}^{T-1}\xi_t(i, j)}{\sum_{t=1}^{T-1}\gamma_t(i)}, \qquad \hat B_j(o) = \frac{\sum_{t:\,o_t = o}\gamma_t(j)}{\sum_t \gamma_t(j)}.
+$$
+
+EM never decreases the likelihood (proved in Chapter 11) but only reaches a local maximum, so the starting point matters.
+
+### From HMMs to conditional random fields
+
+An HMM is **generative**: it models $P(o, s)$, every factor is a normalized conditional probability, and an observation can only influence the model through the current state. A **linear-chain conditional random field (CRF)** models the conditional distribution directly:
+
+$$
+P(y \mid x) = \frac{1}{Z(x)}\exp\Big(\sum_{t}\sum_k w_k f_k(y_{t-1}, y_t, x, t)\Big), \qquad Z(x) = \sum_{y}\exp\Big(\sum_{t}\sum_k w_k f_k(y_{t-1}, y_t, x, t)\Big).
+$$
+
+The feature functions $f_k$ may look at the whole observation sequence $x$ (test results of nearby days, prefixes and suffixes of words) and need not be probabilities. It is exactly the form of Chapter 04's maximum-entropy model, with $y$ now a chain.
+
+<HmmVsCrf client:visible lang="en" />
+
+<Box kind="theorem" title="A CRF's partition function is cheap to compute">
+
+$Z(x)$ sums over $N^T$ label sequences, but because the scores only couple neighbouring labels, the same recursion as the forward algorithm (in log space: products become sums, sums become log-sum-exp) computes it in $O(TN^2)$. Training maximizes the conditional log-likelihood $\sum \log P(y \mid x)$, which is concave in $w$; its gradient is "empirical feature expectation minus model expectation", and the model expectation comes from forward–backward. Decoding is still Viterbi.
+
+</Box>
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: three days of test results
+
+<Box kind="example" title="Forward probabilities and the Viterbi path">
+
+Observations $o = ($normal, abnormal, abnormal$)$ with the model above.
+
+**Forward**:
+
+- $\alpha_1 = (0.6 \times 0.9,\ 0.4 \times 0.2) = (0.54,\ 0.08)$;
+- $\alpha_2(\text{stable}) = (0.54 \times 0.7 + 0.08 \times 0.4) \times 0.1 = 0.041$ and $\alpha_2(\text{worse}) = (0.54 \times 0.3 + 0.08 \times 0.6) \times 0.8 = 0.168$;
+- $\alpha_3 = (0.00959,\ 0.09048)$, so $P(o) = 0.10007$.
+
+**Viterbi**:
+
+- $\delta_1 = (0.54,\ 0.08)$;
+- $\delta_2(\text{stable}) = \max(0.378,\ 0.032) \times 0.1 = 0.0378$ and $\delta_2(\text{worse}) = \max(0.162,\ 0.048) \times 0.8 = 0.1296$; both back-pointers point to "stable";
+- $\delta_3 = (0.005184,\ 0.062208)$; both back-pointers point to "worse".
+
+The larger endpoint is $\delta_3(\text{worse}) = 0.062208$, and backtracking gives the most likely conditions: **stable → worse → worse**. That path carries only about 62% of the total probability ($0.062208/0.10007$); the rest is spread over the other seven paths.
+
+</Box>
+
+### Extensions
+
+- **Position-wise vs global decoding**: taking the most likely state of each day from $\gamma_t$ is optimal day by day, but the resulting sequence may have probability 0 (for example, if it contains a forbidden transition); Viterbi gives the most likely sequence as a whole. Choose the decoder that matches the task's loss.
+- **From CRFs to neural sequence models**: BiLSTM-CRF and Transformer + CRF compute the per-position scores $U_t(y)$ with a neural network and put a linear-chain CRF on top; this was long the standard recipe for named-entity recognition.
+- **State-space models**: the linear-Gaussian version of an HMM is the Kalman filter. Recent models such as S4 and Mamba handle long sequences with linear recurrences and parallel scans, a computation of the same family as the forward algorithm (Chapter 20).
+
+</Section>

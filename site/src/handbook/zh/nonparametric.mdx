@@ -1,0 +1,44 @@
+---
+title: "非参数方法实战：kNN、样条与 GAM"
+summary: "kNN 必须先缩放、怎样选 k、什么时候换近似最近邻，以及用样条展开做可加模型。"
+chapters: ["06"]
+---
+
+### 常用代码
+
+```python
+import numpy as np
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler, SplineTransformer
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import RidgeCV
+from sklearn.model_selection import GridSearchCV
+
+knn = GridSearchCV(make_pipeline(StandardScaler(), KNeighborsClassifier()),
+                   {"kneighborsclassifier__n_neighbors": range(1, 52, 2),
+                    "kneighborsclassifier__weights": ["uniform", "distance"]}, cv=5).fit(X, y)
+gam = make_pipeline(SplineTransformer(n_knots=6, degree=3), RidgeCV(np.logspace(-3, 3, 13))).fit(X, y)
+```
+
+### kNN 的坑
+
+- **不缩放就没意义**：距离由单位最大的特征主导。永远放 `StandardScaler`（或按领域知识加权）。
+- **类别特征**：独热编码后欧氏距离很别扭，考虑 Gower 距离或干脆换模型。
+- **`algorithm`**：sklearn 自动在 `kd_tree`、`ball_tree`、`brute` 间选择；维数超过约 20 时树结构几乎没有优势。大规模检索用 FAISS、HNSW 等近似最近邻库。
+- **预测慢、内存大**：kNN 要存下全部训练数据，预测时才计算。线上服务要考虑这一点。
+- **k 用交叉验证选**，通常在 $\sqrt n$ 附近起步；类别不平衡时用 `weights="distance"` 或调整决策阈值。
+
+### 样条与 GAM
+
+- `SplineTransformer` 对每个特征单独做 B 样条展开，接一个线性模型就是可加模型；`n_knots` 控制每条曲线的灵活度，岭惩罚控制整体光滑度。
+- 想要特征之间的交互，加 `PolynomialFeatures(interaction_only=True)` 或者换树模型（第 08 章）。
+- 外推要小心：样条在训练范围之外按多项式延伸（`extrapolation="linear"` 更稳）。
+- 专门的 GAM 库（pyGAM、R 的 mgcv）用平滑惩罚和 REML 自动选光滑度，还能给出置信带。
+
+### 前沿阅读
+
+- Cover 与 Hart（1967）：最近邻分类器的渐近误差界。
+- Beyer 等（1999）：“最近邻什么时候有意义？”——高维下距离失去区分度。
+- Malkov 与 Yashunin（2018）：HNSW，向量数据库最常用的近似最近邻索引。
+- Hastie 与 Tibshirani（1986）：广义可加模型；Wood（2017）的教材是 mgcv 的系统介绍。
+- Agarwal 等（2021）：神经可加模型（NAM），把 GAM 的可解释性带进深度学习。

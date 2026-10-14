@@ -1,0 +1,15 @@
+/* Chapter 05 widgets. Colours only from the theme variables. */
+.gb-legend { margin-left: auto; font-size: 0.76rem; color: var(--text-muted); align-self: center; }
+.gb-ell path { fill: none; stroke-width: 1.4; stroke-dasharray: 5 4; }
+.gb-ell .pos { stroke: var(--class-pos); }
+.gb-ell .neg { stroke: var(--class-neg); }
+.nb-lab { font-size: 0.8rem; color: var(--text-muted); align-self: center; }
+.nb-svg { margin-top: 0.4rem; }
+.nb-head { font: 600 12px var(--font); }
+.nb-head.pos { fill: var(--class-pos); }
+.nb-head.neg { fill: var(--class-neg); }
+.nb-bar { stroke-width: 1.2; transition: y 0.25s ease, height 0.25s ease; }
+.nb-bar.pos { fill: color-mix(in srgb, var(--class-pos) 60%, transparent); stroke: var(--class-pos); }
+.nb-bar.neg { fill: color-mix(in srgb, var(--class-neg) 60%, transparent); stroke: var(--class-neg); }
+.gv-nb { color: var(--accent); }
+.gv-lr { color: var(--accent-2); }

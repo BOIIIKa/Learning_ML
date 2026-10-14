@@ -1,0 +1,22 @@
+/* Chapter 13 widgets. Colours only from the theme variables. */
+.mh-svg, .pg-svg { margin-top: 0.3rem; }
+.mh-heat { fill: var(--accent-2); }
+.mh-path { fill: none; stroke: var(--accent); stroke-width: 0.8; opacity: 0.75; }
+.mh-head { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+.pg-edge { stroke: var(--text-muted); stroke-width: 1.4; }
+.pg-head { fill: var(--text-muted); }
+.pg-node { fill: color-mix(in srgb, var(--accent-2) 45%, var(--surface)); stroke: var(--accent-2); stroke-width: 1.5; transition: r 0.3s; }
+.pg-node.top { fill: color-mix(in srgb, var(--accent) 55%, var(--surface)); stroke: var(--accent); }
+.pg-ring { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.pg-lab { fill: var(--ink); font: 700 13px var(--mono); }
+.pg-val { fill: var(--text-muted); font: 10px var(--mono); }
+.lda-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; margin: 0.4rem 0; }
+.lda-cap { font: 700 12px var(--font); fill: var(--ink); }
+.lda-bar.med { fill: var(--class-pos); }
+.lda-bar.fin { fill: var(--accent-2); }
+.lda-word { fill: var(--text-muted); font: 9px var(--font); }
+.lda-docs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0.3rem 0; }
+.lda-docs-cap { font-size: 0.78rem; color: var(--text-muted); margin-right: 0.4rem; }
+.lda-doc { width: 40px; height: 12px; background: var(--accent-2); position: relative; border: 1px solid var(--border); }
+.lda-doc-a { position: absolute; left: 0; top: 0; bottom: 0; background: var(--class-pos); }
+@media (max-width: 560px) { .lda-row { grid-template-columns: minmax(0, 1fr); } }

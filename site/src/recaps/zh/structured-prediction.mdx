@@ -1,0 +1,7 @@
+- **HMM**：$\lambda = (\pi, A, B)$；齐次马尔可夫性 + 观测独立性；$P(o, s) = \pi_{s_1}B_{s_1}(o_1)\prod_t A_{s_{t-1}s_t}B_{s_t}(o_t)$。三个问题：概率计算、解码、学习。
+- **前向**：$\alpha_{t+1}(j) = [\sum_i \alpha_t(i)A_{ij}]B_j(o_{t+1})$，$P(o) = \sum_i \alpha_T(i)$；代价 $O(TN^2)$ 而非 $N^T$。长序列要逐步缩放。
+- **后向与后验**：$\beta_t(i) = \sum_j A_{ij}B_j(o_{t+1})\beta_{t+1}(j)$；$\gamma_t(i) \propto \alpha_t(i)\beta_t(i)$，$\xi_t(i,j) \propto \alpha_t(i)A_{ij}B_j(o_{t+1})\beta_{t+1}(j)$。
+- **维特比**：把求和换成取最大，$\delta_{t+1}(j) = \max_i[\delta_t(i)A_{ij}]B_j(o_{t+1})$，记回溯指针；最优子结构保证正确。
+- **Baum–Welch = EM**：E 步算 $\gamma$、$\xi$（软计数），M 步 $\hat A_{ij} = \sum\xi_{ij}/\sum\gamma_i$ 等；似然单调不降，只到局部极大。
+- **例题**：$o = ($正常, 异常, 异常$)$：$\alpha_3 = (0.00959, 0.09048)$，$P(o) = 0.10007$；维特比路径 稳定 → 恶化 → 恶化，概率 $0.062208$。
+- **线性链 CRF**：$P(y\mid x) = \exp(\sum_t w\cdot f(y_{t-1}, y_t, x, t))/Z(x)$，判别式、特征可看整个 $x$；$Z(x)$ 用前向递推（log-sum-exp）$O(TN^2)$；条件对数似然是凹的。HMM 对 CRF ≈ 朴素贝叶斯对逻辑回归。

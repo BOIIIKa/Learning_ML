@@ -1,0 +1,68 @@
+# 第 13 章 马尔可夫链方法：MCMC、PageRank 与主题模型 —— 课后练习 / Chapter 13 exercises
+
+derivation:
+  - id: mh-accept
+    title: {zh: "一次 Metropolis 接受率", en: "One Metropolis acceptance probability"}
+    prompt:
+      zh: "目标是 $\\mathcal N(0, s^2)$，当前位置 $x$，对称提议到离中心更远的 $y$（$|y| \\gt |x|$）。接受率是多少？可用变量：`x, y, s`。"
+      en: "The target is $\\mathcal N(0, s^2)$, the current position is $x$, and a symmetric proposal moves to $y$, farther from the centre ($|y| \\gt |x|$). What is the acceptance probability? Variables: `x, y, s`."
+    answer: "exp((x^2 - y^2)/(2*s^2))"
+    vars: {x: [0, 1], y: [1.2, 3], s: [0.5, 2]}
+    solution:
+      zh: "对称提议时 $q$ 约掉，$\\alpha = \\min(1, \\pi(y)/\\pi(x))$。归一化常数也约掉：$\\pi(y)/\\pi(x) = e^{-y^2/(2s^2)}/e^{-x^2/(2s^2)} = e^{(x^2 - y^2)/(2s^2)}$，因为 $|y| \\gt |x|$ 它小于 1。例题 $x = 0, y = 1, s = 1$ 得 $e^{-1/2} \\approx 0.607$。"
+      en: "With a symmetric proposal the $q$'s cancel, so $\\alpha = \\min(1, \\pi(y)/\\pi(x))$. The normalizing constant cancels too: $\\pi(y)/\\pi(x) = e^{-y^2/(2s^2)}/e^{-x^2/(2s^2)} = e^{(x^2 - y^2)/(2s^2)}$, which is below 1 because $|y| \\gt |x|$. The worked example $x = 0, y = 1, s = 1$ gives $e^{-1/2} \\approx 0.607$."
+
+  - id: two-state
+    title: {zh: "两状态链的平稳分布", en: "Stationary distribution of a two-state chain"}
+    prompt:
+      zh: "两状态链：从状态 1 以概率 $a$ 跳到状态 2，从状态 2 以概率 $b$ 跳回状态 1。平稳时处于状态 1 的概率是多少？可用变量：`a, b`。"
+      en: "A two-state chain jumps from state 1 to state 2 with probability $a$, and from state 2 back to state 1 with probability $b$. What is the stationary probability of state 1? Variables: `a, b`."
+    answer: "b/(a + b)"
+    vars: {a: [0.05, 0.95], b: [0.05, 0.95]}
+    solution:
+      zh: "两状态链总满足细致平衡：$\\pi_1 a = \\pi_2 b$。配合 $\\pi_1 + \\pi_2 = 1$ 得 $\\pi_1 = b/(a + b)$。直觉：离开状态 1 越容易（$a$ 大），在那里待得越少。这也是 M–H 设计的出发点——先写下想要的 $\\pi$，再让来回的流量相等。"
+      en: "A two-state chain always satisfies detailed balance: $\\pi_1 a = \\pi_2 b$. Together with $\\pi_1 + \\pi_2 = 1$ this gives $\\pi_1 = b/(a + b)$. Intuitively, the easier it is to leave state 1 (large $a$), the less time is spent there. This is the starting point of M–H: write down the $\\pi$ you want, then make the flows in both directions equal."
+
+  - id: no-inlinks
+    title: {zh: "没人链向的网页", en: "A page nobody links to"}
+    prompt:
+      zh: "共有 $n$ 个网页，阻尼系数 $d$。某个网页没有任何入链。它的 PageRank 是多少？可用变量：`n, d`。"
+      en: "There are $n$ pages and the damping is $d$. One page has no in-links at all. What is its PageRank? Variables: `n, d`."
+    answer: "(1 - d)/n"
+    vars: {n: [3, 50], d: [0.5, 0.95]}
+    solution:
+      zh: "$r_i = \\frac{1 - d}{n} + d\\sum_{j \\to i} r_j/\\mathrm{out}(j)$，没有入链时求和为空，只剩随机跳转的份额 $(1 - d)/n$。这也是所有页面 PageRank 的下界，阻尼保证了每个页面都有正的概率，链不可约。（假设没有悬挂页面；悬挂页面会把自己的份额均分给所有页面，包括这一页。）"
+      en: "$r_i = \\frac{1 - d}{n} + d\\sum_{j \\to i} r_j/\\mathrm{out}(j)$; with no in-links the sum is empty and only the random-jump share $(1 - d)/n$ is left. It is also a lower bound on every page's PageRank: damping gives every page positive probability and makes the chain irreducible. (This assumes no dangling pages, which spread their share over all pages, this one included.)"
+
+  - id: gibbs-var
+    title: {zh: "吉布斯的条件方差", en: "The Gibbs conditional variance"}
+    prompt:
+      zh: "$(x, y)$ 服从标准二元正态，相关系数 $r$。吉布斯采样每次从 $x \\mid y$ 中抽 $x$。这个条件分布的方差是多少？可用变量：`r`。"
+      en: "$(x, y)$ is standard bivariate normal with correlation $r$. Gibbs sampling draws $x$ from $x \\mid y$. What is the variance of this conditional? Variables: `r`."
+    answer: "1 - r^2"
+    vars: {r: [-0.95, 0.95]}
+    solution:
+      zh: "高斯条件分布：$x \\mid y \\sim \\mathcal N(r y,\\ 1 - r^2)$。$|r|$ 接近 1 时每步只能挪 $\\sqrt{1 - r^2}$ 这么远，而目标沿对角线的长度是 $\\sqrt{1 + |r|}$ 量级——坐标轮换的吉布斯在强相关时混合很慢，和步长过小的 Metropolis 一样。重新参数化或成块更新可以解决。"
+      en: "The Gaussian conditional is $x \\mid y \\sim \\mathcal N(r y,\\ 1 - r^2)$. As $|r| \\to 1$ each move covers only about $\\sqrt{1 - r^2}$, while the target stretches $\\sqrt{1 + |r|}$ along the diagonal: coordinate-wise Gibbs mixes slowly under strong correlation, just like Metropolis with too small a step. Reparametrizing or updating in blocks fixes it."
+
+code:
+  - id: mcmc
+    kind: implement
+    file: mcmc.py
+    packages: [numpy]
+    title: {zh: "从零实现 Metropolis、PageRank 与 LDA 吉布斯采样", en: "Metropolis, PageRank and LDA Gibbs sampling from scratch"}
+    intro:
+      zh: "补全 Metropolis 的接受步骤、PageRank 的一次幂迭代和 LDA 的塌缩吉布斯条件分布。检查会确认链从 N(0, 1) 中抽样、步长与接受率的权衡、PageRank 例题的 (686, 380, 703)/1769 与悬挂页面的处理，以及 LDA 在无标签语料上把医疗词和金融词分开。运行后可以回放你的链怎样从一个峰走到另一个峰。"
+      en: "Fill in the Metropolis accept step, one power-iteration step of PageRank and the collapsed Gibbs conditional of LDA. The checks confirm that the chain samples N(0, 1), the step-size versus acceptance trade-off, the worked example's (686, 380, 703)/1769 and dangling pages, and that LDA separates the medical and financial words of an unlabelled corpus. Afterwards, replay your chain finding its way from one bump to the other."
+    metrics:
+      - {key: acc, label: {zh: "接受率", en: "Acceptance rate"}}
+  - id: mcmc-library
+    kind: library
+    file: mcmc_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "LDA、PageRank 与贝叶斯逻辑回归", en: "LDA, PageRank and Bayesian logistic regression"}
+    intro:
+      zh: "用 scikit-learn 的 LatentDirichletAllocation 在一个小语料上找出两个话题并列出高频词；把 PageRank 写成 numpy 特征值问题；再写出逻辑回归的对数后验，交给现成的 Metropolis 采样器。运行后可以看到从后验里抽出的一条条分类边界——它们的散布就是模型的不确定性。"
+      en: "Find two topics in a tiny corpus with scikit-learn's LatentDirichletAllocation and list their top words; write PageRank as a numpy eigenproblem; then write the log posterior of logistic regression and hand it to a ready-made Metropolis sampler. Afterwards, see decision boundaries drawn from the posterior: their spread is the model's uncertainty."
+    metrics:
+      - {key: acc, label: {zh: "训练准确率", en: "Training accuracy"}}

@@ -1,0 +1,180 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import MhSampler from "../../components/chapters/ch13/MhSampler";
+import PageRankSurfer from "../../components/chapters/ch13/PageRankSurfer";
+import LdaTopics from "../../components/chapters/ch13/LdaTopics";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 13 · Animated course" title="Markov Chain Methods: MCMC, PageRank and Topic Models" say="When a distribution cannot be integrated, sample from it instead. The sampling tool is a carefully designed Markov chain.">
+
+Random walks · Detailed balance · Ranking pages · Topics
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Can't integrate? Sample" say="We only know the posterior up to a constant. Let a chain wander over it.">
+
+<Step drive="s1=-0.25/0.6; s2=0/0.6; s2=100%/6" say="Each step proposes a random new position. If the density goes up, accept; if it goes down, accept with probability equal to the density ratio. Starting at the top left, the chain works its way into the two bumps.">Propose → accept by density ratio → drift into high density</Step>
+
+<Step drive="s1=-1.5/3" say="A tiny step: nearly every move is accepted, but the chain crawls and consecutive samples are almost identical.">Too small: high acceptance, high correlation</Step>
+
+<Step drive="s1=1/3" say="A huge step: proposals land where there is nothing, nearly all are rejected, and the chain stands still.">Too large: nearly everything rejected</Step>
+
+<Step drive="s1=-0.1/2" say="A moderate step, with acceptance between twenty and fifty percent, explores both bumps.">Moderate step: fastest mixing</Step>
+
+<div slot="visual"><MhSampler client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions for this chapter" say="Three questions.">
+
+<Step effect="focus" say="First: how do we make a chain end up in exactly the distribution we want?">
+<p class="big-q sm">How does a chain end up exactly at the target?</p>
+</Step>
+
+<Step say="Second: what does the importance of a web page have to do with Markov chains?">Page rank = stationary distribution?</Step>
+
+<Step say="Third: how do we find topics in documents without labels?">Topics in unlabelled documents</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Markov chains and stationary distributions" say="First, a reminder about Markov chains.">
+
+<Step say="The next step depends only on the current state, described by a transition matrix P.">$P(X_{t+1} = j \mid X_t = i) = P_{ij}$</Step>
+
+<Step say="A distribution pi that P leaves unchanged is stationary.">Stationary: $\pi^\top P = \pi^\top$</Step>
+
+<Step say="If the chain is irreducible and aperiodic, pi is unique, the chain converges to it from anywhere, and time averages converge to expectations.">Irreducible + aperiodic ⇒ unique, convergent, $\frac1T\sum f(X_t) \to \mathbb E_\pi f$</Step>
+
+<Step effect="focus" say="MCMC runs this backwards: fix pi first, then build a chain with pi as its stationary distribution.">
+<p class="big-q sm">Fix π first, then build the chain</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Detailed balance ⇒ stationarity" say="How do we guarantee that pi is stationary? A sufficient condition.">
+
+<Morph>
+
+<Step effect="morph" say="Detailed balance: between any two states, the probability flow is the same both ways.">
+
+$$
+\pi(x)\,T(x \to x') = \pi(x')\,T(x' \to x)
+$$
+
+</Step>
+
+<Step effect="morph" say="Sum both sides over x.">
+
+$$
+\sum_x \pi(x)\,T(x \to x') = \pi(x')\sum_x T(x' \to x)
+$$
+
+</Step>
+
+<Step effect="morph" say="The transition probabilities out of x prime sum to one, so pi is stationary.">
+
+$$
+\sum_x \pi(x)\,T(x \to x') = \pi(x')
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Metropolis–Hastings" say="The M–H algorithm satisfies detailed balance by design.">
+
+<Step say="Draw a candidate from the proposal q.">Propose $x'$ from $q(x' \mid x)$</Step>
+
+<Step say="Accept with this probability. The normalizing constant cancels in the ratio, so only the unnormalized density is needed.">$\alpha = \min\!\left(1, \frac{\tilde\pi(x')q(x \mid x')}{\tilde\pi(x)q(x' \mid x)}\right)$</Step>
+
+<Step say="On rejection, stay put, and record the current point again.">Reject ⇒ record $x$ again</Step>
+
+<Step say="Check: pi times q times alpha is the smaller of the two terms, which is symmetric in x and x prime, so detailed balance holds.">$\pi(x)q(x' \mid x)\alpha = \min\big(\pi(x)q(x' \mid x),\ \pi(x')q(x \mid x')\big)$ is symmetric</Step>
+
+<Step say="Gibbs sampling is a special case: draw from the conditional, and the acceptance is always one.">Gibbs: draw from $\pi(x_j \mid x_{-j})$, $\alpha \equiv 1$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="The random surfer" say="The same mathematics, applied to the web.">
+
+<Step drive="s2=1/0.6; s2=5/5" say="The surfer follows an out-link with probability d and otherwise jumps anywhere. The longer they surf, the closer the visit frequencies, the dashed rings, get to PageRank, the solid discs.">Visit frequencies → PageRank</Step>
+
+<Step drive="s1=0.5/3" say="With a smaller d, random jumps dominate and the pages even out.">Small $d$: towards uniform</Step>
+
+<Step drive="s1=0.99/3; s1=0.85/2" say="With d close to one, the link structure matters more, but convergence is slower. The classic value is zero point eight five.">$d \to 1$: links matter more, slower convergence; usually $0.85$</Step>
+
+<div slot="visual"><PageRankSurfer client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Why PageRank is unique" say="Write it as a matrix equation.">
+
+<Morph>
+
+<Step effect="morph" say="PageRank satisfies this linear equation.">
+
+$$
+r = \frac{1 - d}{n}\mathbf 1 + d\,M r
+$$
+
+</Step>
+
+<Step effect="morph" say="Since r sums to one, this is a matrix G times r.">
+
+$$
+r = \Big(\frac{1 - d}{n}\mathbf 1\mathbf 1^\top + dM\Big) r = G r
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="Every entry of G is strictly positive and its columns sum to one. By Perron–Frobenius, the eigenvalue one has a unique positive eigenvector.">$G \gt 0$, column-stochastic ⇒ Perron–Frobenius: unique</Step>
+
+<Step say="The other eigenvalues have modulus at most d, which sets the speed of power iteration.">Power-iteration error $\sim |\lambda_2|^t$, $|\lambda_2| \le d$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="LDA: topics emerge from Gibbs sampling" say="The third question: topics in documents.">
+
+<Step drive="s1=0/0.6" say="Each document is a mix of topics and each topic a distribution over words. At first every word's topic is random, and both topics are a jumble.">Random start: topics are a jumble</Step>
+
+<Step drive="s1=3/3" say="Redraw each word's topic: this topic is common in this document, times this word is common in this topic.">$P(z = k) \propto (n_{dk} + \alpha)\frac{n_{kw} + \beta}{n_k + V\beta}$</Step>
+
+<Step drive="s1=30/4" say="After a few sweeps the topics have split into medicine and finance, and the documents' topic mixes match. No labels anywhere.">Medicine / finance separate, no labels</Step>
+
+<div slot="visual"><LdaTopics client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked example: PageRank of three pages" say="A small web by hand.">
+
+<Step say="A links to B and C, B links to C, C links to A, and d is zero point eight five.">$A \to B, C$; $B \to C$; $C \to A$; $d = 0.85$</Step>
+
+<Step say="The equations: every page gets zero point zero five, plus a share from each page linking to it.">$r_A = 0.05 + 0.85 r_C$, $r_B = 0.05 + 0.425 r_A$, $r_C = 0.05 + 0.425 r_A + 0.85 r_B$</Step>
+
+<Step say="Solving, C ranks highest, because both A and B vote for it.">$r = (686, 380, 703)/1769 \approx (0.388, 0.215, 0.397)$</Step>
+
+<Step say="Power iteration oscillates into the answer: the other two eigenvalues are a complex pair of modulus zero point six.">Iterates: $(0.333, 0.192, 0.475) \to (0.454, 0.192, 0.355) \to \cdots$, $|\lambda_2| \approx 0.601$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked examples: one acceptance, one word" say="Two more small calculations.">
+
+<Step say="For a standard normal target, proposing one from zero is accepted with probability e to the minus one half, about sixty-one percent. The reverse move is always accepted.">$N(0,1)$: $0 \to 1$ accepted with $e^{-1/2} \approx 0.607$; $1 \to 0$ always</Step>
+
+<Step say="The word stock appears in a document that leans towards topic one. Stock is so common in topic two that it goes there with probability ninety-four percent.">"stock": $p_1 \propto 3.5 \cdot \frac{0.1}{10.8}$, $p_2 \propto 1.5 \cdot \frac{4.1}{12.8}$ ⇒ $P(z = 2) \approx 0.937$</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, Metropolis, PageRank and LDA Gibbs sampling from scratch, then a topic model in scikit-learn and Bayesian logistic regression by MCMC.">
+
+<Step say="After running your code you can replay your chain finding its way from one bump to the other.">✎ 4 derivations · ⌨ Metropolis + PageRank + LDA · ⚙ LDA + Bayesian logistic regression</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/markov-chains/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

@@ -1,0 +1,134 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import GmmEm from "../../components/chapters/ch11/GmmEm";
+import ElboBound from "../../components/chapters/ch11/ElboBound";
+import HardLimit from "../../components/chapters/ch11/HardLimit";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 11 章 · 动画课程" title="EM 算法与混合模型" say="看不见的变量让似然没法直接求解。EM 的办法是：先猜，再解，再改进猜测。">
+
+潜变量 · 贴合与上推 · 从 k 均值到 VAE
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="形状各异的亚型" say="三个亚型形状不同：一个细长，一个圆，一个倾斜。k 均值只认圆形。">
+
+<Step drive="click:chip1; s1=0/0.6; s1=40/6" say="每个亚型是一个高斯。E 步算每位病人属于各亚型的概率，M 步按这些概率重新估计高斯。椭圆一步步贴合数据。">E 步：责任度 · M 步：加权估计</Step>
+
+<Step say="颜色深浅表示把握：边界附近的病人是七成像 A、三成像 B 的软分配。">软分配，椭圆形的簇</Step>
+
+<Step drive="click:chip2; s1=0/0.6; s1=20/3" say="用 k 均值的结果初始化，收敛得更快。对数似然每一步都上升。">对数似然单调上升</Step>
+
+<div slot="visual"><GmmEm client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="对数里面有求和，怎么最大化？">
+<p class="big-q sm">$\log\sum_z$ 怎么最大化？</p>
+</Step>
+
+<Step say="为什么 EM 每一步都让似然上升？">为什么每一步都上升？</Step>
+
+<Step say="EM 和 k 均值、Baum–Welch、VAE 是什么关系？">与 k 均值、Baum–Welch、VAE 的关系</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="高斯混合模型" say="模型、E 步、M 步。">
+
+<Step say="先按权重选一个分量，再从这个高斯里生成数据。">$p(x) = \sum_k \pi_k\,\mathcal N(x; \mu_k, \Sigma_k)$</Step>
+
+<Step say="E 步：贝叶斯公式算责任度。">E 步：$r_{ik} \propto \pi_k\,\mathcal N(x_i; \mu_k, \Sigma_k)$</Step>
+
+<Step say="M 步：把责任度当作权重，像有标签一样估计。">M 步：$\pi_k = N_k/n$，$\mu_k = \sum_i r_{ik}x_i / N_k$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="ELBO 分解" say="对任意分布 q，对数似然可以拆成两部分。">
+
+<Morph>
+
+<Step effect="morph" say="q 求和为一，所以可以把对数似然写成对 q 的期望。">
+
+$$
+\log p(x) = \sum_z q(z)\log p(x)
+$$
+
+</Step>
+
+<Step effect="morph" say="p of x 等于联合分布除以后验。">
+
+$$
+\log p(x) = \sum_z q(z)\log\frac{p(x, z)}{p(z\mid x)}
+$$
+
+</Step>
+
+<Step effect="morph" say="乘除同一个 q，拆成两项。">
+
+$$
+\log p(x) = \sum_z q(z)\log\frac{p(x, z)}{q(z)} + \sum_z q(z)\log\frac{q(z)}{p(z\mid x)}
+$$
+
+</Step>
+
+<Step effect="morph" say="第一项叫 ELBO，第二项是 KL 散度，非负。">
+
+$$
+\log p(x) = \mathrm{ELBO}(q, \theta) + \mathrm{KL}(q\,\|\,p(z\mid x))
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="KL 非负，所以 ELBO 是对数似然的下界；q 等于后验时取等号。">
+<p class="big-q sm">ELBO ≤ log p，q = 后验时相等</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="贴合，再上推" say="EM 就是在 ELBO 上做坐标上升。">
+
+<Step drive="s1=0/0.6" say="E 步取 q 等于当前参数下的后验，蓝色的下界在 theta t 处与黄色的对数似然相切。">E 步：KL = 0，下界在 $\theta_t$ 处贴合</Step>
+
+<Step drive="s1=1/1.5" say="M 步找下界的最高点，对数似然也被一起推高。">M 步：最大化 ELBO，$\log p$ 随之上升</Step>
+
+<Step drive="s1=8/4" say="一次次贴合、上推，直到停在局部极大。只要 M 步让下界变高就行，这叫广义 EM。">$\log p(\theta_{t+1}) \ge \mathrm{ELBO}(\theta_{t+1}) \ge \mathrm{ELBO}(\theta_t) = \log p(\theta_t)$</Step>
+
+<div slot="visual"><ElboBound client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="k 均值是硬分配极限" say="所有高斯共享球形方差、等权时，责任度是一个 sigmoid。">
+
+<Step drive="s1=1/0.6" say="方差大时，曲线平缓，离中点稍远的点也拿不到很高的把握。">方差大：软分配</Step>
+
+<Step drive="s1=-2/4" say="方差趋于零，曲线变成阶跃函数：每个点完全属于最近的中心——正是 k 均值。">$\sigma^2 \to 0$：硬分配 = k 均值</Step>
+
+<Step say="后验算不出来时，用神经网络近似 q，就是变分自编码器，第二十四章。">E 步换成神经网络 ⇒ VAE（第 24 章）</Step>
+
+<div slot="visual"><HardLimit client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：一步 EM" say="数据负一、零、三、四；两个单位方差的高斯，均值从零和二出发。">
+
+<Step say="E 步：责任度是 sigmoid 二 x 减二，分别是零点零一八、零点一一九、零点九八二、零点九九八。">$r_2 = \sigma(2x - 2) = (0.018,\ 0.119,\ 0.982,\ 0.998)$</Step>
+
+<Step say="M 步：加权平均，两个均值变成负零点四八八和三点二六八。">$\mu = (-0.488,\ 3.268)$</Step>
+
+<Step say="对数似然从负九点二八三升到负七点零零一。">$\log p$：$-9.283 \to -7.001$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现高斯混合的 EM，再用 BIC 选模型并与 k 均值比较。">
+
+<Step say="代码运行后，可以回放两分量 EM 中边界一步步弯到正确的位置。">✎ 4 道推导 · ⌨ GMM 的 EM · ⚙ BIC + GMM vs k 均值</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/em-mixtures/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

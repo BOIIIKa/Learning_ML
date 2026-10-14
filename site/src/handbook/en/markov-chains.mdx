@@ -1,0 +1,48 @@
+---
+title: "MCMC and topic models in practice: diagnostics, PageRank and LDA"
+summary: "When to use MCMC, how to tell whether a chain has converged, PageRank on sparse graphs, and tuning LDA in scikit-learn."
+chapters: ["13"]
+---
+
+### Go-to code
+
+```python
+import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+
+# Random-walk Metropolis: needs only the unnormalized log density
+def metropolis(logp, x0, step, n, seed=0):
+    rng = np.random.default_rng(seed)
+    x, lp, out, acc = np.asarray(x0, float), logp(x0), [], 0
+    for _ in range(n):
+        y = x + step * rng.normal(size=x.shape)
+        ly = logp(y)
+        if np.log(rng.uniform()) < ly - lp:
+            x, lp, acc = y, ly, acc + 1
+        out.append(x)
+    return np.array(out), acc / n
+
+vec = CountVectorizer(stop_words="english", min_df=2)    # LDA wants counts, not TF-IDF
+lda = LatentDirichletAllocation(n_components=10, learning_method="online", random_state=0)
+theta = lda.fit_transform(vec.fit_transform(docs))       # topic proportions per document
+```
+
+### Traps
+
+- **Work on the log scale**: density ratios underflow easily; compare $\log u \lt \log\tilde\pi(x') - \log\tilde\pi(x)$.
+- **Record rejections too**: a rejected step must repeat the current point, or the distribution is biased.
+- **Trust diagnostics, not feelings**: run 4 chains from dispersed starts, require $\hat R \lt 1.01$, and report the effective sample size; read trace plots and autocorrelation plots together.
+- **Prefer HMC to a hand-written random walk**: for Bayesian models with continuous parameters, use NUTS in Stan / PyMC / NumPyro.
+- **PageRank on sparse matrices**: web graphs have hundreds of millions of nodes; power-iterate with `scipy.sparse`, add the dangling-node term separately, and never form the dense $G$.
+- **LDA takes counts**: use `CountVectorizer` and drop stop words and very rare / very common words; choose the number of topics by perplexity or topic coherence, and in the end have a human read each topic's top words.
+- **Topic labels are not stable**: different seeds give topics in a different order, sometimes with different content; align them before comparing.
+
+### Frontier reading
+
+- Metropolis et al. (1953) and Hastings (1970): the origins of M–H.
+- Geman and Geman (1984): Gibbs sampling.
+- Brin and Page (1998): PageRank and the Google search engine.
+- Blei, Ng and Jordan (2003): LDA; Griffiths and Steyvers (2004): collapsed Gibbs sampling.
+- Hoffman and Gelman (2014): the NUTS sampler.
+- Vehtari et al. (2021): an improved $\hat R$ and convergence diagnostics.

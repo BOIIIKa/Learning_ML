@@ -1,0 +1,126 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import Trellis from "../../components/chapters/ch09/Trellis";
+import BaumWelchFit from "../../components/chapters/ch09/BaumWelchFit";
+import HmmVsCrf from "../../components/chapters/ch09/HmmVsCrf";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 09 · Animated course" title="Structured Prediction: Hidden Markov Models and Conditional Random Fields" say="This time we predict not one label but a whole sequence of labels that depend on each other.">
+
+A hidden condition · Forward and Viterbi · From HMMs to CRFs
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="A hidden condition" say="A hospitalized patient's daily condition is hidden; we only see each day's test result.">
+
+<Step drive="click:chip1; s1=1/0.6; s1=3/3" say="Each column is a day, each circle a state on that day. The forward algorithm sums the probability of all paths, column by column.">Forward: sum column by column, $P(o) = 0.10007$</Step>
+
+<Step drive="click:chip2; s1=1/0.6; s1=3/3" say="Viterbi replaces the sum by a max; the bold edges are back-pointers. Most likely: stable, worse, worse.">Viterbi: max + backtrack → stable → worse → worse</Step>
+
+<Step drive="click:chip4; s1=1/0.6; s1=6/4" say="Six days work the same way: each step only looks at the previous column, never at all two to the sixth paths.">Cost $O(TN^2)$, not $N^T$</Step>
+
+<div slot="visual"><Trellis client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three basic problems" say="Hidden Markov models come with three basic problems.">
+
+<Step effect="focus" say="Evaluation: how likely is a sequence of observations?">
+<p class="big-q sm">Evaluation · Decoding · Learning</p>
+</Step>
+
+<Step say="Decoding: what is the most likely sequence of states?">Decoding: $\arg\max_s P(s\mid o)$</Step>
+
+<Step say="Learning: with observations but no state labels, how do we learn the parameters?">Learning: from $o$ alone, learn $\lambda = (\pi, A, B)$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Hidden Markov models" say="Three sets of parameters and two assumptions.">
+
+<Step say="An initial distribution pi, a transition matrix A, an emission matrix B.">$\lambda = (\pi, A, B)$</Step>
+
+<Step say="Two assumptions: tomorrow depends only on today; today's test depends only on today's condition.">Markov property + observation independence</Step>
+
+<Step say="So the joint probability of a path and its observations is a chain of products.">$P(o, s) = \pi_{s_1}B_{s_1}(o_1)\prod_t A_{s_{t-1}s_t}B_{s_t}(o_t)$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="The forward recursion" say="How do we get P of O without enumerating paths?">
+
+<Morph>
+
+<Step effect="morph" say="The forward variable: the first t observations, and state j on day t.">
+
+$$
+\alpha_{t+1}(j) = P(o_1, \dots, o_{t+1},\ s_{t+1} = j)
+$$
+
+</Step>
+
+<Step effect="morph" say="Condition on yesterday's state with the law of total probability.">
+
+$$
+\alpha_{t+1}(j) = \sum_i P(o_1, \dots, o_t,\ s_t = i)\,A_{ij}\,B_j(o_{t+1})
+$$
+
+</Step>
+
+<Step effect="morph" say="The bracket is the previous column of forward variables.">
+
+$$
+\alpha_{t+1}(j) = \Big[\sum_i \alpha_t(i)A_{ij}\Big]B_j(o_{t+1})
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="Replace the sum by a max, and you have Viterbi.">Viterbi: $\delta_{t+1}(j) = \max_i[\delta_t(i)A_{ij}]\,B_j(o_{t+1})$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Baum–Welch: learning without labels" say="Test results only, no condition labels: how do we learn the parameters?">
+
+<Step drive="s1=0/0.6; s1=10/4" say="The E-step runs forward–backward to get each day's state posteriors as soft counts; the M-step counts as usual.">E-step: soft counts $\gamma$, $\xi$; M-step: count and normalize</Step>
+
+<Step drive="s1=40/4" say="The log-likelihood keeps rising and the parameters approach the truth.">Likelihood never decreases (EM, Chapter 11)</Step>
+
+<Step say="The transition update: the expected number of moves from i to j, over the expected time spent in i.">$\hat A_{ij} = \sum_t \xi_t(i,j) / \sum_t \gamma_t(i)$</Step>
+
+<div slot="visual"><BaumWelchFit client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="From HMMs to CRFs" say="An HMM is generative; a CRF is discriminative.">
+
+<Step drive="click:chip1" say="An HMM is a directed graph: it generates the state chain and lets each state emit an observation, modelling the joint distribution.">HMM: models $P(x, y)$, factors are conditional probabilities</Step>
+
+<Step drive="click:chip2" say="A linear-chain CRF is undirected: it models only the conditional distribution, and its scores may look at the whole observation sequence.">CRF: models $P(y\mid x) = \exp(\sum w\cdot f)/Z(x)$</Step>
+
+<Step say="The normalizer Z uses the same forward recursion, in log space, still at cost T N squared.">$Z(x)$: forward recursion (log-sum-exp), $O(TN^2)$</Step>
+
+<div slot="visual"><HmmVsCrf client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked example: three days of tests" say="Normal, abnormal, abnormal.">
+
+<Step say="Day one: 0.6 times 0.9 and 0.4 times 0.2 give 0.54 and 0.08.">$\alpha_1 = (0.54,\ 0.08)$</Step>
+
+<Step say="Day two, stable: 0.54 times 0.7 plus 0.08 times 0.4, times 0.1, is 0.041.">$\alpha_2 = (0.041,\ 0.168)$</Step>
+
+<Step say="Day three: 0.00959 and 0.09048, which add up to P of O equals 0.10007.">$\alpha_3 = (0.00959,\ 0.09048)$, $P(o) = 0.10007$</Step>
+
+<Step say="The Viterbi path is stable, worse, worse, with probability 0.062208, about 62 percent of the total.">Viterbi: stable → worse → worse, $0.062208$</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, forward, Viterbi and Baum–Welch from scratch, then per-day classification versus sequence decoding in scikit-learn.">
+
+<Step say="After running your code you can replay how Viterbi's decoding lines up with the true condition as EM proceeds.">✎ 4 derivations · ⌨ forward + Viterbi + Baum–Welch · ⚙ per-day vs Viterbi</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/structured-prediction/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

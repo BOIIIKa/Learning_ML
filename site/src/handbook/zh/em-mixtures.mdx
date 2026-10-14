@@ -1,0 +1,32 @@
+---
+title: "高斯混合与 EM 实战"
+summary: "协方差类型、初始化陷阱、BIC 选模型、密度估计与异常检测。"
+chapters: ["11"]
+---
+
+### 常用代码
+
+```python
+from sklearn.mixture import GaussianMixture, BayesianGaussianMixture
+
+gm = GaussianMixture(n_components=3, covariance_type="full", n_init=5,
+                     init_params="k-means++", reg_covar=1e-6, random_state=0).fit(X)
+labels, proba = gm.predict(X), gm.predict_proba(X)   # 硬分配与软分配
+density = gm.score_samples(X_new)                    # log p(x)，可用于异常检测
+X_fake, _ = gm.sample(100)                           # 生成新样本
+```
+
+### 容易踩的坑
+
+- **初始化陷阱**：默认用 k 均值初始化，在拉长、平行的簇上可能把 EM 带进很差的局部极大。多试几种 `init_params`（`random_from_data`、`k-means++`）、加大 `n_init`，用似然或 BIC 挑最好的。
+- **协方差类型**：`full` 最灵活、参数最多（每个分量 $d(d+1)/2$）；`tied` 共享一个协方差（LDA 式）；`diag` 假设特征独立；`spherical` 最接近 k 均值。用 BIC 一起选。
+- **退化**：某个分量缩成一个点时似然趋于无穷，`reg_covar` 就是为此加的正则；特征尺度差异大时先标准化。
+- **选 K**：`bic()` 越小越好；或者用 `BayesianGaussianMixture`，给一个偏大的 K，让多余分量的权重自己缩到接近 0。
+- **异常检测**：`score_samples` 很低的点是“任何分量都不像”的点；阈值在验证集上定。
+
+### 前沿阅读
+
+- Dempster、Laird、Rubin（1977）：EM 算法原始论文。
+- Neal 与 Hinton（1998）：把 EM 看成 F 函数的极大–极大，证明增量与稀疏变体的正确性。
+- Kingma 与 Welling（2014）：变分自编码器——用神经网络做摊销的 E 步。
+- Blei、Kucukelbir、McAuliffe（2017）：变分推断综述。

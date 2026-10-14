@@ -1,0 +1,69 @@
+# 第 06 章 非参数方法与基函数扩展 —— 课后练习 / Chapter 06 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: cover-hart
+    title: {zh: "1-NN 的渐近误差", en: "Asymptotic error of 1-NN"}
+    prompt:
+      zh: "两类问题中某点的后验 $\\eta = P(Y=1\\mid x)$。样本无穷多时最近邻与 $x$ 重合、标签独立地从同一 $\\eta$ 抽取。写出 1-NN 在该点犯错的概率。可用变量：`eta`。"
+      en: "In a two-class problem a point has posterior $\\eta = P(Y=1\\mid x)$. With infinitely many samples the nearest neighbour coincides with $x$ and its label is drawn independently from the same $\\eta$. Write the probability that 1-NN errs at this point. Variables: `eta`."
+    answer: "2*eta*(1 - eta)"
+    vars: {eta: [0, 1]}
+    solution:
+      zh: "犯错当且仅当两个标签不同：$P = \\eta(1-\\eta) + (1-\\eta)\\eta = 2\\eta(1-\\eta)$。记贝叶斯错误率 $r^* = \\min(\\eta, 1-\\eta)$，则 $2\\eta(1-\\eta) = 2r^*(1-r^*) \\le 2r^*$。对 $x$ 取期望并用 Jensen 不等式（$2t(1-t)$ 是凹函数）得 Cover–Hart 界 $R_{1\\text{NN}} \\le 2R^*(1-R^*)$。"
+      en: "It errs exactly when the two labels differ: $P = \\eta(1-\\eta) + (1-\\eta)\\eta = 2\\eta(1-\\eta)$. With the Bayes error rate $r^* = \\min(\\eta, 1-\\eta)$, $2\\eta(1-\\eta) = 2r^*(1-r^*) \\le 2r^*$. Taking expectations over $x$ with Jensen's inequality ($2t(1-t)$ is concave) gives the Cover–Hart bound $R_{1\\text{NN}} \\le 2R^*(1-R^*)$."
+
+  - id: shell
+    title: {zh: "高维球壳的体积", en: "Volume of a high-dimensional shell"}
+    prompt:
+      zh: "$d$ 维单位球中，半径在 $[1-\\varepsilon, 1]$ 之间的外壳占总体积的比例是多少？可用变量：`d, e`（$e = \\varepsilon$）。"
+      en: "In the $d$-dimensional unit ball, what fraction of the volume lies in the shell with radius in $[1-\\varepsilon, 1]$? Variables: `d, e` ($e = \\varepsilon$)."
+    answer: "1 - (1 - e)^d"
+    vars: {d: [1, 50], e: [0.01, 0.3]}
+    solution:
+      zh: "$d$ 维球体积 $V_d(r) = c_d r^d$。外壳比例 $= \\frac{V_d(1) - V_d(1-\\varepsilon)}{V_d(1)} = 1 - (1-\\varepsilon)^d$。$d = 100$、$\\varepsilon = 0.05$ 时 $\\approx 0.994$：几乎所有体积都在表面附近，均匀样本彼此之间也就差不多一样远（维数灾难组件）。"
+      en: "The volume of a $d$-ball is $V_d(r) = c_d r^d$. The shell fraction is $\\frac{V_d(1) - V_d(1-\\varepsilon)}{V_d(1)} = 1 - (1-\\varepsilon)^d$. For $d = 100$ and $\\varepsilon = 0.05$ it is $\\approx 0.994$: almost all the volume is near the surface, and uniform samples are all about equally far from each other (see the curse-of-dimensionality widget)."
+
+  - id: spline-df
+    title: {zh: "三次样条的自由度", en: "Degrees of freedom of a cubic spline"}
+    prompt:
+      zh: "三次回归样条有 $K$ 个内部节点，要求节点处函数值、一阶和二阶导数连续。它有多少个自由参数？可用变量：`K`。"
+      en: "A cubic regression spline has $K$ interior knots, with the value and the first and second derivatives continuous at every knot. How many free parameters does it have? Variables: `K`."
+    answer: "K + 4"
+    vars: {K: [0, 20]}
+    solution:
+      zh: "$K+1$ 段三次多项式，共 $4(K+1)$ 个参数；每个节点 3 个连续性约束，共 $3K$ 个。$4(K+1) - 3K = K + 4$，等于截断幂基 $1, x, x^2, x^3, (x-\\xi_k)^3_+$ 的个数。自然样条在两端再加 4 个约束，只剩 $K$ 个（此时 $K$ 计入边界节点）。"
+      en: "$K+1$ cubic pieces have $4(K+1)$ parameters; each knot imposes 3 continuity constraints, $3K$ in total. $4(K+1) - 3K = K + 4$, the number of truncated-power basis functions $1, x, x^2, x^3, (x-\\xi_k)^3_+$. A natural spline adds 4 more constraints at the ends, leaving $K$ (counting the boundary knots in $K$)."
+
+  - id: edge
+    title: {zh: "高维邻域的边长", en: "Edge length of a high-dimensional neighbourhood"}
+    prompt:
+      zh: "数据在 $[0,1]^d$ 中均匀分布。一个小立方体要包含比例为 $r$ 的数据，边长是多少？可用变量：`r, d`。"
+      en: "Data are uniform in $[0,1]^d$. What edge length must a sub-cube have to contain a fraction $r$ of the data? Variables: `r, d`."
+    answer: "r^(1/d)"
+    vars: {r: [0.01, 0.5], d: [1, 30]}
+    solution:
+      zh: "边长为 $\\ell$ 的立方体体积为 $\\ell^d$，令其等于 $r$ 得 $\\ell = r^{1/d}$。$d = 10$、$r = 0.1$ 时 $\\ell \\approx 0.79$：“局部”邻域横跨每个坐标近八成的范围。kNN 在高维不再是局部方法，偏差随之变大。"
+      en: "A cube with edge $\\ell$ has volume $\\ell^d$; setting it to $r$ gives $\\ell = r^{1/d}$. For $d = 10$ and $r = 0.1$, $\\ell \\approx 0.79$: the \"local\" neighbourhood spans nearly 80% of every coordinate's range. In high dimension kNN stops being local, and its bias grows accordingly."
+
+code:
+  - id: knn-kd
+    kind: implement
+    file: knn_kd.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现 kNN、kd 树搜索与三次样条", en: "kNN, kd-tree search and cubic splines from scratch"}
+    intro:
+      zh: "补全三种距离、多数表决、kd 树搜索中的剪枝条件和三次样条的截断幂基。检查会与 scikit-learn 对拍，重现讲义例题中 kd 树只访问 4 个结点的搜索，并验证你的样条与 sklearn 的 B 样条拟合值完全相同。运行后可以回放 k 从 1 到 101 时边界怎样从锯齿变平滑。"
+      en: "Fill in the three distances, the majority vote, the pruning condition of the kd-tree search and the truncated-power spline basis. The checks compare with scikit-learn, reproduce the notes' kd-tree search that visits only 4 nodes, and verify that your spline gives exactly the same fit as scikit-learn's B-splines. Afterwards, replay the boundary going from jagged to smooth as k runs from 1 to 101."
+    metrics:
+      - {key: acc, label: {zh: "测试准确率", en: "Test accuracy"}}
+  - id: np-library
+    kind: library
+    file: np_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 scikit-learn 调 kNN、搭 GAM", en: "Tune kNN and build a GAM in scikit-learn"}
+    intro:
+      zh: "在乳腺癌数据上用网格搜索同时选 k 和加权方式（别忘了先标准化）；再用“样条展开 + 岭回归”搭一个可加模型，在含正弦、二次和线性效应的数据上和线性模型比 R²，并画出每个特征的部分依赖曲线。运行后可以对比等权与按距离加权的 kNN 边界。"
+      en: "Tune k and the weighting jointly by grid search on the breast-cancer data (standardize first); then build an additive model as spline expansion + ridge, compare its R² with a linear model on data with sine, quadratic and linear effects, and draw each feature's partial curve. Afterwards, compare uniform and distance-weighted kNN boundaries."
+    metrics:
+      - {key: acc, label: {zh: "训练准确率", en: "Training accuracy"}}

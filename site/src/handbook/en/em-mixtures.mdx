@@ -1,0 +1,32 @@
+---
+title: "Gaussian mixtures and EM in practice"
+summary: "Covariance types, the initialization trap, model selection by BIC, density estimation and anomaly detection."
+chapters: ["11"]
+---
+
+### Go-to code
+
+```python
+from sklearn.mixture import GaussianMixture, BayesianGaussianMixture
+
+gm = GaussianMixture(n_components=3, covariance_type="full", n_init=5,
+                     init_params="k-means++", reg_covar=1e-6, random_state=0).fit(X)
+labels, proba = gm.predict(X), gm.predict_proba(X)   # hard and soft assignments
+density = gm.score_samples(X_new)                    # log p(x), handy for anomaly detection
+X_fake, _ = gm.sample(100)                           # generate new samples
+```
+
+### Traps
+
+- **The initialization trap**: the default k-means initialization can lead EM into a poor local maximum on long, parallel clusters. Try other `init_params` (`random_from_data`, `k-means++`), raise `n_init`, and keep the best likelihood or BIC.
+- **Covariance types**: `full` is the most flexible with the most parameters ($d(d+1)/2$ per component); `tied` shares one covariance (LDA-style); `diag` assumes independent features; `spherical` is closest to k-means. Choose with BIC.
+- **Degeneracy**: if a component collapses onto a point the likelihood goes to infinity; `reg_covar` is the regularizer for that. Standardize features with very different scales first.
+- **Choosing K**: smaller `bic()` is better; or use `BayesianGaussianMixture` with a generous K and let the weights of superfluous components shrink towards 0.
+- **Anomaly detection**: points with very low `score_samples` look like no component at all; set the threshold on validation data.
+
+### Frontier reading
+
+- Dempster, Laird and Rubin (1977): the original EM paper.
+- Neal and Hinton (1998): EM as maximization–maximization of the F function, justifying incremental and sparse variants.
+- Kingma and Welling (2014): the variational autoencoder, an amortized E-step with a neural network.
+- Blei, Kucukelbir and McAuliffe (2017): a review of variational inference.

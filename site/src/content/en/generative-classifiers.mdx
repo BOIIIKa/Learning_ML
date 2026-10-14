@@ -1,0 +1,181 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import GaussianBoundaries from "../../components/chapters/ch05/GaussianBoundaries";
+import NaiveBayesCounts from "../../components/chapters/ch05/NaiveBayesCounts";
+import GenVsDisc from "../../components/chapters/ch05/GenVsDisc";
+
+<Section lang="en" k="scenario">
+
+In Chapter 04 the hospital learned a boundary directly: given the markers $x$, what is the probability $P(y \mid x)$ that a follow-up is needed? An experienced doctor suggests another route: "Let me first describe **what patients who need a follow-up usually look like**, then those who don't. When a new patient arrives, I'll see which group they resemble more."
+
+That is **generative** modelling: model how each class produces its data, $p(x \mid y)$, add how common each class is, $P(y)$, and flip the two into $P(y \mid x)$ with Bayes' rule. Below, each group of patients gets a Gaussian "portrait", and the boundary is what the flip produces:
+
+<GaussianBoundaries client:visible lang="en" />
+
+This chapter answers three questions:
+
+1. When is the boundary a line, and when is it a curve?
+2. Generative LDA and discriminative logistic regression produce boundaries of exactly the same form. So what is the difference?
+3. With many features and few samples (say, thousands of words in medical notes), how can a generative model still be fitted?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Generative classifiers
+
+<Box kind="definition" title="Generative classifier">
+
+**Model**: class priors $P(Y = k) = \pi_k$ and class-conditional densities $p(x \mid Y = k)$; their product is the joint distribution $p(x, y)$.
+
+**Strategy**: maximize the joint likelihood $\sum_i \log \pi_{y_i} p(x_i \mid y_i)$, and predict the class with the largest posterior,
+
+$$
+\hat y(x) = \arg\max_k\ \pi_k\, p(x \mid Y = k).
+$$
+
+**Algorithm**: counting and averaging. Every parameter has a closed-form maximum-likelihood estimate, so no iterative optimization is needed.
+
+</Box>
+
+With two classes the decision only depends on the log-odds
+
+$$
+\log\frac{P(Y = 1 \mid x)}{P(Y = 0 \mid x)} = \log\frac{\pi_1}{\pi_0} + \log\frac{p(x \mid Y = 1)}{p(x \mid Y = 0)}.
+$$
+
+The prior only adds a constant: change it and the boundary shifts without changing shape.
+
+### Gaussian discriminant analysis: LDA and QDA
+
+Take $p(x \mid Y = k) = \mathcal N(\mu_k, \Sigma_k)$. The maximum-likelihood estimates are the ones you would guess: $\hat\pi_k = n_k/n$, $\hat\mu_k$ is the sample mean of class $k$, and $\hat\Sigma_k$ its sample covariance (divided by $n_k$).
+
+- **QDA** (quadratic discriminant analysis): each class has its own $\Sigma_k$. The log-odds are quadratic in $x$ and the boundary is a conic (ellipse, hyperbola or parabola).
+- **LDA** (linear discriminant analysis): all classes share one $\Sigma$, estimated by the pooled covariance $\hat\Sigma = \sum_k \frac{n_k}{n}\hat\Sigma_k$. The quadratic terms cancel and the boundary is a line (a hyperplane).
+
+In $p$ dimensions QDA estimates $p(p+1)/2$ covariance parameters per class; LDA estimates one set in total. With few samples LDA is more stable; with many samples and genuinely different class shapes QDA is more accurate. It is Chapter 02's bias–variance trade-off again.
+
+<Box kind="insight" title="A generative model knows a bit more">
+
+A generative model also models $x$ itself, which lets it do things a discriminative one cannot. If the prior changes (a different hospital with a different follow-up rate), just change $\pi_k$, with no retraining. It can generate new samples. It can handle missing features by integrating them out. The price: if the assumption about $p(x \mid y)$ is wrong, this extra knowledge is wrong too.
+
+</Box>
+
+### Naive Bayes
+
+When $x$ has hundreds or thousands of dimensions (which words or symptoms appear in a note), even one covariance matrix is too much to estimate. Naive Bayes makes a bold assumption: **given the class, the features are independent**,
+
+$$
+p(x \mid Y = k) = \prod_{j=1}^p p(x_j \mid Y = k).
+$$
+
+Each feature is then estimated on its own: a proportion for a binary feature, a set of frequencies for a count feature, a mean and variance for a continuous one. The parameter count drops from $O(p^2)$ to $O(p)$, and training is counting.
+
+<NaiveBayesCounts client:visible lang="en" />
+
+**The zero-probability problem.** If a class never shows some feature value in training, maximum likelihood assigns it probability 0, and any new sample with that value gets posterior 0 for the class, however strong the other evidence. **Laplace smoothing** adds $\alpha$ to every count: for a feature with $S_j$ possible values,
+
+$$
+\hat P(x_j = v \mid Y = k) = \frac{n_{k}(x_j = v) + \alpha}{n_k + S_j\,\alpha}.
+$$
+
+$\alpha = 1$ is classic Laplace smoothing; $\alpha \to 0$ recovers maximum likelihood; $\alpha \to \infty$ makes every value equally likely, so the feature carries no information.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Shared covariance ⇒ a linear boundary
+
+The Gaussian part of the log-odds is
+
+$$
+\log\frac{\mathcal N(x; \mu_1, \Sigma_1)}{\mathcal N(x; \mu_0, \Sigma_0)} = -\tfrac12 (x - \mu_1)^\top\Sigma_1^{-1}(x - \mu_1) + \tfrac12 (x - \mu_0)^\top\Sigma_0^{-1}(x - \mu_0) - \tfrac12\log\frac{|\Sigma_1|}{|\Sigma_0|}.
+$$
+
+Expanding, the quadratic term in $x$ is $-\tfrac12 x^\top(\Sigma_1^{-1} - \Sigma_0^{-1})x$. It is non-zero in general, so the QDA boundary is a conic (derivation exercise 3 does the one-dimensional case). If $\Sigma_1 = \Sigma_0 = \Sigma$, the quadratic and determinant terms cancel and what remains is
+
+$$
+\log\frac{P(Y = 1 \mid x)}{P(Y = 0 \mid x)} = w^\top x + b, \qquad w = \Sigma^{-1}(\mu_1 - \mu_0), \qquad b = -\tfrac12\big(\mu_1^\top\Sigma^{-1}\mu_1 - \mu_0^\top\Sigma^{-1}\mu_0\big) + \log\frac{\pi_1}{\pi_0}.
+$$
+
+<Box kind="theorem" title="The LDA posterior has the logistic form">
+
+Under the LDA assumptions, $P(Y = 1 \mid x) = \sigma(w^\top x + b)$ with $w$ and $b$ as above. LDA and Chapter 04's logistic regression therefore belong to the **same model family** (linear log-odds) and differ only in the **estimation strategy**:
+
+- LDA maximizes the **joint** likelihood $\sum_i \log p(x_i, y_i)$: $w$ and $b$ come in closed form from means and covariances.
+- Logistic regression maximizes the **conditional** likelihood $\sum_i \log P(y_i \mid x_i)$: it only cares about the boundary and assumes nothing about the distribution of $x$.
+
+</Box>
+
+The direction $w = \Sigma^{-1}(\mu_1 - \mu_0)$ deserves a closer look. If $\Sigma = \sigma^2 I$, $w$ points along the line joining the means, and the boundary is the perpendicular bisector (shifted by the prior): the nearest-centroid classifier. A general $\Sigma$ first "whitens" the space to make it isotropic, then does the same. It is also Fisher's answer: projected onto $w$, the ratio of between-class distance to within-class variance is as large as possible.
+
+In one dimension ($\Sigma = \sigma^2$) the threshold is
+
+$$
+x^* = \frac{\mu_0 + \mu_1}{2} + \frac{\sigma^2}{\mu_1 - \mu_0}\log\frac{\pi_0}{\pi_1}
+$$
+
+(derivation exercise 1): the more the prior favours class 0, the further the threshold retreats towards class 1.
+
+### Discriminative versus generative: which is better?
+
+The difference is bias versus variance in another guise:
+
+- If the Gaussian (or independence) assumption holds, the generative model uses more structure, its estimates have lower variance, and it **gets close to its best performance with fewer samples**. Ng and Jordan (2001) showed that naive Bayes reaches its asymptotic error with $O(\log p)$ samples, logistic regression with $O(p)$.
+- If the assumption fails, the generative model's limit is biased; logistic regression does not depend on the form of $p(x)$ and **reaches a lower limiting error**.
+
+So the typical picture is two learning curves that **cross**:
+
+<GenVsDisc client:visible lang="en" />
+
+### Maximum likelihood versus Bayesian estimates in naive Bayes
+
+Take a binary feature with probability $\theta$ of $x_j = 1$ in class $k$. If $m$ of the $n_k$ samples are 1, the likelihood is $\theta^m(1-\theta)^{n_k - m}$ and the maximum-likelihood estimate is $\hat\theta = m/n_k$, which may be exactly 0 or 1.
+
+A **Bayesian estimate** puts a Beta prior $\mathrm{Beta}(\alpha + 1, \alpha + 1)$ on $\theta$, as if we had already "seen" $\alpha$ ones and $\alpha$ zeros. The posterior is $\mathrm{Beta}(m + \alpha + 1, n_k - m + \alpha + 1)$, whose mode (the MAP estimate) is
+
+$$
+\hat\theta_{\text{MAP}} = \frac{m + \alpha}{n_k + 2\alpha},
+$$
+
+exactly Laplace smoothing (derivation exercise 2). For multi-valued features a Dirichlet prior gives the denominator $n_k + S_j\alpha$. It is the same story as "a penalty is a prior" in Chapter 03: smoothing pulls small-sample estimates towards "all values equally likely".
+
+**Why does such a naive model work so often?** Conditional independence almost never holds, so the probabilities tend to be overconfident (repeated evidence pushes posteriors towards 0 or 1). But classification only needs the **ranking** of the posteriors to be right: as long as the correct class still scores highest, biased probabilities do not change the decision. Naive Bayes is therefore often accurate as a classifier but poorly calibrated; when you need probabilities, calibrate them (see the Chapter 04 handbook).
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: naive Bayes by hand
+
+<Box kind="example" title="Two symptoms, ten patients">
+
+Ten diagnosed patients with two binary symptoms, fever $F$ and cough $C$:
+
+| | Patients | Fever | Cough |
+|---|---|---|---|
+| Follow-up ($+$) | 4 | 3 | 4 |
+| No follow-up ($-$) | 6 | 1 | 2 |
+
+The priors are $P(+) = 0.4$ and $P(-) = 0.6$.
+
+**Patient A: no fever, no cough.** By maximum likelihood $P(\neg C \mid +) = 0/4 = 0$, so $P(+ \mid A) = 0$, only because all 4 follow-up patients happened to cough. With Laplace smoothing, $\alpha = 1$:
+
+- $P(\neg F \mid +) = \frac{1 + 1}{4 + 2} = \frac13$ and $P(\neg C \mid +) = \frac{0 + 1}{6} = \frac16$;
+- $P(\neg F \mid -) = \frac{5 + 1}{6 + 2} = \frac34$ and $P(\neg C \mid -) = \frac{4 + 1}{8} = \frac58$;
+- scores: $0.4 \times \frac13 \times \frac16 = \frac1{45}$ for $+$, and $0.6 \times \frac34 \times \frac58 = \frac9{32}$ for $-$;
+- posterior $P(+ \mid A) = \dfrac{1/45}{1/45 + 9/32} = \dfrac{32}{437} \approx 0.073$.
+
+**Patient B: fever and cough.** Unsmoothed, $P(+ \mid B) = \frac{0.4 \cdot \frac34 \cdot 1}{0.4 \cdot \frac34 \cdot 1 + 0.6 \cdot \frac16 \cdot \frac26} = 0.9$; smoothed, it becomes $\frac{320}{401} \approx 0.798$. Smoothing does more than remove zeros: it also makes conclusions drawn from a small sample less extreme.
+
+</Box>
+
+### Extensions
+
+- **Multinomial naive Bayes** is the classic baseline for text classification. Features are word counts and $p(x \mid k) \propto \prod_j \theta_{kj}^{x_j}$; the log-posterior is **linear** in the counts, so it is a linear classifier too.
+- **Regularized discriminant analysis**: $\hat\Sigma_k(\lambda) = \lambda\hat\Sigma_k + (1 - \lambda)\hat\Sigma$ moves continuously between QDA and LDA; shrinking further towards $\sigma^2 I$ handles $p \gt n$.
+- **Dimension reduction**: LDA with $K$ classes only uses the $(K - 1)$-dimensional subspace of the class centres, which makes it a supervised tool for dimension reduction and visualization (Fisher's discriminant directions).
+- **From Gaussians to deep generative models**: the idea of generative classification lives on in Chapters 22–25. Model $p(x \mid y)$ with a VAE, a flow or a diffusion model, then classify with Bayes' rule; this remains useful for out-of-distribution detection and semi-supervised learning.
+
+</Section>

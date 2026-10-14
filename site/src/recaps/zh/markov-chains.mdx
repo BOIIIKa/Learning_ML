@@ -1,0 +1,7 @@
+- **平稳分布**：$\pi^\top P = \pi^\top$；不可约 + 非周期 ⇒ 唯一，且 $X_t$ 的分布收敛到 $\pi$，时间平均 $\to \mathbb E_\pi f$（遍历定理）。
+- **细致平衡**：$\pi(x)T(x \to x') = \pi(x')T(x' \to x)$ ⇒ $\pi$ 平稳（对 $x$ 求和即得）。
+- **Metropolis–Hastings**：接受率 $\min\!\big(1, \frac{\tilde\pi(x')q(x \mid x')}{\tilde\pi(x)q(x' \mid x)}\big)$，归一化常数抵消；拒绝时重复记录当前点。随机游走步长使接受率约 0.2–0.5；丢掉预烧期。
+- **吉布斯采样**：轮流从 $\pi(x_j \mid x_{-j})$ 抽，接受率恒为 1。
+- **PageRank**：$r = \frac{1-d}{n}\mathbf 1 + dMr$，随机冲浪者的平稳分布；Perron–Frobenius 保证存在唯一，幂迭代以 $|\lambda_2|^t$ 收敛，$|\lambda_2| \le d$。
+- **例题**：A→B,C；B→C；C→A，$d = 0.85$ ⇒ $r = (686, 380, 703)/1769 \approx (0.388, 0.215, 0.397)$；$N(0,1)$ 目标从 0 提议到 1，接受率 $e^{-1/2} \approx 0.607$。
+- **LDA 塌缩吉布斯**：$P(z_i = k \mid \cdot) \propto (n_{dk}^{-i} + \alpha)\frac{n_{kw}^{-i} + \beta}{n_k^{-i} + V\beta}$，只维护三张计数表；大语料用在线变分推断。

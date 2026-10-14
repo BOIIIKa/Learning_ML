@@ -1,0 +1,128 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import KMeansSteps from "../../components/chapters/ch10/KMeansSteps";
+import Dendrogram from "../../components/chapters/ch10/Dendrogram";
+import ChooseK from "../../components/chapters/ch10/ChooseK";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 10 章 · 动画课程" title="聚类" say="没有任何标签，让数据自己分成几群。">
+
+k 均值 · 层次聚类 · 选多少簇
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="没有标签的病人亚型" say="医院怀疑一种病有几个亚型，但谁属于哪一型，没有人知道。">
+
+<Step drive="click:chip2; s1=0/0.6; s1=100%/5" say="k 均值交替两步：每个病人归到最近的中心，再把中心移到这一簇的平均位置。目标曲线一路下降。">分配 → 更新，目标单调下降</Step>
+
+<Step drive="click:chip1; click:btn1; s1=0/0.6; s1=100%/4" say="随机初始化时，换几个种子：有时两个中心挤进同一群，停在更差的局部最优。">随机初始化：可能卡在局部最优</Step>
+
+<Step drive="click:chip2; s1=100%/3" say="k-means++ 让离已有中心越远的点越可能被选中，中心一开始就分散开。">k-means++：按 $D(x)^2$ 抽样初始化</Step>
+
+<div slot="visual"><KMeansSteps client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="k 均值在优化什么？为什么一定会停，却可能停在坏的地方？">
+<p class="big-q sm">它优化什么？为什么会停在坏处？</p>
+</Step>
+
+<Step say="不想预先指定簇数怎么办？">不预先定 $K$ 怎么办？</Step>
+
+<Step say="没有标签，怎样选 k、怎样评价？">没有标签，怎样评价？</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="k 均值" say="三要素。">
+
+<Step say="模型：K 个中心和一个划分。">**模型**：中心 $\mu_1, \dots, \mu_K$ + 划分 $c(i)$</Step>
+
+<Step say="策略：簇内平方和最小。">**策略**：$J = \sum_i \|x_i - \mu_{c(i)}\|^2$</Step>
+
+<Step say="算法：固定中心分配，固定分配更新，交替进行，这是坐标下降。">**算法**：Lloyd 交替最小化 = 坐标下降</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="为什么更新步取均值" say="固定一个簇，看它的平方和怎样随中心变化。">
+
+<Morph>
+
+<Step effect="morph" say="一簇的平方和。">
+
+$$
+\sum_{i} \|x_i - \mu\|^2
+$$
+
+</Step>
+
+<Step effect="morph" say="插入簇均值 x 拔。">
+
+$$
+\sum_{i} \|x_i - \bar x + \bar x - \mu\|^2
+$$
+
+</Step>
+
+<Step effect="morph" say="交叉项求和为零，分成两部分。">
+
+$$
+\sum_{i} \|x_i - \bar x\|^2 + n\|\bar x - \mu\|^2
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="第二项非负，所以中心取均值最优；分配步对每个点也是最优。两步都不增加目标，划分又有限，算法必然停下。">两步都不增加 $J$ + 划分有限 ⇒ 有限步收敛（局部最优）</Step>
+
+<Step effect="focus" say="但目标不是凸的，只保证局部最优，初始化很重要。">
+<p class="big-q sm">只保证局部最优</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="层次聚类：一棵树" say="不想预先定 K，就构造一整棵树。">
+
+<Step drive="click:chip2; s1=0.9/1.5; s1=0.15/4" say="从每人一簇开始，每次合并最近的两簇。拖动切割线，线以下的合并保留，簇数随之变化。">切割高度 → 任意粒度</Step>
+
+<Step drive="click:chip1; s1=0.45/2" say="单链接看最近的一对点，容易链式地把点串起来。">单链接：最近对，易链式</Step>
+
+<Step drive="click:chip2" say="全链接看最远的一对点，簇更紧凑。Ward 看合并后平方和的增量，最常用。">全链接：最远对，紧凑 · Ward 最常用</Step>
+
+<div slot="visual"><Dendrogram client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="k 选多少？" say="没有标签，怎样选 k？">
+
+<Step drive="s1=1/0.6; s1=8/4" say="簇内平方和随 k 一直下降，k 等于 n 时为零，只能找肘部。">平方和单调下降：找“肘部”</Step>
+
+<Step drive="s1=3/2" say="轮廓系数比较到本簇和到最近他簇的平均距离，它在 k 等于三处最高。">轮廓系数 $s = (b-a)/\max(a,b)$：峰值在 $k = 3$</Step>
+
+<Step say="等方差高斯在方差趋于零时，软分配变成硬分配：k 均值是高斯混合 EM 的极限，下一章展开。">k 均值 = GMM-EM 的硬分配极限（第 11 章）</Step>
+
+<div slot="visual"><ChooseK client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：糟糕的起点" say="一维指标一、二、四、七、八、十二，两个中心故意从一和二出发。">
+
+<Step say="目标从一百六十五开始，一路降到五十九点二、三十三点二五。">$J$：$165 \to 59.2 \to 39.04 \to 33.25 \to \dots$</Step>
+
+<Step say="三轮后停在一二四和七八十二两簇，中心是三分之七和九，目标三分之五十六。">终点 $\{1,2,4\}, \{7,8,12\}$，中心 $7/3, 9$，$J = 56/3$</Step>
+
+<Step say="另一个例子：一、二、四、七、十一。单链接的合并高度是一二三四，全链接是一三六十。">单链接 $1,2,3,4$ · 全链接 $1,3,6,10$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现 k 均值和 k-means++，再用 scikit-learn 聚类葡萄酒数据。">
+
+<Step say="代码运行后，可以回放两个中心从糟糕的起点出发，边界一步步移到正确位置。">✎ 4 道推导 · ⌨ k 均值 + k-means++ · ⚙ 轮廓系数 + 四种链接</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/clustering/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

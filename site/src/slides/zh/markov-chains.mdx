@@ -1,0 +1,180 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import MhSampler from "../../components/chapters/ch13/MhSampler";
+import PageRankSurfer from "../../components/chapters/ch13/PageRankSurfer";
+import LdaTopics from "../../components/chapters/ch13/LdaTopics";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 13 章 · 动画课程" title="马尔可夫链方法：MCMC、PageRank 与主题模型" say="积不出来的分布，就从里面抽样；抽样的工具，是一条精心设计的马尔可夫链。">
+
+随机游走 · 细致平衡 · 网页排名 · 话题
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="积不出来，就抽样" say="后验分布只知道正比于什么。让一条链在上面游走。">
+
+<Step drive="s1=-0.25/0.6; s2=0/0.6; s2=100%/6" say="每一步随机提议一个新位置，密度变大就接受，变小就按密度之比的概率接受。链从左上角出发，慢慢走进两个峰。">提议 → 按密度之比接受 → 走进高密度区</Step>
+
+<Step drive="s1=-1.5/3" say="步长很小：几乎每步都接受，可是挪得极慢，相邻样本几乎一样。">步长太小：接受率高，相关性也高</Step>
+
+<Step drive="s1=1/3" say="步长很大：提议总落在没人的地方，几乎全被拒绝，链原地不动。">步长太大：几乎全被拒绝</Step>
+
+<Step drive="s1=-0.1/2" say="适中的步长，接受率二三成到五成，两个峰都能走遍。">适中步长：混合最快</Step>
+
+<div slot="visual"><MhSampler client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="第一，怎样让一条链最终的分布恰好是我们想要的？">
+<p class="big-q sm">怎样让链的终点恰好是目标分布？</p>
+</Step>
+
+<Step say="第二，网页的重要性和马尔可夫链有什么关系？">网页排名 = 平稳分布？</Step>
+
+<Step say="第三，怎样从没有标签的文档里找出话题？">无标签文档里的话题</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="马尔可夫链与平稳分布" say="先回忆马尔可夫链。">
+
+<Step say="下一步只依赖当前状态，用转移矩阵 P 描述。">$P(X_{t+1} = j \mid X_t = i) = P_{ij}$</Step>
+
+<Step say="分布 pi 乘以 P 还是 pi，就叫平稳分布。">平稳：$\pi^\top P = \pi^\top$</Step>
+
+<Step say="不可约、非周期时，平稳分布唯一，从哪里出发都会收敛到它，时间平均也收敛到期望。">不可约 + 非周期 ⇒ 唯一、收敛、$\frac1T\sum f(X_t) \to \mathbb E_\pi f$</Step>
+
+<Step effect="focus" say="MCMC 反过来用：先给定 pi，再设计一条以它为平稳分布的链。">
+<p class="big-q sm">先定 π，再造链</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="细致平衡 ⇒ 平稳" say="怎样保证 pi 是平稳分布？一个充分条件。">
+
+<Morph>
+
+<Step effect="morph" say="细致平衡：任意两个状态之间，来回的概率流相等。">
+
+$$
+\pi(x)\,T(x \to x') = \pi(x')\,T(x' \to x)
+$$
+
+</Step>
+
+<Step effect="morph" say="两边对 x 求和。">
+
+$$
+\sum_x \pi(x)\,T(x \to x') = \pi(x')\sum_x T(x' \to x)
+$$
+
+</Step>
+
+<Step effect="morph" say="从 x 撇出发的转移概率加起来是一，于是 pi 是平稳分布。">
+
+$$
+\sum_x \pi(x)\,T(x \to x') = \pi(x')
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="Metropolis–Hastings" say="M–H 算法正好满足细致平衡。">
+
+<Step say="从提议分布 q 抽一个候选点。">从 $q(x' \mid x)$ 提议 $x'$</Step>
+
+<Step say="以这个概率接受。归一化常数在比值里抵消，所以只需要未归一化的密度。">$\alpha = \min\!\left(1, \frac{\tilde\pi(x')q(x \mid x')}{\tilde\pi(x)q(x' \mid x)}\right)$</Step>
+
+<Step say="拒绝时留在原地，并且要再记一次当前点。">拒绝 ⇒ 重复记录 $x$</Step>
+
+<Step say="验证：pi 乘 q 乘 alpha 等于两者取小，关于 x 和 x 撇对称，于是细致平衡成立。">$\pi(x)q(x' \mid x)\alpha = \min\big(\pi(x)q(x' \mid x),\ \pi(x')q(x \mid x')\big)$ 对称</Step>
+
+<Step say="吉布斯采样是特例：从条件分布抽，接受率恒为一。">吉布斯：从 $\pi(x_j \mid x_{-j})$ 抽，$\alpha \equiv 1$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="随机冲浪者" say="同样的数学，用在网页上。">
+
+<Step drive="s2=1/0.6; s2=5/5" say="冲浪者以概率 d 沿外链走，否则随便跳。走得越久，访问频率，也就是虚线环，越贴近 PageRank，也就是实心圆。">访问频率 → PageRank</Step>
+
+<Step drive="s1=0.5/3" say="d 变小，随机跳转占主导，各页面越来越平均。">$d$ 小：趋于均匀</Step>
+
+<Step drive="s1=0.99/3; s1=0.85/2" say="d 接近一，更看重链接结构，但收敛更慢。经典取值零点八五。">$d \to 1$：看重链接，收敛慢；常用 $0.85$</Step>
+
+<div slot="visual"><PageRankSurfer client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="PageRank 为什么唯一" say="写成矩阵形式。">
+
+<Morph>
+
+<Step effect="morph" say="PageRank 满足这个线性方程。">
+
+$$
+r = \frac{1 - d}{n}\mathbf 1 + d\,M r
+$$
+
+</Step>
+
+<Step effect="morph" say="因为 r 的和为一，它等于一个矩阵 G 乘 r。">
+
+$$
+r = \Big(\frac{1 - d}{n}\mathbf 1\mathbf 1^\top + dM\Big) r = G r
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="G 的每个元素都严格为正、各列和为一。Perron–Frobenius 定理：特征值一对应唯一的正特征向量。">$G \gt 0$，列随机 ⇒ Perron–Frobenius：唯一</Step>
+
+<Step say="其余特征值的模不超过 d，幂迭代按这个速度收敛。">幂迭代误差 $\sim |\lambda_2|^t$，$|\lambda_2| \le d$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="LDA：话题从吉布斯采样中涌现" say="第三个问题：文档里的话题。">
+
+<Step drive="s1=0/0.6" say="每篇文档是话题的混合，每个话题是词的分布。一开始每个词的话题随机分配，两个话题都是大杂烩。">随机初始化：话题是大杂烩</Step>
+
+<Step drive="s1=3/3" say="逐个词重新抽话题：这篇文档里这个话题常见，乘以这个话题里这个词常见。">$P(z = k) \propto (n_{dk} + \alpha)\frac{n_{kw} + \beta}{n_k + V\beta}$</Step>
+
+<Step drive="s1=30/4" say="几轮之后，话题自己分成了医疗和金融，文档的话题比例也对上了。全程没有标签。">医疗 / 金融自动分开，不用标签</Step>
+
+<div slot="visual"><LdaTopics client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：三页网的 PageRank" say="手算一个小网络。">
+
+<Step say="A 链向 B 和 C，B 链向 C，C 链向 A，d 取零点八五。">$A \to B, C$；$B \to C$；$C \to A$；$d = 0.85$</Step>
+
+<Step say="列方程：每页先得零点零五，再从链向它的页面分得一份。">$r_A = 0.05 + 0.85 r_C$，$r_B = 0.05 + 0.425 r_A$，$r_C = 0.05 + 0.425 r_A + 0.85 r_B$</Step>
+
+<Step say="解出来 C 最高，因为 A 和 B 都投给了它。">$r = (686, 380, 703)/1769 \approx (0.388, 0.215, 0.397)$</Step>
+
+<Step say="幂迭代绕着答案振荡收敛：另两个特征值是一对模为零点六的复数。">迭代：$(0.333, 0.192, 0.475) \to (0.454, 0.192, 0.355) \to \cdots$，$|\lambda_2| \approx 0.601$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：一次接受，一个词" say="再看两个小计算。">
+
+<Step say="标准正态目标，从零提议到一，接受率是 e 的负二分之一，约百分之六十一。反方向必然接受。">$N(0,1)$：$0 \to 1$ 接受率 $e^{-1/2} \approx 0.607$；$1 \to 0$ 必接受</Step>
+
+<Step say="一篇偏话题一的文档里出现股票。股票在话题二里很常见，算下来有百分之九十四的概率分给话题二。">“股票”：$p_1 \propto 3.5 \cdot \frac{0.1}{10.8}$，$p_2 \propto 1.5 \cdot \frac{4.1}{12.8}$ ⇒ $P(z = 2) \approx 0.937$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现 Metropolis、PageRank 和 LDA 吉布斯采样，再用 scikit-learn 做主题模型、用 MCMC 做贝叶斯逻辑回归。">
+
+<Step say="代码运行后，可以回放你的链怎样从一个峰走到另一个峰。">✎ 4 道推导 · ⌨ Metropolis + PageRank + LDA · ⚙ LDA + 贝叶斯逻辑回归</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/markov-chains/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

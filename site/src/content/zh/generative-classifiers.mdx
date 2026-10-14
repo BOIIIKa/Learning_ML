@@ -1,0 +1,181 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import GaussianBoundaries from "../../components/chapters/ch05/GaussianBoundaries";
+import NaiveBayesCounts from "../../components/chapters/ch05/NaiveBayesCounts";
+import GenVsDisc from "../../components/chapters/ch05/GenVsDisc";
+
+<Section lang="zh" k="scenario">
+
+第 04 章里，医院直接学了一条边界：给定指标 $x$，需要复查的概率 $P(y \mid x)$ 是多少。一位老医生换了个思路：“我先描述清楚**需要复查的人通常长什么样**，再描述不需要的人长什么样；来了新病人，看他更像哪一群。”
+
+这就是**生成式**建模：先建模每一类的数据怎样产生，$p(x \mid y)$，再配上每一类有多常见，$P(y)$，最后用贝叶斯公式翻转成 $P(y \mid x)$。下图给每类病人画了一团高斯“画像”，边界是翻转出来的：
+
+<GaussianBoundaries client:visible lang="zh" />
+
+这一章回答三个问题：
+
+1. 什么时候边界是直线，什么时候是曲线？
+2. 生成式的 LDA 和判别式的逻辑回归，边界形式一模一样——那它们到底差在哪里？
+3. 特征很多、样本很少时（比如病历里的上千个词），怎样让生成式模型还算得动？
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 生成式分类器
+
+<Box kind="definition" title="生成式分类器">
+
+**模型**：类先验 $P(Y = k) = \pi_k$ 与类条件密度 $p(x \mid Y = k)$，二者的乘积是联合分布 $p(x, y)$。
+
+**策略**：最大化联合似然 $\sum_i \log \pi_{y_i} p(x_i \mid y_i)$；预测时取后验最大的类
+
+$$
+\hat y(x) = \arg\max_k\ \pi_k\, p(x \mid Y = k).
+$$
+
+**算法**：数数和求平均——参数都有闭式的极大似然估计，不需要迭代优化。
+
+</Box>
+
+两类时，决策只看对数几率
+
+$$
+\log\frac{P(Y = 1 \mid x)}{P(Y = 0 \mid x)} = \log\frac{\pi_1}{\pi_0} + \log\frac{p(x \mid Y = 1)}{p(x \mid Y = 0)}.
+$$
+
+先验只贡献一个常数：改变先验，边界整体平移，形状不变。
+
+### 高斯判别分析：LDA 与 QDA
+
+取 $p(x \mid Y = k) = \mathcal N(\mu_k, \Sigma_k)$。极大似然估计就是你会猜到的那些：$\hat\pi_k = n_k/n$，$\hat\mu_k$ 是第 $k$ 类的样本均值，$\hat\Sigma_k$ 是第 $k$ 类的样本协方差（除以 $n_k$）。
+
+- **QDA**（二次判别分析）：每类有自己的 $\Sigma_k$。对数几率是 $x$ 的二次函数，边界是二次曲线（椭圆、双曲线或抛物线）。
+- **LDA**（线性判别分析）：假设所有类共享同一个 $\Sigma$，用合并协方差 $\hat\Sigma = \sum_k \frac{n_k}{n}\hat\Sigma_k$ 估计。二次项相消，边界是直线（超平面）。
+
+在 $p$ 维中，QDA 每类要估计 $p(p+1)/2$ 个协方差参数，LDA 一共只估计一份。样本少时 LDA 更稳，样本多、各类形状确实不同时 QDA 更准：又是第 02 章的偏差–方差权衡。
+
+<Box kind="insight" title="生成式模型多“知道”一些事">
+
+生成式模型对 $x$ 本身也建了模，所以能做判别式模型做不到的事：先验变了（例如换一家医院，复查率不同），只需改 $\pi_k$，不必重新训练；可以生成新样本；可以处理缺失特征（对缺失的维度积分即可）。代价是：如果 $p(x \mid y)$ 的假设错了，这些“额外的知识”就是错的。
+
+</Box>
+
+### 朴素贝叶斯
+
+当 $x$ 有成百上千维（病历里出现了哪些词、哪些症状），连一个协方差矩阵都估计不动。朴素贝叶斯做了一个大胆的假设：**给定类别，各特征相互独立**，
+
+$$
+p(x \mid Y = k) = \prod_{j=1}^p p(x_j \mid Y = k).
+$$
+
+于是每个特征单独估计：二值特征估计一个比例，计数特征估计一组频率，连续特征估计一个均值和方差。参数量从 $O(p^2)$ 降到 $O(p)$，训练就是数数。
+
+<NaiveBayesCounts client:visible lang="zh" />
+
+**零概率问题。** 训练集中某类从没出现过某个特征取值，极大似然估计就给它概率 0，任何带这个取值的新样本在这一类的后验都被乘成 0——不管其他证据多强。**拉普拉斯平滑**给每个计数加上 $\alpha$：对取 $S_j$ 个值的特征，
+
+$$
+\hat P(x_j = v \mid Y = k) = \frac{n_{k}(x_j = v) + \alpha}{n_k + S_j\,\alpha}.
+$$
+
+$\alpha = 1$ 是经典的拉普拉斯平滑；$\alpha \to 0$ 回到极大似然；$\alpha \to \infty$ 时每个取值等概率，特征不再提供信息。
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 共享协方差 ⇒ 线性边界
+
+对数几率中的高斯项：
+
+$$
+\log\frac{\mathcal N(x; \mu_1, \Sigma_1)}{\mathcal N(x; \mu_0, \Sigma_0)} = -\tfrac12 (x - \mu_1)^\top\Sigma_1^{-1}(x - \mu_1) + \tfrac12 (x - \mu_0)^\top\Sigma_0^{-1}(x - \mu_0) - \tfrac12\log\frac{|\Sigma_1|}{|\Sigma_0|}.
+$$
+
+展开后 $x$ 的二次项是 $-\tfrac12 x^\top(\Sigma_1^{-1} - \Sigma_0^{-1})x$：一般不为零，所以 QDA 的边界是二次曲线（推导题 3 是一维的情形）。若 $\Sigma_1 = \Sigma_0 = \Sigma$，二次项和行列式项都相消，剩下
+
+$$
+\log\frac{P(Y = 1 \mid x)}{P(Y = 0 \mid x)} = w^\top x + b, \qquad w = \Sigma^{-1}(\mu_1 - \mu_0), \qquad b = -\tfrac12\big(\mu_1^\top\Sigma^{-1}\mu_1 - \mu_0^\top\Sigma^{-1}\mu_0\big) + \log\frac{\pi_1}{\pi_0}.
+$$
+
+<Box kind="theorem" title="LDA 的后验就是逻辑回归的形式">
+
+在 LDA 的假设下，$P(Y = 1 \mid x) = \sigma(w^\top x + b)$，$w$、$b$ 如上。所以 LDA 和第 04 章的逻辑回归属于**同一个模型族**（对数几率线性），区别只在**估计策略**：
+
+- LDA 最大化**联合**似然 $\sum_i \log p(x_i, y_i)$：用均值和协方差算出 $w$、$b$，闭式解。
+- 逻辑回归最大化**条件**似然 $\sum_i \log P(y_i \mid x_i)$：只关心边界，不对 $x$ 的分布做任何假设。
+
+</Box>
+
+方向 $w = \Sigma^{-1}(\mu_1 - \mu_0)$ 值得细看。若 $\Sigma = \sigma^2 I$，$w$ 就沿着两个均值的连线，边界是连线的垂直平分面（再按先验平移）——这正是“最近类中心”分类器。一般的 $\Sigma$ 先把空间“白化”成各向同性，再做同样的事。这也是 Fisher 判别的答案：投影到 $w$ 上时，类间距离与类内方差之比最大。
+
+一维时（$\Sigma = \sigma^2$），阈值是
+
+$$
+x^* = \frac{\mu_0 + \mu_1}{2} + \frac{\sigma^2}{\mu_1 - \mu_0}\log\frac{\pi_0}{\pi_1}
+$$
+
+（推导题 1）：先验越偏向 0 类，阈值越往 1 类那边退。
+
+### 判别式与生成式：谁更好？
+
+两者的差别是**偏差与方差**的另一种面貌：
+
+- 如果高斯（或条件独立）的假设成立，生成式模型利用了更多结构，参数估计的方差更小，**用更少的样本就能接近它的最好表现**。Ng 与 Jordan（2001）证明：朴素贝叶斯达到其渐近误差只需 $O(\log p)$ 个样本，逻辑回归需要 $O(p)$ 个。
+- 如果假设不成立，生成式模型的极限是有偏的；逻辑回归不依赖 $p(x)$ 的形式，**极限误差更低**。
+
+所以常见的图景是两条学习曲线**交叉**：
+
+<GenVsDisc client:visible lang="zh" />
+
+### 朴素贝叶斯的极大似然与贝叶斯估计
+
+以二值特征为例，设类 $k$ 中 $x_j = 1$ 的概率为 $\theta$。$n_k$ 个样本中有 $m$ 个取 1，似然是 $\theta^m(1-\theta)^{n_k - m}$，极大似然估计 $\hat\theta = m/n_k$——可能恰好是 0 或 1。
+
+**贝叶斯估计**给 $\theta$ 一个 Beta 先验 $\mathrm{Beta}(\alpha + 1, \alpha + 1)$，相当于事先“见过” $\alpha$ 个 1 和 $\alpha$ 个 0。后验是 $\mathrm{Beta}(m + \alpha + 1, n_k - m + \alpha + 1)$，它的众数（MAP）是
+
+$$
+\hat\theta_{\text{MAP}} = \frac{m + \alpha}{n_k + 2\alpha},
+$$
+
+正好是拉普拉斯平滑（推导题 2）。多值特征换成 Dirichlet 先验，分母变成 $n_k + S_j\alpha$。这和第 03 章“惩罚就是先验”是同一个故事：平滑就是在小样本时把估计拉向“各取值等可能”。
+
+**为什么“朴素”的模型常常好用？** 条件独立几乎从不成立，概率估计因此往往过于自信（证据被重复计数时，后验被推向 0 或 1）。但分类只需要后验的**排序**正确：只要正确类的分数仍然最大，概率有偏也不影响决策。所以朴素贝叶斯常常分类准、概率不准——需要概率时要再做校准（第 04 章实战手册）。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题：手算朴素贝叶斯
+
+<Box kind="example" title="两个症状，十位病人">
+
+已确诊的 10 位病人，记录两个二值症状：发热 $F$、咳嗽 $C$。
+
+| | 人数 | 发热 | 咳嗽 |
+|---|---|---|---|
+| 需要复查（$+$） | 4 | 3 | 4 |
+| 不需要（$-$） | 6 | 1 | 2 |
+
+先验 $P(+) = 0.4$，$P(-) = 0.6$。
+
+**新病人甲：不发热、不咳嗽。** 极大似然估计下 $P(\neg C \mid +) = 0/4 = 0$，所以 $P(+ \mid \text{甲}) = 0$——仅仅因为训练集里 4 位复查病人恰好都咳嗽。用 $\alpha = 1$ 的拉普拉斯平滑：
+
+- $P(\neg F \mid +) = \frac{1 + 1}{4 + 2} = \frac13$，$P(\neg C \mid +) = \frac{0 + 1}{6} = \frac16$；
+- $P(\neg F \mid -) = \frac{5 + 1}{6 + 2} = \frac34$，$P(\neg C \mid -) = \frac{4 + 1}{8} = \frac58$；
+- 分数：$+$ 为 $0.4 \times \frac13 \times \frac16 = \frac1{45}$，$-$ 为 $0.6 \times \frac34 \times \frac58 = \frac9{32}$；
+- 后验 $P(+ \mid \text{甲}) = \dfrac{1/45}{1/45 + 9/32} = \dfrac{32}{437} \approx 0.073$。
+
+**新病人乙：发热且咳嗽。** 不平滑时 $P(+ \mid \text{乙}) = \frac{0.4 \cdot \frac34 \cdot 1}{0.4 \cdot \frac34 \cdot 1 + 0.6 \cdot \frac16 \cdot \frac26} = 0.9$；平滑后变成 $\frac{320}{401} \approx 0.798$。平滑不只消除零概率，也让小样本得出的结论不那么极端。
+
+</Box>
+
+### 拓展
+
+- **多项式朴素贝叶斯**：文本分类的经典基线。特征是词频，$p(x \mid k) \propto \prod_j \theta_{kj}^{x_j}$；对数后验是词频的**线性**函数，所以它也是一个线性分类器。
+- **正则化判别分析**：$\hat\Sigma_k(\lambda) = \lambda\hat\Sigma_k + (1 - \lambda)\hat\Sigma$ 在 QDA 与 LDA 之间连续过渡；再向 $\sigma^2 I$ 收缩，就能处理 $p \gt n$。
+- **降维**：$K$ 类的 LDA 只用到 $K - 1$ 维的类中心子空间，可以拿来做有监督的降维和可视化（Fisher 判别方向）。
+- **从高斯到深度生成模型**：生成式分类器的思想延续到了第 22–25 章——用 VAE、流模型、扩散模型建模 $p(x \mid y)$，再按贝叶斯公式分类，在分布外检测和半监督学习中仍有用武之地。
+
+</Section>

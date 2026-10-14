@@ -1,0 +1,29 @@
+/* Chapter 09 widgets. Colours only from the theme variables. */
+.tr-svg { margin-top: 0.4rem; }
+.tr-obs { fill: var(--text-muted); font: 12px var(--font); opacity: 0.45; }
+.tr-obs.on { opacity: 1; }
+.tr-obs.ab { fill: var(--class-pos); }
+.tr-state { fill: var(--text-muted); font: 11px var(--font); }
+.tr-edge { stroke: var(--border); stroke-width: 1; }
+.tr-edge.back { stroke: var(--accent-2); stroke-width: 2.4; }
+.tr-edge.path { stroke: var(--accent); stroke-width: 3.4; }
+.tr-node { fill: var(--surface); stroke: var(--ink); stroke-width: 1.6; }
+.tr-on .tr-node { fill: color-mix(in srgb, var(--accent-2) 30%, var(--surface)); }
+.tr-node.path { fill: var(--accent); stroke: var(--accent); }
+.tr-off { opacity: 0.35; }
+.tr-val { fill: var(--ink); font: 11px var(--mono); }
+.hc-svg { margin-top: 0.4rem; }
+.hc-edge { stroke: var(--ink); stroke-width: 1.6; }
+.hc-edge.global { stroke: var(--accent-2); stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.7; }
+.hc-head { fill: var(--ink); }
+.hc-y { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.hc-x { fill: color-mix(in srgb, var(--accent-2) 25%, var(--surface)); stroke: var(--accent-2); stroke-width: 1.5; }
+.hc-lab { fill: var(--ink); font: 13px var(--mono); }
+.hc-formula { text-align: center; font-family: var(--mono); font-size: 0.9rem; color: var(--accent); margin: 0.3rem 0 0; }
+.bw-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; margin: 0.4rem 0; }
+.bw-cap { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.2rem; }
+.bw-mat { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); font: 12px var(--mono); }
+.bw-cell { position: relative; padding: 0.35rem 0.4rem; border: 1px solid var(--border); color: var(--text-muted); }
+.bw-mat b { color: var(--ink); position: relative; }
+.bw-bar { position: absolute; left: 0; top: 0; bottom: 0; background: color-mix(in srgb, var(--accent) 22%, transparent); }
+@media (max-width: 560px) { .bw-grid { grid-template-columns: minmax(0, 1fr); } }

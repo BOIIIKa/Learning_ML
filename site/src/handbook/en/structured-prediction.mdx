@@ -1,0 +1,35 @@
+---
+title: "Sequence labelling in practice: HMMs, CRFs and neural sequence models"
+summary: "Numerical underflow, choosing a decoder, the usual libraries, and when structured decoding pays off."
+chapters: ["09"]
+---
+
+### Go-to code
+
+```python
+# HMMs: hmmlearn (CategoricalHMM / GaussianHMM)
+from hmmlearn import hmm
+m = hmm.CategoricalHMM(n_components=2, n_iter=100, random_state=0).fit(O.reshape(-1, 1))
+states = m.predict(O.reshape(-1, 1))          # Viterbi
+post = m.predict_proba(O.reshape(-1, 1))       # forward–backward γ
+
+# Linear-chain CRFs: sklearn-crfsuite (features are one dict per position)
+import sklearn_crfsuite
+crf = sklearn_crfsuite.CRF(algorithm="lbfgs", c1=0.1, c2=0.1, max_iterations=100)
+crf.fit(X_train_feats, y_train)
+```
+
+### Traps
+
+- **Underflow**: $\alpha$ decays exponentially with length and becomes 0 within a few hundred steps. Either rescale at every step or work in log space throughout (log-sum-exp).
+- **Local maxima**: Baum–Welch is sensitive to its starting point. Use several random restarts and keep the best likelihood; pick the number of states by BIC or held-out likelihood.
+- **What the states mean**: state numbers learned without labels are arbitrary (label switching); interpret them afterwards from their emission distributions.
+- **Match the decoder to the metric**: for per-position accuracy use the posterior maximum ($\gamma$); for whole-sequence correctness use Viterbi; for entity-level F1, Viterbi usually wins.
+- **Try a sliding window plus a plain classifier first**: sometimes that is enough; structured decoding pays most when labels are strongly dependent (sticky states, grammatical constraints).
+
+### Frontier reading
+
+- Rabiner (1989): the classic HMM tutorial.
+- Lafferty, McCallum and Pereira (2001): the original conditional random fields paper.
+- Lample et al. (2016): BiLSTM-CRF for named-entity recognition.
+- Gu and Dao (2023): Mamba, selective state-space models; linear recurrences with parallel scans, best understood side by side with the HMM forward algorithm.

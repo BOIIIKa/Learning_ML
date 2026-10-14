@@ -1,0 +1,14 @@
+/* Chapter 06 widgets. Colours only from the theme variables. */
+.kd-svg { max-width: 420px; margin-top: 0.4rem; }
+.kd-lab { font-size: 0.8rem; color: var(--text-muted); align-self: center; }
+.kd-frame { fill: none; stroke: var(--border); stroke-width: 1; }
+.kd-split { stroke: var(--accent-2); stroke-width: 2; }
+.kd-split.d1 { stroke-width: 1.6; opacity: 0.85; }
+.kd-split.d2 { stroke-width: 1.2; opacity: 0.7; }
+.kd-pruned { fill: color-mix(in srgb, var(--text-muted) 22%, transparent); stroke: none; }
+.kd-ball { fill: color-mix(in srgb, var(--accent) 10%, transparent); stroke: var(--accent); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.kd-pt { fill: var(--surface); stroke: var(--ink); stroke-width: 1.6; }
+.kd-pt.visited { fill: var(--accent-2); }
+.kd-pt.best { fill: var(--accent); stroke: var(--accent); }
+.kd-q { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+.kd-txt { fill: var(--text-muted); font: 10px var(--mono); }

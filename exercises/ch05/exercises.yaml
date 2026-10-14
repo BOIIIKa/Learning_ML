@@ -1,0 +1,69 @@
+# 第 05 章 生成式分类：朴素贝叶斯与判别分析 —— 课后练习 / Chapter 05 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: lda-threshold
+    title: {zh: "一维 LDA 的阈值", en: "The 1-D LDA threshold"}
+    prompt:
+      zh: "一维，两类方差都是 $s$（即 $\\sigma^2$），均值 $\\mu_0 \\lt \\mu_1$，先验 $P(Y=1) = q$。写出对数几率为 0 的阈值 $x^*$。可用变量：`m0, m1, s, q`。"
+      en: "In 1-D both classes have variance $s$ (that is, $\\sigma^2$), means $\\mu_0 \\lt \\mu_1$ and prior $P(Y=1) = q$. Write the threshold $x^*$ where the log-odds vanish. Variables: `m0, m1, s, q`."
+    answer: "(m0 + m1)/2 + s * log((1 - q)/q) / (m1 - m0)"
+    vars: {m0: [-2, 0], m1: [0.5, 3], s: [0.3, 2], q: [0.1, 0.9]}
+    solution:
+      zh: "对数几率 $= \\log\\frac{q}{1-q} - \\frac{(x-\\mu_1)^2}{2s} + \\frac{(x-\\mu_0)^2}{2s} = \\log\\frac{q}{1-q} + \\frac{(\\mu_1-\\mu_0)x}{s} - \\frac{\\mu_1^2-\\mu_0^2}{2s}$。令其为 0：$x^* = \\frac{\\mu_0+\\mu_1}{2} + \\frac{s}{\\mu_1-\\mu_0}\\log\\frac{1-q}{q}$。等先验时是两均值的中点；1 类越少见（$q$ 越小），阈值越往 1 类那边退。例如 $\\mu_0 = 0, \\mu_1 = 2, s = 1, q = 0.2$ 时 $x^* = 1 + \\ln 2 \\approx 1.69$。"
+      en: "The log-odds are $\\log\\frac{q}{1-q} - \\frac{(x-\\mu_1)^2}{2s} + \\frac{(x-\\mu_0)^2}{2s} = \\log\\frac{q}{1-q} + \\frac{(\\mu_1-\\mu_0)x}{s} - \\frac{\\mu_1^2-\\mu_0^2}{2s}$. Setting them to 0 gives $x^* = \\frac{\\mu_0+\\mu_1}{2} + \\frac{s}{\\mu_1-\\mu_0}\\log\\frac{1-q}{q}$. With equal priors it is the midpoint of the means; the rarer class 1 is (smaller $q$), the further the threshold retreats towards it. For example $\\mu_0 = 0, \\mu_1 = 2, s = 1, q = 0.2$ gives $x^* = 1 + \\ln 2 \\approx 1.69$."
+
+  - id: laplace
+    title: {zh: "拉普拉斯平滑就是 MAP", en: "Laplace smoothing is a MAP estimate"}
+    prompt:
+      zh: "二值特征，类中 $n$ 个样本有 $m$ 个取 1。给概率 $\\theta$ 一个 $\\mathrm{Beta}(a+1, a+1)$ 先验，写出后验众数（MAP 估计）。可用变量：`m, n, a`。"
+      en: "A binary feature takes value 1 in $m$ of the class's $n$ samples. Put a $\\mathrm{Beta}(a+1, a+1)$ prior on its probability $\\theta$ and write the posterior mode (the MAP estimate). Variables: `m, n, a`."
+    answer: "(m + a) / (n + 2*a)"
+    vars: {m: [0, 5], n: [6, 20], a: [0.2, 3]}
+    solution:
+      zh: "后验 $\\propto \\theta^m(1-\\theta)^{n-m}\\cdot\\theta^{a}(1-\\theta)^{a} = \\theta^{m+a}(1-\\theta)^{n-m+a}$。取对数求导令其为 0：$\\frac{m+a}{\\theta} = \\frac{n-m+a}{1-\\theta}$，得 $\\hat\\theta = \\frac{m+a}{n+2a}$。$a = 1$ 是拉普拉斯平滑：相当于每个取值事先多见过一次。例题中复查组从未出现“不咳嗽”，$\\hat P(\\neg C\\mid +) = \\frac{0+1}{4+2} = \\frac16$ 而不是 0。"
+      en: "The posterior is $\\propto \\theta^m(1-\\theta)^{n-m}\\cdot\\theta^{a}(1-\\theta)^{a} = \\theta^{m+a}(1-\\theta)^{n-m+a}$. Setting the derivative of its log to 0, $\\frac{m+a}{\\theta} = \\frac{n-m+a}{1-\\theta}$, so $\\hat\\theta = \\frac{m+a}{n+2a}$. With $a = 1$ this is Laplace smoothing: as if every value had been seen once more. In the worked example the follow-up group never showed \"no cough\", and $\\hat P(\\neg C\\mid +) = \\frac{0+1}{4+2} = \\frac16$ instead of 0."
+
+  - id: qda-quad
+    title: {zh: "QDA 的二次项", en: "The quadratic term of QDA"}
+    prompt:
+      zh: "一维，两类方差分别为 $s_0, s_1$。对数几率 $\\log\\frac{P(1\\mid x)}{P(0\\mid x)}$ 中 $x^2$ 的系数是多少？可用变量：`s0, s1`。"
+      en: "In 1-D the classes have variances $s_0, s_1$. What is the coefficient of $x^2$ in the log-odds $\\log\\frac{P(1\\mid x)}{P(0\\mid x)}$? Variables: `s0, s1`."
+    answer: "1/(2*s0) - 1/(2*s1)"
+    vars: {s0: [0.3, 3], s1: [0.3, 3]}
+    solution:
+      zh: "对数几率含 $-\\frac{(x-\\mu_1)^2}{2s_1} + \\frac{(x-\\mu_0)^2}{2s_0}$，$x^2$ 的系数为 $\\frac{1}{2s_0} - \\frac{1}{2s_1}$。两方差相等时为 0，边界退化为一个点（多维时为超平面，即 LDA）；不等时对数几率是开口向上或向下的抛物线，可能有两个零点——方差大的那一类会在**两侧**都胜出。这就是 QDA 边界会“包住”紧凑那一类的原因。"
+      en: "The log-odds contain $-\\frac{(x-\\mu_1)^2}{2s_1} + \\frac{(x-\\mu_0)^2}{2s_0}$, so the coefficient of $x^2$ is $\\frac{1}{2s_0} - \\frac{1}{2s_1}$. With equal variances it is 0 and the boundary is a single point (a hyperplane in higher dimensions: LDA). Otherwise the log-odds are a parabola that can have two roots, and the class with the larger variance wins on **both** sides. That is why a QDA boundary can wrap around the tighter class."
+
+  - id: pooled-var
+    title: {zh: "合并方差", en: "Pooled variance"}
+    prompt:
+      zh: "LDA 用合并协方差。一维时，两类各有 $n_0, n_1$ 个样本，类内 MLE 方差为 $v_0, v_1$。写出合并方差（同时也是共享方差的 MLE）。可用变量：`n0, n1, v0, v1`。"
+      en: "LDA uses a pooled covariance. In 1-D the classes have $n_0, n_1$ samples with within-class MLE variances $v_0, v_1$. Write the pooled variance (which is also the MLE of the shared variance). Variables: `n0, n1, v0, v1`."
+    answer: "(n0*v0 + n1*v1)/(n0 + n1)"
+    vars: {n0: [2, 30], n1: [2, 30], v0: [0.2, 3], v1: [0.2, 3]}
+    solution:
+      zh: "共享方差 $s$ 时，对数似然中与 $s$ 有关的部分是 $-\\frac{n}{2}\\log s - \\frac{1}{2s}\\sum_i (x_i - \\mu_{y_i})^2$。求导为 0：$s = \\frac1n\\sum_i (x_i - \\mu_{y_i})^2 = \\frac{n_0v_0 + n_1v_1}{n_0 + n_1}$，即按样本数加权的类内方差平均。这就是 `pooled(priors, covs)` 要算的东西；它用全部 $n$ 个样本估计一个方差，比 QDA 每类单独估计稳得多。"
+      en: "With a shared variance $s$, the part of the log-likelihood that involves $s$ is $-\\frac{n}{2}\\log s - \\frac{1}{2s}\\sum_i (x_i - \\mu_{y_i})^2$. Setting the derivative to 0 gives $s = \\frac1n\\sum_i (x_i - \\mu_{y_i})^2 = \\frac{n_0v_0 + n_1v_1}{n_0 + n_1}$, the within-class variances averaged with sample-size weights. This is what `pooled(priors, covs)` computes; it uses all $n$ samples for one variance, which is far more stable than QDA's separate estimate per class."
+
+code:
+  - id: gda-nb
+    kind: implement
+    file: gda_nb.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现 LDA、QDA 与朴素贝叶斯", en: "LDA, QDA and naive Bayes from scratch"}
+    intro:
+      zh: "补全类别统计量、合并协方差、LDA 的 w 与 b、QDA 的对数几率，以及带拉普拉斯平滑的伯努利朴素贝叶斯。检查会和 scikit-learn 对拍，并重现讲义例题的 32/437。运行后可以回放：样本从 8 个增加到 200 个时，LDA 的直线和 QDA 的曲线怎样稳定下来（黄圈是当前用到的样本）。"
+      en: "Fill in the class statistics, the pooled covariance, LDA's w and b, QDA's log-odds, and Bernoulli naive Bayes with Laplace smoothing. The checks compare with scikit-learn and reproduce the notes' 32/437. Afterwards, replay how LDA's line and QDA's curve settle as the sample grows from 8 to 200 points (yellow rings mark the points in use)."
+    metrics:
+      - {key: acc, label: {zh: "训练准确率", en: "Training accuracy"}}
+  - id: gen-library
+    kind: library
+    file: gen_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 scikit-learn 组装生成式分类器", en: "Generative classifiers in scikit-learn"}
+    intro:
+      zh: "在乳腺癌数据上用交叉验证比较 LDA（收缩协方差）、QDA、高斯朴素贝叶斯和逻辑回归；再搭一条“词频 → 多项式朴素贝叶斯”的文本管道，给一小批病历分诊，并找出最指向“复查”的词。运行后可以逐个查看四种分类器在同一份二维数据上的边界。"
+      en: "Compare LDA (shrunk covariance), QDA, Gaussian naive Bayes and logistic regression by cross-validation on the breast-cancer data; then build a word counts → multinomial naive Bayes pipeline to triage a few notes and find the words that point most to a follow-up. Afterwards, flip through the four classifiers' boundaries on the same 2-D data."
+    metrics:
+      - {key: acc, label: {zh: "训练准确率", en: "Training accuracy"}}

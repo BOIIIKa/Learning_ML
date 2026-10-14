@@ -1,0 +1,145 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import PcaRotate from "../../components/chapters/ch12/PcaRotate";
+import LowRankImage from "../../components/chapters/ch12/LowRankImage";
+import ScreePlot from "../../components/chapters/ch12/ScreePlot";
+
+<Section lang="en" k="scenario">
+
+The hospital's lab reports keep getting longer: dozens of markers, many of which say the same thing. Several liver markers rise together, several lipid markers rise together. The doctors want a "thumbnail": two or three summary scores for dozens of markers, losing as little information as possible.
+
+Start with the simplest case: two strongly correlated markers. Can one number replace two?
+
+<PcaRotate client:visible lang="en" />
+
+This chapter answers:
+
+1. How do we find the "best" low-dimensional representation, and why are "keep the most variance" and "reconstruct most accurately" the same thing? (PCA.)
+2. What is the best low-rank approximation of a matrix? (The SVD and the Eckart–Young theorem.)
+3. How do these tools apply to text, uncovering the topics behind the words? (Latent semantic analysis.)
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Principal component analysis
+
+<Box kind="definition" title="Principal component analysis (PCA)">
+
+**Model**: the data lie close to a $k$-dimensional linear subspace: $x_i \approx \bar x + W z_i$, where $W \in \mathbb R^{p \times k}$ has orthonormal columns and $z_i = W^\top(x_i - \bar x)$ are the low-dimensional coordinates (principal component scores).
+
+**Strategy** (two equivalent statements):
+
+- maximize the projected variance $\mathrm{tr}(W^\top \Sigma W)$;
+- minimize the reconstruction error $\frac1n\sum_i \|x_i - \bar x - WW^\top(x_i - \bar x)\|^2$.
+
+**Algorithm**: take as $W$ the top $k$ eigenvectors of the sample covariance $\Sigma$, or equivalently the top $k$ right singular vectors of the centred data matrix.
+
+</Box>
+
+The $j$-th eigenvalue $\lambda_j$ is the variance along the $j$-th principal direction, and $\lambda_j/\sum_l \lambda_l$ is its **explained variance ratio**. A scree plot lays them out in decreasing order to help choose $k$:
+
+<ScreePlot client:visible lang="en" />
+
+**Standardize first?** PCA is scale-sensitive: the feature with the largest units dominates the first component. When features have different units, standardize them first (which amounts to PCA on the correlation matrix).
+
+### The singular value decomposition and low-rank approximation
+
+Every $m \times n$ matrix factors as $A = U\Sigma V^\top = \sum_j \sigma_j u_j v_j^\top$ with $\sigma_1 \ge \sigma_2 \ge \dots \ge 0$ (Chapter 00). Keeping only the first $k$ terms gives the **truncated SVD** $A_k$, the best approximation of $A$ among all matrices of rank at most $k$:
+
+<LowRankImage client:visible lang="en" />
+
+PCA and the SVD are linked: if the centred data matrix is $X_c = U\Sigma V^\top$, then the covariance is $\frac1n X_c^\top X_c = V\frac{\Sigma^2}{n}V^\top$. The right singular vectors are the principal directions and $\lambda_j = \sigma_j^2/n$. In practice one uses the SVD rather than forming the covariance explicitly, which is numerically more stable.
+
+### Latent semantic analysis and non-negative matrix factorization
+
+Write a document collection as a **term–document matrix** $A$ (entry $(i, j)$ is the count or TF-IDF weight of term $i$ in document $j$). Synonyms and related words appear together across documents, so the matrix is approximately low-rank. **Latent semantic analysis (LSA)** takes a truncated SVD of $A$: each singular vector is a "latent semantic direction" (a topic), and documents compared in these $k$ dimensions can be similar through shared topics even with no words in common.
+
+The SVD's factors can be positive or negative, which makes them hard to interpret. **Non-negative matrix factorization (NMF)** asks for $A \approx WH$ with $W, H \ge 0$: each document is a non-negative mix of topics and each topic a non-negative mix of words, more like a sum of parts. The usual multiplicative updates
+
+$$
+H \leftarrow H \odot \frac{W^\top A}{W^\top W H}, \qquad W \leftarrow W \odot \frac{A H^\top}{W H H^\top}
+$$
+
+(element-wise products and quotients) keep everything non-negative and never increase $\|A - WH\|_F^2$.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### PCA: Lagrange multipliers give the eigen-equation
+
+Start with one dimension: maximize $w^\top \Sigma w$ subject to $\|w\| = 1$. With the Lagrangian $L = w^\top \Sigma w - \lambda(w^\top w - 1)$, setting the derivative to zero gives
+
+$$
+\Sigma w = \lambda w.
+$$
+
+So $w$ must be an eigenvector of $\Sigma$, and the projected variance is $w^\top \Sigma w = \lambda$: take the eigenvector of the **largest** eigenvalue (derivation exercise 1). The second direction repeats this under the constraint of orthogonality to $w_1$, giving the eigenvector of the second largest eigenvalue, and so on.
+
+### Maximum variance = minimum reconstruction error
+
+For a unit vector $w$ and a centred $x$, Pythagoras gives
+
+$$
+\|x\|^2 = (w^\top x)^2 + \|x - ww^\top x\|^2.
+$$
+
+Averaging over samples: total variance $=$ projected variance $+$ reconstruction error (derivation exercise 3). The total variance does not depend on $w$, so maximizing the first is the same as minimizing the second. The same holds for $k$-dimensional subspaces: $\mathrm{tr}\,\Sigma = \mathrm{tr}(W^\top\Sigma W) + $ reconstruction error.
+
+<Box kind="theorem" title="The Eckart–Young theorem">
+
+Let $A = \sum_j \sigma_j u_j v_j^\top$ and $A_k = \sum_{j \le k}\sigma_j u_j v_j^\top$. For every matrix $B$ of rank at most $k$,
+
+$$
+\|A - B\|_F \ \ge\ \|A - A_k\|_F = \sqrt{\sigma_{k+1}^2 + \dots + \sigma_r^2}.
+$$
+
+(It also holds in the spectral norm, with error $\sigma_{k+1}$.)
+
+</Box>
+
+**Proof idea (spectral norm)**: $B$ has rank at most $k$, so its null space has dimension at least $n - k$ and must meet the $(k+1)$-dimensional span of $A$'s top $k+1$ right singular vectors in a non-zero vector. For a unit vector $x$ in that intersection, $\|(A - B)x\| = \|Ax\| \ge \sigma_{k+1}$. The Frobenius version follows term by term from Weyl's inequality $\sigma_{i+j-1}(A) \le \sigma_i(A - B) + \sigma_j(B)$ (derivation exercise 2 computes this error).
+
+### The multiplicative updates of NMF
+
+The gradient in $H$ is $\nabla_H = W^\top W H - W^\top A$; split it into a positive part $\nabla^+ = W^\top WH$ and a negative part $\nabla^- = W^\top A$. The update $H \leftarrow H \odot \nabla^-/\nabla^+$ is a gradient step with element-wise step size $H/(W^\top WH)$: adaptive, and always non-negative. Lee and Seung (2001) proved with an auxiliary function that it never increases the objective, the same "touch a bound, then push it" idea as EM.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example 1: PCA of two markers
+
+<Box kind="example" title="Covariance [[2, 1], [1, 2]]">
+
+Both markers have variance 2 and covariance 1. The characteristic equation $\det(\Sigma - \lambda I) = (2 - \lambda)^2 - 1 = 0$ gives $\lambda_1 = 3$ and $\lambda_2 = 1$, with directions $(1, 1)/\sqrt2$ and $(1, -1)/\sqrt2$.
+
+- The first principal component is the average of the two markers (times $\sqrt2$) and explains $3/(3+1) = 75\%$ of the variance.
+- Reconstructing from it alone leaves a mean error of $\lambda_2 = 1$; every other direction does worse.
+
+</Box>
+
+### Worked example 2: LSA on four documents
+
+<Box kind="example" title="A term–document matrix">
+
+Terms (rows): patient, doctor, stock, market; documents (columns) $D_1$–$D_4$:
+
+$$
+A = \begin{pmatrix} 2 & 1 & 0 & 0 \\ 1 & 2 & 0 & 1 \\ 0 & 0 & 2 & 1 \\ 0 & 0 & 1 & 1 \end{pmatrix}.
+$$
+
+The singular values are $\approx 3.146,\ 2.578,\ 1.164,\ 0.318$; keeping the first two retains $(\sigma_1^2 + \sigma_2^2)/\sum\sigma_j^2 \approx 91.9\%$ of the energy. In the two-dimensional latent space the cosine similarity of $D_1$ and $D_2$ (both about medicine) rises from $0.80$ on raw counts to $0.994$: the two topics separate, and wording differences within a topic are smoothed out.
+
+</Box>
+
+### Extensions
+
+- **Probabilistic PCA and factor analysis**: adding a Gaussian noise model to PCA allows fitting by EM, handling missing values and computing likelihoods (Chapter 11).
+- **Kernel PCA**: replace inner products by a kernel and do PCA in a high-dimensional feature space (Chapter 07).
+- **Non-linear dimension reduction**: t-SNE and UMAP preserve local neighbourhoods and are good for visualization, but distances and cluster sizes in their plots cannot be read literally; autoencoders are the non-linear generalization of PCA (Part IV).
+- **Recommender systems and matrix completion**: user–item rating matrices are mostly missing and are completed by low-rank factorization; the nuclear norm is the convex relaxation of rank.
+- **Word vectors**: LSA is the ancestor of word embeddings; word2vec was shown to implicitly factorize a shifted pointwise-mutual-information matrix (Levy and Goldberg, 2014).
+
+</Section>

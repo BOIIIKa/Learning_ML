@@ -1,0 +1,202 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import MhSampler from "../../components/chapters/ch13/MhSampler";
+import PageRankSurfer from "../../components/chapters/ch13/PageRankSurfer";
+import LdaTopics from "../../components/chapters/ch13/LdaTopics";
+
+<Section lang="zh" k="scenario">
+
+医院的统计师建了一个贝叶斯模型来估计新疗法的效果。后验分布写得出来——先验乘以似然——却积不出归一化常数，更算不出后验均值和可信区间。参数一多，网格积分也不可能。
+
+换个思路：如果能**从后验里抽样**，均值、区间都只是样本的平均和分位数。下面这条链就在做这件事，它只需要知道密度“正比于什么”：
+
+<MhSampler client:visible lang="zh" />
+
+这一章回答：
+
+1. 怎样构造一条马尔可夫链，让它最终的分布恰好是我们想要的分布？（细致平衡与 Metropolis–Hastings）
+2. 网页的“重要性”和马尔可夫链有什么关系？（PageRank 是平稳分布）
+3. 怎样从一堆没有标签的文档里找出话题？（LDA 与吉布斯采样）
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 马尔可夫链与平稳分布
+
+<Box kind="definition" title="马尔可夫链">
+
+状态序列 $X_0, X_1, \dots$ 满足 $P(X_{t+1} = j \mid X_t = i, X_{t-1}, \dots) = P_{ij}$：下一步只依赖当前状态。行和为 1 的矩阵 $P$ 称为**转移矩阵**。若分布 $\pi$ 满足
+
+$$
+\pi^\top P = \pi^\top,
+$$
+
+称 $\pi$ 为**平稳分布**：链一旦处于 $\pi$，就永远处于 $\pi$。
+
+</Box>
+
+链**不可约**（任意两状态互相可达）且**非周期**时，平稳分布唯一，并且无论从哪里出发，$X_t$ 的分布都收敛到 $\pi$；时间平均 $\frac1T\sum_t f(X_t) \to \mathbb E_\pi f$（遍历定理）。MCMC 的全部想法就是反过来用这条定理：**先给定 $\pi$，再设计一条以它为平稳分布的链。**
+
+### Metropolis–Hastings
+
+<Box kind="definition" title="Metropolis–Hastings 算法">
+
+目标 $\pi(x) \propto \tilde\pi(x)$（只需知道未归一化的 $\tilde\pi$），提议分布 $q(x' \mid x)$。每一步：
+
+1. 从 $q(\cdot \mid x)$ 提议 $x'$；
+2. 以概率 $\displaystyle \alpha(x, x') = \min\!\left(1, \frac{\tilde\pi(x')\,q(x \mid x')}{\tilde\pi(x)\,q(x' \mid x)}\right)$ 接受，移动到 $x'$；否则留在 $x$（**仍记一个样本**）。
+
+对称提议（如 $x' = x + \varepsilon$，$\varepsilon \sim \mathcal N(0, s^2 I)$）时 $q$ 约掉，就是 Metropolis 算法。
+
+</Box>
+
+归一化常数在比值里抵消——这正是它能用于后验的原因。步长 $s$ 是唯一的旋钮：太小，几乎全接受但挪不动；太大，几乎全拒绝。经验上随机游走 Metropolis 的接受率在 $0.2$–$0.5$ 时混合最快（高维时理论最优约 $0.234$）。前面一段受初值影响的样本（**预烧期**）要丢掉。
+
+**吉布斯采样**是 M–H 的特例：轮流从每个坐标的条件分布 $\pi(x_j \mid x_{-j})$ 中抽样，接受率恒为 1。条件分布好抽时（共轭模型）它最方便。
+
+### PageRank：网页上的随机游走
+
+一个**随机冲浪者**在网页间游走：以概率 $d$ 随机点当前页面的一条外链，以概率 $1 - d$ 跳到任意一个页面。冲浪者长期停留在各页面的比例，就是 **PageRank**：
+
+<PageRankSurfer client:visible lang="zh" />
+
+写成矩阵：$M_{ij} = 1/\mathrm{out}(j)$（若 $j$ 链向 $i$），则
+
+$$
+r = \frac{1 - d}{n}\mathbf 1 + d\,M r.
+$$
+
+没有外链的页面（悬挂结点）视作链向所有页面。$d = 0.85$ 是经典取值；**幂迭代**从均匀分布出发反复代入，即可求出 $r$。
+
+### 主题模型：LDA
+
+<Box kind="definition" title="潜在狄利克雷分配（LDA）">
+
+$K$ 个话题，每个话题 $k$ 是词表上的分布 $\phi_k \sim \mathrm{Dir}(\beta)$；每篇文档 $d$ 有话题比例 $\theta_d \sim \mathrm{Dir}(\alpha)$。文档中的每个词：先抽话题 $z \sim \theta_d$，再抽词 $w \sim \phi_z$。
+
+**推断**：给定词，求话题指派 $z$ 的后验。把 $\theta, \phi$ 积掉后，对每个词的话题做**塌缩吉布斯采样**：
+
+$$
+P(z_i = k \mid z_{-i}, w) \ \propto\ (n_{dk}^{-i} + \alpha)\,\frac{n_{kw}^{-i} + \beta}{n_k^{-i} + V\beta}.
+$$
+
+$n_{dk}$ 是文档 $d$ 中话题 $k$ 的词数，$n_{kw}$ 是词 $w$ 被分到话题 $k$ 的次数，$n_k = \sum_w n_{kw}$，上标 $-i$ 表示去掉当前这个词。
+
+</Box>
+
+两个因子正好对应直觉：“这篇文档里话题 $k$ 常见” × “话题 $k$ 里这个词常见”。拖动下面的扫描轮数，看话题从随机分配中自己分开：
+
+<LdaTopics client:visible lang="zh" />
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 细致平衡 ⇒ 平稳
+
+<Box kind="theorem" title="细致平衡条件">
+
+若对所有状态 $x, x'$ 有 $\pi(x)\,T(x \to x') = \pi(x')\,T(x' \to x)$，则 $\pi$ 是转移核 $T$ 的平稳分布。
+
+</Box>
+
+**证明**：对 $x$ 求和，
+
+$$
+\sum_x \pi(x)\,T(x \to x') = \sum_x \pi(x')\,T(x' \to x) = \pi(x')\sum_x T(x' \to x) = \pi(x').
+$$
+
+细致平衡说的是“任何两个状态之间，来回的概率流相等”，比平稳更强，却更容易验证。
+
+### M–H 满足细致平衡
+
+对 $x' \ne x$，转移核是 $T(x \to x') = q(x' \mid x)\,\alpha(x, x')$。于是
+
+$$
+\pi(x)\,q(x' \mid x)\,\alpha(x, x') = \min\big(\pi(x)\,q(x' \mid x),\ \pi(x')\,q(x \mid x')\big).
+$$
+
+右边关于 $x, x'$ 对称，所以等于 $\pi(x')\,q(x \mid x')\,\alpha(x', x)$——细致平衡成立，$\pi$ 是平稳分布。（$x' = x$ 的部分两边相同，无需验证。）
+
+吉布斯采样每次只更新坐标 $j$，提议就是 $q(x' \mid x) = \pi(x_j' \mid x_{-j})$。代入接受率：
+
+$$
+\frac{\pi(x')\,\pi(x_j \mid x_{-j})}{\pi(x)\,\pi(x_j' \mid x_{-j})} = \frac{\pi(x_j' \mid x_{-j})\,\pi(x_{-j})\,\pi(x_j \mid x_{-j})}{\pi(x_j \mid x_{-j})\,\pi(x_{-j})\,\pi(x_j' \mid x_{-j})} = 1,
+$$
+
+所以吉布斯永远接受。
+
+### PageRank 的存在唯一性
+
+令 $G = \frac{1 - d}{n}\mathbf 1\mathbf 1^\top + dM$（$M$ 已处理悬挂结点、各列和为 1）。$G$ 的每个元素都严格为正，各列和为 1。
+
+<Box kind="theorem" title="Perron–Frobenius（正矩阵）">
+
+严格正的列随机矩阵有特征值 $1$，对应唯一的正特征向量（归一化后和为 1）；其余特征值的模都严格小于 1。
+
+</Box>
+
+所以 PageRank $r = Gr$ 存在且唯一，幂迭代以 $|\lambda_2|^t$ 的速度收敛；可以证明 $|\lambda_2| \le d$——$d$ 越接近 1 收敛越慢。注意 $\mathbf 1^\top r = 1$ 时 $\frac{1 - d}{n}\mathbf 1\mathbf 1^\top r = \frac{1 - d}{n}\mathbf 1$，这就是方法一节里的迭代式。
+
+### 塌缩吉布斯条件分布的来历
+
+$P(z_i = k \mid z_{-i}, w) \propto P(z_i = k, w_i \mid z_{-i}, w_{-i})$。积掉 $\theta_d$：狄利克雷–多项共轭给出预测概率 $\frac{n_{dk}^{-i} + \alpha}{n_d - 1 + K\alpha}$；积掉 $\phi_k$：$\frac{n_{kw}^{-i} + \beta}{n_k^{-i} + V\beta}$。第一个分母与 $k$ 无关，丢掉即得方法一节的公式。整个推断只需要维护三张计数表。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题一：三页网的 PageRank
+
+<Box kind="example" title="A → B, C；B → C；C → A，d = 0.85">
+
+$A$ 有两条外链，$B$、$C$ 各一条。方程
+
+$$
+r_A = 0.05 + 0.85\,r_C,\quad r_B = 0.05 + 0.425\,r_A,\quad r_C = 0.05 + 0.425\,r_A + 0.85\,r_B.
+$$
+
+解得 $r = (686, 380, 703)/1769 \approx (0.388, 0.215, 0.397)$。$C$ 最高：它同时收到 $A$ 和 $B$ 的票。
+
+幂迭代从 $(\frac13, \frac13, \frac13)$ 出发：
+
+- 第 1 步 $(0.333, 0.192, 0.475)$；
+- 第 2 步 $(0.454, 0.192, 0.355)$；
+- 第 3 步 $(0.351, 0.243, 0.406)$。
+
+它绕着答案振荡着收敛：$G$ 的另两个特征值是一对模为 $0.601$ 的复数，误差每步缩小约四成。
+
+</Box>
+
+### 例题二：一次 Metropolis 判断
+
+<Box kind="example" title="标准正态目标">
+
+目标 $\pi(x) \propto e^{-x^2/2}$，当前 $x = 0$，对称提议到 $x' = 1$。接受率 $\min(1, e^{-1/2}) \approx 0.607$：抽 $u \sim U(0,1)$，$u \lt 0.607$ 就移动。反过来从 $x = 1$ 提议到 $0$，密度变大，必然接受。两个方向一个“总是”、一个“六成”，正好让 $0$ 处停留的时间是 $1$ 处的 $e^{1/2}$ 倍——细致平衡。
+
+</Box>
+
+### 例题三：一个词的话题
+
+<Box kind="example" title="LDA 条件概率，K = 2，V = 8，α = 0.5，β = 0.1">
+
+文档里出现“股票”。去掉它后，这篇文档有 3 个词属于话题 1、1 个属于话题 2；全语料中“股票”被分到话题 1 有 0 次、话题 2 有 4 次；两个话题的总词数分别为 10 和 12。
+
+$$
+p_1 \propto 3.5 \times \frac{0.1}{10.8} \approx 0.0324,\qquad p_2 \propto 1.5 \times \frac{4.1}{12.8} \approx 0.4805.
+$$
+
+归一化后 $P(z = 2) \approx 0.937$：虽然这篇文档偏话题 1，“股票”在话题 2 中太常见，它几乎一定被分到话题 2。
+
+</Box>
+
+### 拓展
+
+- **收敛诊断**：多条链从分散的初值出发，比较链间与链内方差（$\hat R$）；有效样本量 ESS 扣除自相关。
+- **哈密顿蒙特卡洛（HMC）**：用梯度和“动量”做长距离提议，高维时远比随机游走高效；NUTS 自动选步数，是 Stan、PyMC 的默认采样器。
+- **变分推断**：把采样换成优化（第 11 章的 ELBO），LDA 的在线变分算法能处理上百万文档——scikit-learn 的 `LatentDirichletAllocation` 用的就是它。
+- **扩散模型与朗之万动力学**：沿 $\nabla\log\pi$ 加噪声地走，就是 MCMC；扩散模型学习的正是这个“分数”（第五部分）。
+- **马尔可夫链的谱**：PageRank 的收敛速度由谱间隙决定；同样的思想用于谱聚类和图上的随机游走嵌入（DeepWalk）。
+
+</Section>

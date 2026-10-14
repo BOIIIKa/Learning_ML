@@ -1,0 +1,192 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import GaussianBoundaries from "../../components/chapters/ch05/GaussianBoundaries";
+import NaiveBayesCounts from "../../components/chapters/ch05/NaiveBayesCounts";
+import GenVsDisc from "../../components/chapters/ch05/GenVsDisc";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 05 章 · 动画课程" title="生成式分类：朴素贝叶斯与判别分析" say="不直接学边界，而是先描述每一类长什么样，再用贝叶斯公式翻转过来。">
+
+先画像，再翻转 · LDA 与 QDA · 朴素贝叶斯
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="先给每一类画像" say="老医生说：我先描述需要复查的人长什么样，再描述不需要的人。">
+
+<Step drive="s1=120/3; s1=35/2" say="每一类病人用一团高斯描述：一个中心，一个椭圆形的散布。">每一类：一团高斯 $\mathcal N(\mu_k, \Sigma_k)$</Step>
+
+<Step say="来了新病人，用贝叶斯公式比较他更像哪一团。边界是翻转出来的。">贝叶斯公式翻转：$P(y\mid x) \propto \pi_y\, p(x\mid y)$</Step>
+
+<Step drive="click:chip1; wait:1.5; click:chip2" say="两团形状相同时边界是直线；形状不同时，边界弯了。">共享形状 → 直线；形状不同 → 曲线</Step>
+
+<Step drive="s3=0.2/3; s3=0.5/2" say="改变先验，所有边界一起平移：先验只改截距。">先验只平移边界</Step>
+
+<div slot="visual"><GaussianBoundaries client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="第一，什么时候边界是直线，什么时候是曲线？">
+<p class="big-q sm">边界何时是直线，何时是曲线？</p>
+</Step>
+
+<Step say="第二，生成式的 LDA 和判别式的逻辑回归，边界形式一样，差在哪里？">LDA 与逻辑回归：形式相同，差在哪里？</Step>
+
+<Step say="第三，特征成千上万时，生成式模型还怎么算？">特征成千上万时怎么办？</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="生成式分类器" say="还是三要素。">
+
+<Step say="模型：类先验乘以类条件密度，就是联合分布。">**模型**：$p(x, y) = \pi_y\, p(x \mid y)$</Step>
+
+<Step say="策略：最大化联合似然，预测时取后验最大的类。">**策略**：联合似然最大；$\hat y = \arg\max_k \pi_k\, p(x\mid k)$</Step>
+
+<Step say="算法：只是数数和求平均，参数都有闭式解。">**算法**：数数与求平均，闭式解</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="共享协方差 ⇒ 直线" say="看两类的对数几率。">
+
+<Morph>
+
+<Step effect="morph" say="对数几率等于先验比的对数，加上两个密度比的对数。">
+
+$$
+\log\frac{P(1\mid x)}{P(0\mid x)} = \log\frac{\pi_1}{\pi_0} + \log\frac{p(x\mid 1)}{p(x\mid 0)}
+$$
+
+</Step>
+
+<Step effect="morph" say="代入共享协方差的高斯，行列式项相消。">
+
+$$
+\log\frac{P(1\mid x)}{P(0\mid x)} = \log\frac{\pi_1}{\pi_0} - \tfrac12(x-\mu_1)^\top\Sigma^{-1}(x-\mu_1) + \tfrac12(x-\mu_0)^\top\Sigma^{-1}(x-\mu_0)
+$$
+
+</Step>
+
+<Step effect="morph" say="展开后 x 的二次项也相消，只剩一次项和常数。">
+
+$$
+\log\frac{P(1\mid x)}{P(0\mid x)} = (\mu_1-\mu_0)^\top\Sigma^{-1}x + b
+$$
+
+</Step>
+
+<Step effect="morph" say="记 w 等于 Sigma 逆乘以均值之差。">
+
+$$
+\log\frac{P(1\mid x)}{P(0\mid x)} = w^\top x + b, \quad w = \Sigma^{-1}(\mu_1-\mu_0)
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="所以 LDA 的后验正好是 sigmoid of w x 加 b：和逻辑回归同一个模型族。">
+<p class="big-q sm">LDA 的后验 = $\sigma(w^\top x + b)$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="同一模型族，不同估计策略" say="那 LDA 和逻辑回归差在哪里？">
+
+<Step say="LDA 最大化联合似然，用均值和协方差直接算出 w 和 b。">LDA：最大化 $\sum_i \log p(x_i, y_i)$，闭式解</Step>
+
+<Step say="逻辑回归最大化条件似然，只关心边界，对 x 的分布不做假设。">逻辑回归：最大化 $\sum_i \log P(y_i\mid x_i)$，迭代求解</Step>
+
+<Step say="一维例子：均值零和二，方差一，复查的先验是零点二。阈值从中点一退到一加 ln 2，约一点六九。">$\mu_0 = 0,\ \mu_1 = 2,\ \sigma^2 = 1,\ \pi_1 = 0.2$：$x^* = 1 + \ln 2 \approx 1.69$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="QDA：各有各的形状" say="如果两类的协方差不同呢？">
+
+<Step drive="s2=1.6/3; s1=90/3" say="二次项不再相消，边界变成椭圆、双曲线或抛物线。">$-\tfrac12 x^\top(\Sigma_1^{-1}-\Sigma_0^{-1})x$ 留下来 → 二次曲线</Step>
+
+<Step say="下方的测试误差：形状真的不同时，QDA 比 LDA 好。">形状不同：QDA 测试误差更低</Step>
+
+<Step drive="click:chip1" say="但 QDA 每类要多估计一整个协方差矩阵。样本少时，LDA 更稳：又是偏差与方差。">参数更多 → 方差更大：偏差–方差</Step>
+
+<div slot="visual"><GaussianBoundaries client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="朴素贝叶斯：数一数" say="特征成千上万时，连一个协方差矩阵都估计不动。">
+
+<Step say="朴素贝叶斯假设：给定类别，各特征相互独立。参数从 p 的平方降到 p。">$p(x\mid k) = \prod_j p(x_j\mid k)$：参数 $O(p)$</Step>
+
+<Step drive="click:chip1; s1=0/2" say="既不发热也不咳嗽的新病人。不平滑时，复查组从没见过不咳嗽，一个零把后验乘成零。">零计数 ⇒ 后验 $= 0$</Step>
+
+<Step drive="s1=1/2" say="拉普拉斯平滑：每个格子先假装多见过一次。后验变成零点零七三。">$\alpha = 1$：$P(+\mid \neg F, \neg C) = 32/437 \approx 0.073$</Step>
+
+<Step drive="click:chip2" say="发热又咳嗽的病人，从零点九变成零点七九八：平滑也让小样本的结论不那么极端。">$P(+\mid F, C)$：$0.9 \to 320/401 \approx 0.798$</Step>
+
+<div slot="visual"><NaiveBayesCounts client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="拉普拉斯平滑就是 MAP" say="平滑从哪里来？给概率 theta 一个 Beta 先验。">
+
+<Morph>
+
+<Step effect="morph" say="n 个样本里有 m 个取一，似然是这样。">
+
+$$
+\theta^{m}(1-\theta)^{n-m}
+$$
+
+</Step>
+
+<Step effect="morph" say="乘上 Beta 先验，相当于事先多见过 alpha 个一和 alpha 个零。">
+
+$$
+\theta^{m}(1-\theta)^{n-m}\cdot\theta^{\alpha}(1-\theta)^{\alpha}
+$$
+
+</Step>
+
+<Step effect="morph" say="合并指数。">
+
+$$
+\theta^{m+\alpha}(1-\theta)^{n-m+\alpha}
+$$
+
+</Step>
+
+<Step effect="morph" say="求众数：正是拉普拉斯平滑。">
+
+$$
+\hat\theta = \frac{m+\alpha}{n+2\alpha}
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="和第三章一样：惩罚就是先验，平滑就是先验。">平滑 = 先验（与第 03 章同一个故事）</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="生成式先跑，判别式后追" say="谁更好？看学习曲线。">
+
+<Step drive="click:chip1; s1=0/1; s1=12/5" say="特征真的条件独立时，朴素贝叶斯学得更快，最终两者一样好。">假设成立：朴素贝叶斯更快，极限相同</Step>
+
+<Step drive="click:chip2; s1=0/1; s1=12/5" say="混入两个重复特征：朴素贝叶斯把同一份证据数了三遍，停在更高处；逻辑回归后来居上。">假设不成立：曲线交叉，逻辑回归极限更低</Step>
+
+<Step say="Ng 与 Jordan 证明：朴素贝叶斯只需对数 p 个样本接近其极限，逻辑回归需要 p 个。">$O(\log p)$ vs $O(p)$（Ng 与 Jordan 2001）</Step>
+
+<div slot="visual"><GenVsDisc client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现 LDA、QDA 和朴素贝叶斯，再用 scikit-learn 比较四种分类器并搭一条文本分类管道。">
+
+<Step say="代码运行后，可以回放样本越来越多时，LDA 的直线和 QDA 的曲线怎样稳定下来。">✎ 4 道推导 · ⌨ LDA + QDA + 朴素贝叶斯 · ⚙ 判别分析与文本管道</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/generative-classifiers/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

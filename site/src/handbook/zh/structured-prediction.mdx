@@ -1,0 +1,35 @@
+---
+title: "序列标注实战：HMM、CRF 与神经序列模型"
+summary: "数值下溢、解码方式的选择、常用库，以及什么时候结构化解码值得做。"
+chapters: ["09"]
+---
+
+### 常用代码
+
+```python
+# HMM：hmmlearn（CategoricalHMM / GaussianHMM）
+from hmmlearn import hmm
+m = hmm.CategoricalHMM(n_components=2, n_iter=100, random_state=0).fit(O.reshape(-1, 1))
+states = m.predict(O.reshape(-1, 1))          # 维特比
+post = m.predict_proba(O.reshape(-1, 1))       # 前向–后向的 γ
+
+# 线性链 CRF：sklearn-crfsuite（特征是每个位置的 dict）
+import sklearn_crfsuite
+crf = sklearn_crfsuite.CRF(algorithm="lbfgs", c1=0.1, c2=0.1, max_iterations=100)
+crf.fit(X_train_feats, y_train)
+```
+
+### 容易踩的坑
+
+- **下溢**：$\alpha$ 随长度指数衰减，几百步就变成 0。要么逐步缩放，要么全程在对数空间里算（log-sum-exp）。
+- **局部极大**：Baum–Welch 对初值敏感。多次随机初始化、取似然最大的；状态数用 BIC 或留出集似然选。
+- **状态的含义**：无监督学到的状态编号是任意的（标签交换），需要事后看发射分布来解释。
+- **解码方式要配合评价指标**：按位置的准确率用后验最大（$\gamma$）；整条序列对不对用维特比；实体级 F1 往往维特比更好。
+- **先试滑动窗口 + 普通分类器**：有时这已经足够；结构化解码在标签强相关（粘滞、语法约束）时收益最大。
+
+### 前沿阅读
+
+- Rabiner（1989）：HMM 的经典教程。
+- Lafferty、McCallum、Pereira（2001）：条件随机场原始论文。
+- Lample 等（2016）：BiLSTM-CRF 用于命名实体识别。
+- Gu 与 Dao（2023）：Mamba，选择性状态空间模型——线性递推加并行扫描，可以与 HMM 的前向算法对照理解。
