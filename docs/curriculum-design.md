@@ -59,5 +59,5 @@
 ## 5. 进展
 
 - 技术栈已确定：Astro + React + TypeScript，SVG 与 d3 负责可视化，KaTeX 负责公式，Pyodide 在浏览器中运行 Python。章节的六段式结构与练习系统见 [exercises-design.md](exercises-design.md)。
-- 已完成第 00 章（数学工具箱）、第 07 章（支持向量机）、第 08 章（决策树与集成学习），每章都有中英双语的竖版讲义、横版动画课程、一页纸总结和课后练习。
+- 已完成第 00–03、07、08 章，每章都有中英双语的竖版讲义、横版动画课程、一页纸总结和课后练习。最新进度见 [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) 与 [HANDOFF.md](HANDOFF.md)。
 - 网站通过 `.github/workflows/pages.yml` 部署到 GitHub Pages（推送到 main 分支时自动触发）。
