@@ -2,10 +2,11 @@
 // its narration runs as a subtitle (optionally spoken) and widget scripts (`drive`) operate the
 // figures. A click (or Space) plays the current card to its end and then pauses, leaving the
 // student time to think; the next click moves on. "Auto" plays straight through.
-// ← / → jump between beats, the progress bar jumps between parts.
+// ← / → step through beats, PageUp / PageDown (and swipes, the wheel, the ⏮ ⏭ buttons) turn cards,
+// the progress bar jumps between parts and the overview (O) jumps to any card.
 import { renderRich } from "../../lib/rich";
 import { Clock } from "../../manim/clock";
-import { createSvg, fadeIn, fadeOut, indicate, morph, write } from "../../manim/animations";
+import { createSvg, fadeIn, indicate, morph, write } from "../../manim/animations";
 import { parseDrive, runDrive } from "../../manim/drive";
 
 interface Labels { play: string; pause: string; voiceOn: string; voiceOff: string; next: string }
@@ -19,11 +20,12 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   const subtitle = root.querySelector<HTMLElement>(".subtitle-text")!;
   const counter = root.querySelector<HTMLElement>(".stage-counter")!;
   const playBtn = root.querySelector<HTMLButtonElement>("[data-act=play]")!;
-  const voiceBtn = root.querySelector<HTMLButtonElement>("[data-act=voice]")!;
+  const voiceBtn = root.querySelector<HTMLButtonElement>("[data-act=voice]"); // narration voice: currently switched off in the markup
   const speedBtn = root.querySelector<HTMLButtonElement>("[data-act=speed]")!;
   const startOverlay = root.querySelector<HTMLElement>(".start-overlay")!;
   const endOverlay = root.querySelector<HTMLElement>(".end-overlay")!;
   const autoBtn = root.querySelector<HTMLButtonElement>("[data-act=auto]");
+  const overview = root.querySelector<HTMLElement>(".overview");
   const segments = [...root.querySelectorAll<HTMLElement>(".seg")];
   // The course *is* the animation, so it ignores prefers-reduced-motion: that setting is often on
   // system-wide (e.g. Windows "animation effects" off), and the lesson would show no movement.
@@ -38,6 +40,7 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   let active = false; // a timeline loop is running (possibly paused mid-card)
   let auto = false; // play straight through instead of pausing after each card
   let takeover: AbortController | null = null; // aborted when the student grabs a control
+  let pendingTurn: HTMLElement | null = null; // a card still sliding out when the next one is introduced
 
   const stepsOf = (i: number) => [...slides[i].querySelectorAll<HTMLElement>(".step")];
 
@@ -207,8 +210,10 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     while (!signal.aborted) {
       if (fresh) {
         applyState();
+        const turning = pendingTurn ? turn(pendingTurn, slides[slide], 1, signal) : Promise.resolve();
+        pendingTurn = null;
         const intro = enterSlide(signal);
-        await Promise.all([intro, narrate(slides[slide].dataset.say ?? "", signal)]);
+        await Promise.all([intro, turning, narrate(slides[slide].dataset.say ?? "", signal)]);
         await clock.wait(350, signal);
         fresh = false;
         continue;
@@ -224,20 +229,27 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
       // End of the card: pause for thinking unless the student asked to go on (or Auto is on).
       if (!auto && !advance) { cardDone(); return; }
       advance = false;
-      // Clear the stage (FadeOut of everything), then the next slide.
-      await leaveSlide(signal);
-      if (signal.aborted) return;
+      // Turn the page: the next card slides in while its title is written.
+      pendingTurn = slides[slide];
       slide++;
       step = 0;
       fresh = true;
     }
   }
 
-  /** FadeOut of everything on the current slide, then reset it for a later visit. */
-  async function leaveSlide(signal: AbortSignal) {
-    const s = slides[slide];
-    await Promise.all([...s.children].map((c) => (c.classList.contains("slide-bg") ? Promise.resolve() : fadeOut(clock, c, { signal }))));
-    s.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+  /** Page turn: the old card slides out while the new one (already active) slides in, together.
+   * UI motion, so it runs on real time rather than the (pausable) lesson clock. */
+  function turn(from: HTMLElement, to: HTMLElement, dir: number, signal?: AbortSignal): Promise<void> {
+    if (from === to) return Promise.resolve();
+    from.classList.add("leaving");
+    const out = from.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translateX(${-90 * dir}px)` }], { duration: 300, easing: "cubic-bezier(.4,0,.7,.2)", fill: "forwards" });
+    const inn = to.animate([{ opacity: 0, transform: `translateX(${90 * dir}px)` }, { opacity: 1, transform: "none" }], { duration: 420, easing: "cubic-bezier(.2,.8,.2,1)" });
+    const end = () => { try { out.finish(); inn.finish(); } catch { /* already done */ } };
+    signal?.addEventListener("abort", end, { once: true });
+    return Promise.all([out.finished, inn.finished]).catch(() => {}).then(() => {
+      from.classList.remove("leaving");
+      from.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    });
   }
 
   function restart(fresh: boolean, advance = false) {
@@ -272,20 +284,22 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     run?.abort();
     active = false;
     clock.finishAll();
+    // Stepping by hand while paused must still animate: a paused clock would freeze the beat's
+    // entrance on its first frame (text invisible or glyphs stuck mid-morph). Nothing else runs now.
+    if (!playing) clock.setPaused(false);
     if ("speechSynthesis" in window) speechSynthesis.cancel();
     root.classList.remove("card-done");
     run = new AbortController();
     const signal = run.signal;
     newSlide = Math.max(0, Math.min(slides.length - 1, newSlide));
     const changed = newSlide !== slide;
-    if (changed && animate) {
-      // Text and figures leave before the next card comes in.
-      const wasPaused = clock.paused;
-      clock.setPaused(false);
-      await leaveSlide(signal);
-      clock.setPaused(wasPaused);
-      if (signal.aborted) return;
-    } else if (changed) slides[slide].getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    const from = slides[slide];
+    const dir = newSlide > slide ? 1 : -1;
+    if (changed) {
+      from.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      pendingTurn?.classList.remove("leaving");
+      pendingTurn = null;
+    }
     slide = newSlide;
     const steps = stepsOf(slide);
     step = Math.max(0, Math.min(steps.length, newStep));
@@ -306,13 +320,16 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
         if (playing) { await clock.wait(450, signal); if (!signal.aborted) await timeline(signal, false); }
       });
     } else if (playing && changed && step === 0) {
+      if (changed) { from.classList.add("leaving"); pendingTurn = from; }
       void timeline(signal, true);
+      return;
     } else {
       applyState();
       if (changed && animate) void enterSlide(signal);
       showSubtitle(currentSay());
       if (playing) void clock.wait(1200, signal).then(() => { if (!signal.aborted) void timeline(signal, false); });
     }
+    if (changed) void turn(from, slides[slide], dir, signal);
   }
 
   const next = () => {
@@ -324,6 +341,23 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     if (step > 0) void jumpTo(slide, step - 1, false);
     else if (slide > 0) void jumpTo(slide - 1, stepsOf(slide - 1).length, false);
   };
+  /** Card-level page turns: the next card arrives fresh (and plays if playing); the previous card
+   * comes back fully revealed, for review. */
+  const nextCard = () => { if (slide < slides.length - 1) void jumpTo(slide + 1, 0, true); };
+  const prevCard = () => { if (slide > 0) void jumpTo(slide - 1, stepsOf(slide - 1).length, false); };
+  /** Play the current card again from its first beat. */
+  function replayCard() {
+    slides[slide].getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    step = 0;
+    startOverlay.hidden = true;
+    endOverlay.hidden = true;
+    playing = true;
+    playBtn.textContent = "❚❚";
+    playBtn.title = labels.pause;
+    root.classList.add("playing");
+    clock.setPaused(false);
+    restart(true);
+  }
 
   // ---------- play / pause / voice / speed ----------
   function setPlaying(on: boolean) {
@@ -369,7 +403,7 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     autoBtn.setAttribute("aria-pressed", String(auto));
     if (auto && !playing && root.classList.contains("card-done")) toggle();
   });
-  voiceBtn.addEventListener("click", () => {
+  voiceBtn?.addEventListener("click", () => {
     voice = !voice;
     voiceBtn.classList.toggle("on", voice);
     voiceBtn.title = voice ? labels.voiceOff : labels.voiceOn;
@@ -382,6 +416,41 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   });
   root.querySelector("[data-act=next]")!.addEventListener("click", next);
   root.querySelector("[data-act=prev]")!.addEventListener("click", prev);
+  root.querySelector("[data-act=next-card]")?.addEventListener("click", nextCard);
+  root.querySelector("[data-act=prev-card]")?.addEventListener("click", prevCard);
+  root.querySelector("[data-act=replay-card]")?.addEventListener("click", replayCard);
+
+  // ---------- overview: every card at a glance, click to jump ----------
+  const cardName = (s: HTMLElement) => {
+    const t = s.querySelector(".slide-h2, .slide-h1")?.textContent?.trim();
+    if (t) return t;
+    const first = s.querySelector<HTMLElement>(".big-q, .step, .slide-main");
+    return (first?.dataset.say || first?.textContent || "").trim().slice(0, 40) || "…";
+  };
+  if (overview) {
+    const list = overview.querySelector<HTMLElement>(".ov-list")!;
+    slides.forEach((s, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = `ov-item part-${s.dataset.part}`;
+      b.innerHTML = `<span class="ov-n"></span><span class="ov-t"></span>`;
+      b.querySelector(".ov-n")!.textContent = String(i + 1).padStart(2, "0");
+      b.querySelector(".ov-t")!.textContent = cardName(s);
+      b.addEventListener("click", () => { showOverview(false); void jumpTo(i, 0, true); });
+      list.appendChild(b);
+    });
+  }
+  function showOverview(on: boolean) {
+    if (!overview) return;
+    overview.hidden = !on;
+    overview.querySelectorAll(".ov-item").forEach((b, i) => b.classList.toggle("here", i === slide));
+    if (on) {
+      if (playing) setPlaying(false);
+      overview.querySelector<HTMLElement>(".ov-item.here")?.focus();
+    }
+  }
+  root.querySelector("[data-act=overview]")?.addEventListener("click", () => showOverview(!!overview?.hidden));
+  overview?.addEventListener("click", (e) => { if (e.target === overview) showOverview(false); });
   root.querySelector("[data-act=full]")!.addEventListener("click", () => {
     if (document.fullscreenElement) document.exitFullscreen();
     else root.requestFullscreen?.();
@@ -389,14 +458,14 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   segments.forEach((seg) => seg.addEventListener("click", () => void jumpTo(+seg.dataset.range!.split("-")[0], 0, true)));
 
   const start = (withVoice: boolean) => {
-    if (withVoice && !voice) voiceBtn.click();
+    if (withVoice && !voice) voiceBtn?.click();
     clock.setPaused(false);
     playing = false;
     run = null;
     setPlaying(true);
   };
   root.querySelector("[data-act=start]")!.addEventListener("click", () => start(false));
-  root.querySelector("[data-act=start-voice]")!.addEventListener("click", () => start(true));
+  root.querySelector("[data-act=start-voice]")?.addEventListener("click", () => start(true));
   function replay() {
     endOverlay.hidden = true;
     slides[slide].getAnimations({ subtree: true }).forEach((a) => a.cancel());
@@ -429,28 +498,62 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     if (tgt.closest("textarea, [contenteditable], input:not([type=range]):not([type=checkbox])")) return;
     if (tgt.closest("button, a") && (e.key === " " || e.key === "Enter")) return;
     if (tgt.closest("input[type=range]") && /^(Arrow|Page|Home|End)/.test(e.key)) return;
+    if (overview && !overview.hidden) { if (e.key === "Escape" || e.key === "o" || e.key === "O") showOverview(false); return; }
     if (e.key === " " || e.key === "k" || e.key === "K" || e.key === "Enter") { e.preventDefault(); toggle(); }
     else if (e.key === "a" || e.key === "A") autoBtn?.click();
-    else if (["ArrowRight", "PageDown", "l", "L"].includes(e.key)) { e.preventDefault(); next(); }
-    else if (["ArrowLeft", "PageUp", "j", "J"].includes(e.key)) { e.preventDefault(); prev(); }
+    else if (e.key === "o" || e.key === "O") showOverview(true);
+    else if (e.key === "r" || e.key === "R") replayCard();
+    else if (["PageDown", "n", "N"].includes(e.key)) { e.preventDefault(); nextCard(); }
+    else if (["PageUp", "p", "P"].includes(e.key)) { e.preventDefault(); prevCard(); }
+    else if (["ArrowRight", "l", "L"].includes(e.key)) { e.preventDefault(); next(); }
+    else if (["ArrowLeft", "j", "J"].includes(e.key)) { e.preventDefault(); prev(); }
     else if (e.key === "f" || e.key === "F") root.querySelector<HTMLElement>("[data-act=full]")!.click();
     else if (e.key === "Home") void jumpTo(0, 0, true);
     else if (e.key === "End") void jumpTo(slides.length - 1, 0, true);
   });
 
-  // Touch: swipe to jump beats.
+  // Touch: the card follows the finger, and a swipe turns the page.
   let x0 = 0;
+  let y0 = 0;
   let swipe = false;
   stage.addEventListener("touchstart", (e) => {
     // Dragging a slider or a point inside a figure is not a swipe.
     swipe = !(e.target as HTMLElement).closest(".widget, input");
     x0 = e.touches[0].clientX;
+    y0 = e.touches[0].clientY;
+  }, { passive: true });
+  stage.addEventListener("touchmove", (e) => {
+    if (!swipe) return;
+    const dx = e.touches[0].clientX - x0;
+    if (Math.abs(dx) < Math.abs(e.touches[0].clientY - y0)) return;
+    slides[slide].style.transform = `translateX(${(dx * 0.4).toFixed(1)}px)`;
+    slides[slide].style.opacity = String(Math.max(0.55, 1 - Math.abs(dx) / 600));
   }, { passive: true });
   stage.addEventListener("touchend", (e) => {
     if (!swipe) return;
+    const card = slides[slide];
     const dx = e.changedTouches[0].clientX - x0;
-    if (Math.abs(dx) > 50) (dx < 0 ? next : prev)();
+    card.style.transform = "";
+    card.style.opacity = "";
+    if (Math.abs(dx) > 60) (dx < 0 ? nextCard : prevCard)();
+    else if (Math.abs(dx) > 8) card.animate([{ transform: `translateX(${(dx * 0.4).toFixed(1)}px)` }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" });
   });
+
+  // Mouse wheel / trackpad: one notch (or one flick) turns one page.
+  let wheelAcc = 0;
+  let wheelLock = 0;
+  root.querySelector(".stage-fit")!.addEventListener("wheel", (e) => {
+    const we = e as WheelEvent;
+    if ((we.target as HTMLElement).closest(".widget") || (overview && !overview.hidden)) return;
+    we.preventDefault();
+    const now = performance.now();
+    if (now < wheelLock) return;
+    wheelAcc += Math.abs(we.deltaX) > Math.abs(we.deltaY) ? we.deltaX : we.deltaY;
+    if (Math.abs(wheelAcc) < 60) return;
+    (wheelAcc > 0 ? nextCard : prevCard)();
+    wheelAcc = 0;
+    wheelLock = now + 650;
+  }, { passive: false });
 
   // Initial state: the requested slide, fully revealed behind the start overlay.
   const fromHash = parseInt(location.hash.slice(1), 10);

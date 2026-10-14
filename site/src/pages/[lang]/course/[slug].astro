@@ -21,7 +21,7 @@ const nextCourse = ordered[ordered.findIndex((c) => c.slug === slug) + 1];
 const L = {
   notes: { zh: "讲义", en: "Notes" },
   recap: { zh: "本章一页纸", en: "The chapter on one page" },
-  hint: { zh: "点击画面或按空格：播放这一页，播完自动暂停 · ← → 上一拍 / 下一拍 · A 连续播放 · F 全屏", en: "Click or press Space to play a card; it pauses at the end · ← → previous / next beat · A plays straight through · F fullscreen" },
+  hint: { zh: "点击画面或按空格：播放这一页，播完自动暂停 · 滑动、滚轮或 PageUp / PageDown 翻页 · ← → 上一拍 / 下一拍 · R 重播本页 · O 页面总览 · A 连播 · F 全屏", en: "Click or press Space to play a card; it pauses at the end · swipe, scroll or PageUp / PageDown to turn pages · ← → previous / next beat · R replay card · O overview · A auto · F fullscreen" },
   start: { zh: "播放", en: "Play" },
   startVoice: { zh: "播放并朗读", en: "Play with narration" },
   minutes: { zh: "逐页播放 · 每页播完暂停，留出思考时间 · 共约 {m} 分钟 · 图形随时可以拖动和操作", en: "Card by card · each card pauses at the end so you can think · about {m} min in all · the figures are yours to drag any time" },
@@ -33,6 +33,14 @@ const L = {
   auto: { zh: "连播", en: "Auto" },
   autoTitle: { zh: "连续播放，不在每页结束时暂停（A）", en: "Play straight through without pausing after each card (A)" },
   cont: { zh: "点击继续", en: "Click to continue" },
+  prevCard: { zh: "上一页（PageUp）", en: "Previous card (PageUp)" },
+  nextCard: { zh: "下一页（PageDown）", en: "Next card (PageDown)" },
+  prevBeat: { zh: "上一拍（←）", en: "Previous beat (←)" },
+  nextBeat: { zh: "下一拍（→）", en: "Next beat (→)" },
+  replayCard: { zh: "重播本页（R）", en: "Replay this card (R)" },
+  overview: { zh: "页面总览（O）", en: "All cards (O)" },
+  overviewTitle: { zh: "页面总览 · 点击跳转", en: "All cards · click to jump" },
+  full: { zh: "全屏（F）", en: "Fullscreen (F)" },
   speed: { zh: "播放速度", en: "Playback speed" },
   play: { zh: "播放（空格）", en: "Play (Space)" },
   pause: { zh: "暂停", en: "Pause" },
@@ -77,11 +85,18 @@ const L = {
         <h1 class="start-title">{pick(chapter.title, lang)}</h1>
         <div class="start-actions">
           <button class="start-play" data-act="start" aria-label={L.start[lang]}><span class="start-tri"></span>{L.start[lang]}</button>
-          <button class="btn start-voice" data-act="start-voice">🔊 {L.startVoice[lang]}</button>
+          {/* Narration voice is switched off for now; the controller still supports it.
+          <button class="btn start-voice" data-act="start-voice">🔊 {L.startVoice[lang]}</button> */}
         </div>
         <p class="start-meta">{L.minutes[lang].replace("{m}", "__MIN__")}</p>
         <p class="start-hint">{L.hint[lang]}</p>
         <p class="rotate-hint">{lang === "zh" ? "📱 横屏观看效果更好" : "📱 Turn your phone sideways for a bigger picture"}</p>
+      </div>
+      <div class="overview" hidden>
+        <div class="ov-panel" role="dialog" aria-label={L.overviewTitle[lang]}>
+          <p class="ov-head">{L.overviewTitle[lang]}</p>
+          <div class="ov-list"></div>
+        </div>
       </div>
       <div class="end-overlay" hidden>
         <p class="start-title">{L.end[lang]}</p>
@@ -94,14 +109,23 @@ const L = {
       </div>
 
       <footer class="course-controls">
-        <button class="btn ctl" data-act="prev" aria-label="previous">←</button>
-        <button class="btn ctl ctl-play" data-act="play" title={L.play[lang]}>▶</button>
-        <button class="btn ctl" data-act="next" aria-label="next">→</button>
+        <div class="ctl-group">
+          <button class="btn ctl" data-act="prev-card" title={L.prevCard[lang]} aria-label={L.prevCard[lang]}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M19 5l-9 7 9 7z" /></svg></button>
+          <button class="btn ctl ctl-beat" data-act="prev" title={L.prevBeat[lang]} aria-label={L.prevBeat[lang]}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
+          <button class="btn ctl ctl-play" data-act="play" title={L.play[lang]}>▶</button>
+          <button class="btn ctl ctl-beat" data-act="next" title={L.nextBeat[lang]} aria-label={L.nextBeat[lang]}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg></button>
+          <button class="btn ctl" data-act="next-card" title={L.nextCard[lang]} aria-label={L.nextCard[lang]}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14M5 5l9 7-9 7z" /></svg></button>
+        </div>
         <div class="segments" id="segments"></div>
-        <button class="btn ctl ctl-auto" data-act="auto" aria-pressed="false" title={L.autoTitle[lang]}>{L.auto[lang]}</button>
-        <button class="btn ctl ctl-speed" data-act="speed" title={L.speed[lang]}>1×</button>
-        <button class="btn ctl" data-act="voice" title={L.voiceOn[lang]}>🔊</button>
-        <button class="btn ctl" data-act="full" title="F">⛶</button>
+        <div class="ctl-group">
+          <button class="btn ctl" data-act="replay-card" title={L.replayCard[lang]} aria-label={L.replayCard[lang]}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5" /></svg></button>
+          <button class="btn ctl ctl-auto" data-act="auto" aria-pressed="false" title={L.autoTitle[lang]}>{L.auto[lang]}</button>
+          <button class="btn ctl ctl-speed" data-act="speed" title={L.speed[lang]}>1×</button>
+          {/* Narration voice, switched off for now:
+          <button class="btn ctl" data-act="voice" title={L.voiceOn[lang]}>🔊</button> */}
+          <button class="btn ctl" data-act="overview" title={L.overview[lang]} aria-label={L.overview[lang]}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg></button>
+          <button class="btn ctl" data-act="full" title={L.full[lang]} aria-label={L.full[lang]}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg></button>
+        </div>
       </footer>
     </div>
 

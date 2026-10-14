@@ -21,6 +21,11 @@ Other rules the controller now enforces:
 - The visual column is shrunk with `transform: scale`, never CSS `zoom`, which breaks range-input
   and SVG pointer mapping in some browsers.
 - Swipes that start inside a widget are not treated as beat navigation.
+- Controls: ⏮ / ⏭ (PageUp / PageDown, swipe, wheel) turn whole cards with a sliding page turn;
+  ‹ / › (← / →) step beats; ↺ (R) replays the card; ▦ (O) opens the card overview, which lists each
+  card by its title, so give every slide a meaningful `title` (or a first beat that reads well).
+- Stepping by hand while paused unpauses the lesson clock, or entrances would freeze on frame 0.
+- The narration voice is commented out in `course/[slug].astro` (the controller still supports it).
 
 ## Building blocks
 
