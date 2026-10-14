@@ -1,0 +1,7 @@
+- **生成式 vs 判别式**：生成式建模 $p(x, y) = \pi_k\,p(x \mid k)$，再用贝叶斯公式得 $P(y \mid x)$；判别式（逻辑回归）直接建模 $P(y \mid x)$。
+- **先验只改截距**：对数几率 $= \log(\pi_1/\pi_0) + \log\frac{p(x\mid 1)}{p(x\mid 0)}$；换先验不必重新训练。
+- **QDA**：每类 $\mathcal N(\mu_k, \Sigma_k)$，二次项 $-\frac12 x^\top(\Sigma_1^{-1} - \Sigma_0^{-1})x$ ⇒ 二次曲线边界；每类 $p(p+1)/2$ 个协方差参数。
+- **LDA**：共享 $\Sigma$ ⇒ 线性边界 $w = \Sigma^{-1}(\mu_1 - \mu_0)$；后验恰为 $\sigma(w^\top x + b)$——与逻辑回归同一模型族，估计策略不同（联合似然 vs 条件似然）。一维阈值 $x^* = \frac{\mu_0+\mu_1}{2} + \frac{\sigma^2}{\mu_1-\mu_0}\log\frac{\pi_0}{\pi_1}$。
+- **朴素贝叶斯**：给定类别特征独立，$p(x\mid k) = \prod_j p(x_j \mid k)$；参数 $O(p)$，训练就是数数；分类常准、概率常过于自信。
+- **拉普拉斯平滑**：$\frac{n_k(x_j = v) + \alpha}{n_k + S_j\alpha}$ = Beta/Dirichlet 先验下的 MAP；消除零概率。例题：$\alpha = 1$ 时 $P(+\mid \neg F, \neg C) = 32/437 \approx 0.073$（不平滑为 0），$P(+\mid F, C)$ 从 0.9 变为 $320/401 \approx 0.798$。
+- **样本效率**：假设成立时生成式更快收敛（朴素贝叶斯 $O(\log p)$ vs 逻辑回归 $O(p)$）；假设不成立时判别式极限更低——学习曲线交叉（Ng 与 Jordan 2001）。

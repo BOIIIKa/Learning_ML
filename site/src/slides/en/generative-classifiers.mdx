@@ -1,0 +1,192 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import GaussianBoundaries from "../../components/chapters/ch05/GaussianBoundaries";
+import NaiveBayesCounts from "../../components/chapters/ch05/NaiveBayesCounts";
+import GenVsDisc from "../../components/chapters/ch05/GenVsDisc";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 05 · Animated course" title="Generative Classifiers: Naive Bayes and Discriminant Analysis" say="Instead of learning the boundary directly, describe what each class looks like, then flip it with Bayes' rule.">
+
+Portrait first, then flip · LDA and QDA · Naive Bayes
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="A portrait of each class" say="An experienced doctor says: let me describe the patients who need a follow-up, then those who don't.">
+
+<Step drive="s1=120/3; s1=35/2" say="Each group of patients is described by one Gaussian: a centre and an elliptical spread.">Each class: one Gaussian $\mathcal N(\mu_k, \Sigma_k)$</Step>
+
+<Step say="When a new patient arrives, Bayes' rule compares which Gaussian they resemble more. The boundary comes out of the flip.">Flip with Bayes: $P(y\mid x) \propto \pi_y\, p(x\mid y)$</Step>
+
+<Step drive="click:chip1; wait:1.5; click:chip2" say="When both shapes are the same the boundary is straight; when they differ, it bends.">Same shape → line; different shapes → curve</Step>
+
+<Step drive="s3=0.2/3; s3=0.5/2" say="Change the prior and every boundary shifts together: the prior only changes the intercept.">The prior only shifts the boundary</Step>
+
+<div slot="visual"><GaussianBoundaries client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions for this chapter" say="Three questions.">
+
+<Step effect="focus" say="First: when is the boundary a line, and when is it a curve?">
+<p class="big-q sm">When is the boundary a line, when a curve?</p>
+</Step>
+
+<Step say="Second: generative LDA and discriminative logistic regression give boundaries of the same form. So what is the difference?">LDA vs logistic regression: same form, what differs?</Step>
+
+<Step say="Third: with thousands of features, how can a generative model still be fitted?">What about thousands of features?</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Generative classifiers" say="Model, strategy, algorithm, once more.">
+
+<Step say="Model: the class prior times the class-conditional density, which is the joint distribution.">**Model**: $p(x, y) = \pi_y\, p(x \mid y)$</Step>
+
+<Step say="Strategy: maximize the joint likelihood, and predict the class with the largest posterior.">**Strategy**: max joint likelihood; $\hat y = \arg\max_k \pi_k\, p(x\mid k)$</Step>
+
+<Step say="Algorithm: counting and averaging; every parameter has a closed form.">**Algorithm**: counting and averaging, closed form</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Shared covariance ⇒ a line" say="Look at the log-odds of the two classes.">
+
+<Morph>
+
+<Step effect="morph" say="The log-odds are the log prior ratio plus the log density ratio.">
+
+$$
+\log\frac{P(1\mid x)}{P(0\mid x)} = \log\frac{\pi_1}{\pi_0} + \log\frac{p(x\mid 1)}{p(x\mid 0)}
+$$
+
+</Step>
+
+<Step effect="morph" say="Plug in Gaussians with a shared covariance; the determinant terms cancel.">
+
+$$
+\log\frac{P(1\mid x)}{P(0\mid x)} = \log\frac{\pi_1}{\pi_0} - \tfrac12(x-\mu_1)^\top\Sigma^{-1}(x-\mu_1) + \tfrac12(x-\mu_0)^\top\Sigma^{-1}(x-\mu_0)
+$$
+
+</Step>
+
+<Step effect="morph" say="Expand: the quadratic terms in x cancel too, leaving a linear term and a constant.">
+
+$$
+\log\frac{P(1\mid x)}{P(0\mid x)} = (\mu_1-\mu_0)^\top\Sigma^{-1}x + b
+$$
+
+</Step>
+
+<Step effect="morph" say="Call w the inverse covariance times the difference of the means.">
+
+$$
+\log\frac{P(1\mid x)}{P(0\mid x)} = w^\top x + b, \quad w = \Sigma^{-1}(\mu_1-\mu_0)
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="So the LDA posterior is exactly the sigmoid of w x plus b: the same model family as logistic regression.">
+<p class="big-q sm">LDA posterior = $\sigma(w^\top x + b)$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Same family, different estimators" say="So what separates LDA from logistic regression?">
+
+<Step say="LDA maximizes the joint likelihood and computes w and b directly from means and covariances.">LDA: maximize $\sum_i \log p(x_i, y_i)$, closed form</Step>
+
+<Step say="Logistic regression maximizes the conditional likelihood: it only cares about the boundary and assumes nothing about x.">Logistic: maximize $\sum_i \log P(y_i\mid x_i)$, iterative</Step>
+
+<Step say="A 1-D example: means 0 and 2, variance 1, follow-up prior 0.2. The threshold moves from the midpoint 1 to 1 plus ln 2, about 1.69.">$\mu_0 = 0,\ \mu_1 = 2,\ \sigma^2 = 1,\ \pi_1 = 0.2$: $x^* = 1 + \ln 2 \approx 1.69$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="QDA: each class its own shape" say="What if the two covariances differ?">
+
+<Step drive="s2=1.6/3; s1=90/3" say="The quadratic term no longer cancels, and the boundary becomes an ellipse, hyperbola or parabola.">$-\tfrac12 x^\top(\Sigma_1^{-1}-\Sigma_0^{-1})x$ survives → a conic</Step>
+
+<Step say="Look at the test errors below: when the shapes really differ, QDA beats LDA.">Different shapes: QDA has the lower test error</Step>
+
+<Step drive="click:chip1" say="But QDA estimates a whole extra covariance matrix per class. With few samples LDA is more stable: bias versus variance again.">More parameters → more variance: bias–variance</Step>
+
+<div slot="visual"><GaussianBoundaries client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Naive Bayes: just count" say="With thousands of features, even one covariance matrix is too much to estimate.">
+
+<Step say="Naive Bayes assumes the features are independent given the class. Parameters drop from p squared to p.">$p(x\mid k) = \prod_j p(x_j\mid k)$: $O(p)$ parameters</Step>
+
+<Step drive="click:chip1; s1=0/2" say="A new patient with neither fever nor cough. Unsmoothed, the follow-up group never showed no cough, and one zero multiplies the posterior to zero.">A zero count ⇒ posterior $= 0$</Step>
+
+<Step drive="s1=1/2" say="Laplace smoothing pretends every cell was seen once more. The posterior becomes 0.073.">$\alpha = 1$: $P(+\mid \neg F, \neg C) = 32/437 \approx 0.073$</Step>
+
+<Step drive="click:chip2" say="For fever and cough it moves from 0.9 to 0.798: smoothing also tempers conclusions drawn from a small sample.">$P(+\mid F, C)$: $0.9 \to 320/401 \approx 0.798$</Step>
+
+<div slot="visual"><NaiveBayesCounts client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Laplace smoothing is a MAP estimate" say="Where does smoothing come from? Put a Beta prior on the probability theta.">
+
+<Morph>
+
+<Step effect="morph" say="m of the n samples are one; this is the likelihood.">
+
+$$
+\theta^{m}(1-\theta)^{n-m}
+$$
+
+</Step>
+
+<Step effect="morph" say="Multiply by a Beta prior, as if we had already seen alpha ones and alpha zeros.">
+
+$$
+\theta^{m}(1-\theta)^{n-m}\cdot\theta^{\alpha}(1-\theta)^{\alpha}
+$$
+
+</Step>
+
+<Step effect="morph" say="Combine the exponents.">
+
+$$
+\theta^{m+\alpha}(1-\theta)^{n-m+\alpha}
+$$
+
+</Step>
+
+<Step effect="morph" say="Take the mode: exactly Laplace smoothing.">
+
+$$
+\hat\theta = \frac{m+\alpha}{n+2\alpha}
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="As in Chapter 3: a penalty is a prior, and so is smoothing.">Smoothing = a prior (the Chapter 03 story again)</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Generative starts fast, discriminative catches up" say="Which is better? Look at the learning curves.">
+
+<Step drive="click:chip1; s1=0/1; s1=12/5" say="When the features really are conditionally independent, naive Bayes learns faster and both end equally good.">Assumption holds: naive Bayes faster, same limit</Step>
+
+<Step drive="click:chip2; s1=0/1; s1=12/5" say="Add two duplicated features: naive Bayes counts the same evidence three times and plateaus higher; logistic regression overtakes it.">Assumption fails: the curves cross, logistic ends lower</Step>
+
+<Step say="Ng and Jordan showed that naive Bayes needs about log p samples to approach its limit, logistic regression about p.">$O(\log p)$ vs $O(p)$ (Ng and Jordan 2001)</Step>
+
+<div slot="visual"><GenVsDisc client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, LDA, QDA and naive Bayes from scratch, then four classifiers compared in scikit-learn and a text pipeline.">
+
+<Step say="After running your code you can replay how LDA's line and QDA's curve settle as the sample grows.">✎ 4 derivations · ⌨ LDA + QDA + naive Bayes · ⚙ discriminant analysis and a text pipeline</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/generative-classifiers/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

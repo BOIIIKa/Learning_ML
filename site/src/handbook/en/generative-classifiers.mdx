@@ -1,0 +1,41 @@
+---
+title: "Generative classifiers in practice: LDA, QDA and naive Bayes"
+summary: "When to try LDA or naive Bayes first, the parameter names, the standard text pipeline, and calibration."
+chapters: ["05"]
+---
+
+### Go-to code
+
+```python
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_score
+
+lda = LinearDiscriminantAnalysis(solver="lsqr", shrinkage="auto")   # shrunk covariance, stable even when p ≈ n
+qda = QuadraticDiscriminantAnalysis(reg_param=0.1)                   # shrink towards the identity
+text = make_pipeline(CountVectorizer(min_df=2), MultinomialNB(alpha=1.0))
+print(cross_val_score(lda, X, y, cv=5).mean())
+```
+
+### When to try them first
+
+- **Few samples, moderate number of features**: LDA is often as good as logistic regression, in closed form and with no hyperparameters. `shrinkage="auto"` (Ledoit–Wolf) is almost always worth turning on.
+- **Text, counts, huge numbers of features**: multinomial naive Bayes is a strong baseline that trains in seconds; use it to set the bar before anything fancier.
+- **Classes with clearly different shapes** (one spread out, one tight): try QDA, with `reg_param` to keep the covariances invertible.
+
+### Traps
+
+- **`alpha` must not be 0**: in MultinomialNB/BernoulliNB, `alpha` is the Laplace smoothing; 0 brings back the zero-probability problem.
+- **GaussianNB's `var_smoothing`** adds a small fraction of the largest variance to every variance, so no feature has zero variance within a class.
+- **Priors**: `priors=` (LDA, QDA, GaussianNB) or `class_prior=` (MultinomialNB) swaps the prior directly; deploying to a hospital with a different follow-up rate, this beats retraining.
+- **Probabilities are not trustworthy**: naive Bayes' `predict_proba` is often close to 0 or 1. Calibrate with `CalibratedClassifierCV` when you need probabilities.
+- **LDA reduces dimension too**: `LinearDiscriminantAnalysis(n_components=K-1).fit_transform(X, y)` gives a supervised low-dimensional projection, handy for plots.
+
+### Frontier reading
+
+- Ng and Jordan (2001): discriminative versus generative classifiers, the classic paper on crossing learning curves.
+- Friedman (1989): regularized discriminant analysis, interpolating between LDA and QDA.
+- Ledoit and Wolf (2004): shrinkage estimation of large covariance matrices, the source of `shrinkage="auto"`.
+- Rennie et al. (2003): fixing systematic biases of naive Bayes for text (complement naive Bayes, `ComplementNB` in scikit-learn).
