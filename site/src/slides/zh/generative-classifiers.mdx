@@ -1,0 +1,152 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import GaussianBoundaries from "../../components/chapters/ch05/GaussianBoundaries";
+import PosteriorShape from "../../components/chapters/ch05/PosteriorShape";
+import NaiveBayesText from "../../components/chapters/ch05/NaiveBayesText";
+import LearningCurves from "../../components/chapters/ch05/LearningCurves";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 05 章 · 动画课程" title="生成式分类" say="上一章的逻辑回归直接去找分开两类的边界。这一章反过来：先描述每一类数据长什么样，再用贝叶斯公式反推类别。">
+
+朴素贝叶斯 · 线性与二次判别分析 · 生成式 vs 判别式
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="诊所的两件分诊工作" say="一家社区诊所想做两件事：根据两项体检指标提示谁需要复查，以及把患者留言分成紧急和常规。麻烦是带标签的记录很少。">
+
+<Step say="右边是两类体检者：蓝色是常规，橙色是需要复查。每一类都用一个高斯分布描述，虚线椭圆是它的两倍标准差等高线。">蓝 = 常规，橙 = 复查；椭圆 = 每类的分布</Step>
+
+<Step say="拖动实心圆移动均值，拖动空心把手旋转、拉伸椭圆。注意：边界是从两个分布里自动算出来的。">拖均值、拖椭圆 → 边界自动出现</Step>
+
+<Step say="勾选共用协方差，紫色的二次曲线会变直，和粉色的 LDA 直线几乎重合；绿色虚线是逻辑回归。">共享形状 ⇒ 直线；形状不同 ⇒ 曲线</Step>
+
+<div slot="visual"><GaussianBoundaries client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" say="同一个分类问题，有两种思路。">
+
+<Step say="判别式：直接为后验建模，找边界。第四章的逻辑回归就是这样。">判别式：直接学 $P(y\mid x)$ ——画边界</Step>
+
+<Step say="生成式：先为每一类建模，描述这一类的人通常长什么样，再用贝叶斯公式反推。">生成式：先学 $p(x\mid y)$ 与 $P(y)$，再用贝叶斯公式</Step>
+
+<Step effect="focus" say="两个问题：这两种思路是什么关系？样本很少的时候，谁更可靠？">
+<p class="big-q sm">两者什么关系？数据少时谁更可靠？</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="生成式分类器的三要素" say="用三要素来看生成式分类器。">
+
+<Step say="模型：类先验乘以类条件密度，也就是联合分布。">模型：$\pi_k \cdot p(x\mid k)$</Step>
+
+<Step say="策略：最大化联合似然。判别式最大化的则是条件似然。">策略：最大化联合似然 $\prod_i \pi_{y_i}\,p(x_i\mid y_i)$</Step>
+
+<Step say="算法：联合对数似然按类拆开，每一类只用自己的数据拟合分布，先验就是各类所占比例。只需要计数和求平均。">算法：按类拆开，$\hat\pi_k = n_k/n$，计数与平均即可</Step>
+
+<Step say="预测时取后验最大的类，也就是对数先验加对数似然最大的类。">预测：$\arg\max_k\ \log\pi_k + \log p(x\mid k)$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="类条件密度的三种选择" say="类条件密度怎么选，决定了方法的名字。">
+
+<Step say="每类一个均值、一个协方差：二次判别分析，QDA，边界是二次曲线。">QDA：$\mathcal N(\mu_k, \Sigma_k)$ → 二次边界</Step>
+
+<Step say="所有类共享一个协方差：线性判别分析，LDA，边界是直线。">LDA：共享 $\Sigma$ → 线性边界</Step>
+
+<Step say="给定类别后各特征相互独立：朴素贝叶斯，参数个数只随维数线性增长。">朴素贝叶斯：$p(x\mid k)=\prod_j p(x_j\mid k)$</Step>
+
+<Step effect="focus" say="从上到下，假设越来越强，参数越来越少：估计更稳，但假设错了就有偏差。">
+<p class="big-q sm">假设越强 → 方差越小、偏差越大</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="边界为什么是直线或曲线" say="写出每一类的判别函数。">
+
+<Step say="取对数后，判别函数含有一个二次型。">
+
+$$
+\delta_k(x) = \log\pi_k - \tfrac12\log\det\Sigma_k - \tfrac12 (x-\mu_k)^\top\Sigma_k^{-1}(x-\mu_k)
+$$
+
+</Step>
+
+<Step say="两类相减，二次项是 x 转置乘以两个逆协方差之差再乘以 x。协方差不同，边界就是二次曲线。">$\delta_1 - \delta_0 \ni -\tfrac12 x^\top(\Sigma_1^{-1}-\Sigma_0^{-1})x$ → 二次</Step>
+
+<Step say="协方差相同，二次项相互抵消，只剩一次项，边界是直线。">$\Sigma_0 = \Sigma_1$ ⇒ 二次项抵消 ⇒ 直线</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="LDA 的后验就是 sigmoid" say="共享协方差时，对数几率是 x 的一次函数。">
+
+<Step say="权重是协方差的逆乘以均值之差。">$w = \Sigma^{-1}(\mu_1 - \mu_0)$</Step>
+
+<Step say="所以后验恰好是 sigmoid，和逻辑回归是同一个模型族，只是估计方式不同。">$P(y=1\mid x) = \sigma(w^\top x + b)$ ——与逻辑回归同族</Step>
+
+<Step say="右边拖动方差比：等于一时，二次项系数 a 为零，后验是 sigmoid；不等时，方差大的一类会在两侧尾部反超。">方差不等 ⇒ $a \ne 0$ ⇒ 后验不再单调 →</Step>
+
+<div slot="visual"><PosteriorShape client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="朴素贝叶斯与拉普拉斯平滑" say="文本怎么办？用多项式朴素贝叶斯。">
+
+<Step say="每类有一组词概率 theta，极大似然估计就是词频除以总词数。">$\hat\theta_{kj} = N_{kj}/N_k$</Step>
+
+<Step say="问题是：某个词在一类中从未出现，它的概率就是零，一个词就能否决整类。">一个没见过的词 ⇒ 整类概率为 0</Step>
+
+<Step say="给 theta 一个狄利克雷先验，取后验均值，就得到平滑后的估计。阿尔法等于一就是拉普拉斯平滑。">
+
+$$
+\tilde\theta_{kj} = \frac{N_{kj} + \alpha}{N_k + \alpha V}
+$$
+
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：分拣一条留言" say="紧急留言两条，常规留言三条，新留言是发烧、疼痛、续药。">
+
+<Step say="不平滑时，续药从未在紧急留言中出现，紧急的概率直接变成零。">$\alpha = 0$：$P(\text{紧急}) = 0$</Step>
+
+<Step say="拉普拉斯平滑后，紧急的得分是二百一十六分之一，常规是一千零二十四分之三，紧急的后验约为零点六一二。">$\alpha = 1$：$\frac{1/216}{1/216 + 3/1024} \approx 0.612$</Step>
+
+<Step say="右边可以自己往留言里加词，看每个词把对数几率往哪边推。">每个词的对数几率贡献 →</Step>
+
+<div slot="visual"><NaiveBayesText client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="生成式 vs 判别式：样本效率" say="朴素贝叶斯和逻辑回归是一对：同一个模型族，不同的估计策略。">
+
+<Step say="朴素贝叶斯收敛快，大约对数 d 个样本；逻辑回归需要大约 d 个样本。">生成式：$O(\log d)$ 个样本 · 判别式：$O(d)$</Step>
+
+<Step say="但独立性假设不成立时，朴素贝叶斯的极限误差更高。">假设不成立 ⇒ 生成式的极限误差更高</Step>
+
+<Step say="所以两条学习曲线会交叉。右边拖动相关系数，看交叉点怎样移动。">学习曲线交叉 →</Step>
+
+<div slot="visual"><LearningCurves client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="什么时候选生成式" say="生成式模型还有几个判别式没有的好处。">
+
+<Step say="类别比例变了，只要改先验，不用重新训练。">类别比例变化 → 只改 $\pi_k$</Step>
+
+<Step say="缺了一个特征，把那一维积分掉就行。">特征缺失 → 积分掉那一维</Step>
+
+<Step say="还可以利用没有标签的数据，这要用到第十一章的 EM 算法。">未标注数据 → EM（第 11 章）</Step>
+
+<Step say="再往前走，为图像和文本的分布建模，就是第二十二到二十五章的深度生成模型。">为 $p(x)$ 建模 → 深度生成模型（第 22–25 章）</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现 LDA 与 QDA，再用 scikit-learn 比较四个分类器并画学习曲线。">
+
+<Step say="代码题运行后，可以并排回放 LDA 直线和 QDA 曲线如何随样本增多而稳定下来。">✎ 4 道推导 · ⌨ 从零实现 LDA / QDA · ⚙ LDA / QDA / NB / 逻辑回归</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/generative-classifiers/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

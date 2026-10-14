@@ -1,0 +1,70 @@
+# 第 05 章 生成式分类：朴素贝叶斯与判别分析 —— 课后练习 / Chapter 05 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: lda-logodds
+    title: {zh: "一维 LDA 的对数几率", en: "The log-odds of 1-D LDA"}
+    prompt:
+      zh: "类 0 服从 $\\mathcal N(m_0, s^2)$，类 1 服从 $\\mathcal N(m_1, s^2)$（方差相同），先验 $P(y=1) = p$。写出对数几率 $\\log\\frac{P(y=1\\mid x)}{P(y=0\\mid x)}$。可用变量：`m0, m1, s, p, x`。"
+      en: "Class 0 is $\\mathcal N(m_0, s^2)$ and class 1 is $\\mathcal N(m_1, s^2)$ (same variance), with prior $P(y=1) = p$. Write the log-odds $\\log\\frac{P(y=1\\mid x)}{P(y=0\\mid x)}$. Variables: `m0, m1, s, p, x`."
+    answer: "(m1 - m0)/s^2 * x - (m1^2 - m0^2)/(2*s^2) + log(p/(1 - p))"
+    vars: {m0: [-2, 0], m1: [0.5, 3], s: [0.5, 2], p: [0.2, 0.8], x: [-3, 3]}
+    solution:
+      zh: "由贝叶斯公式，对数几率 $= \\log\\frac{p\\,\\phi((x-m_1)/s)}{(1-p)\\,\\phi((x-m_0)/s)} = \\frac{(x-m_0)^2 - (x-m_1)^2}{2s^2} + \\log\\frac{p}{1-p}$。展开分子：$x^2$ 项相消，剩下 $2(m_1 - m_0)x - (m_1^2 - m_0^2)$。所以对数几率 $= \\frac{m_1-m_0}{s^2}x - \\frac{m_1^2-m_0^2}{2s^2} + \\log\\frac{p}{1-p}$，是 $x$ 的**一次函数**，后验 $P(y=1\\mid x) = \\sigma(wx + b)$ 恰好是逻辑回归的形式，其中 $w = (m_1 - m_0)/s^2$。"
+      en: "By Bayes' rule the log-odds is $\\log\\frac{p\\,\\phi((x-m_1)/s)}{(1-p)\\,\\phi((x-m_0)/s)} = \\frac{(x-m_0)^2 - (x-m_1)^2}{2s^2} + \\log\\frac{p}{1-p}$. Expanding the numerator, the $x^2$ terms cancel, leaving $2(m_1 - m_0)x - (m_1^2 - m_0^2)$. So the log-odds is $\\frac{m_1-m_0}{s^2}x - \\frac{m_1^2-m_0^2}{2s^2} + \\log\\frac{p}{1-p}$, a **linear** function of $x$: the posterior $P(y=1\\mid x) = \\sigma(wx + b)$ has exactly the logistic-regression form, with $w = (m_1 - m_0)/s^2$."
+
+  - id: qda-curvature
+    title: {zh: "QDA 的二次项", en: "The quadratic term of QDA"}
+    prompt:
+      zh: "一维情形，类 0 服从 $\\mathcal N(m_0, s_0^2)$，类 1 服从 $\\mathcal N(m_1, s_1^2)$。对数几率 $\\log\\frac{P(y=1\\mid x)}{P(y=0\\mid x)} = a x^2 + bx + c$。写出二次项系数 $a$。可用变量：`s0, s1`。"
+      en: "In one dimension class 0 is $\\mathcal N(m_0, s_0^2)$ and class 1 is $\\mathcal N(m_1, s_1^2)$. The log-odds is $\\log\\frac{P(y=1\\mid x)}{P(y=0\\mid x)} = a x^2 + bx + c$. Write the quadratic coefficient $a$. Variables: `s0, s1`."
+    answer: "1/(2*s0^2) - 1/(2*s1^2)"
+    vars: {s0: [0.4, 2.5], s1: [0.4, 2.5]}
+    solution:
+      zh: "$\\log p(x\\mid 1) - \\log p(x\\mid 0) = -\\frac{(x-m_1)^2}{2s_1^2} + \\frac{(x-m_0)^2}{2s_0^2} + \\log\\frac{s_0}{s_1}$，其中 $x^2$ 的系数为 $\\frac{1}{2s_0^2} - \\frac{1}{2s_1^2}$；先验只贡献常数项。$s_0 = s_1$ 时 $a = 0$，退化为 LDA 的直线边界；$s_1 > s_0$ 时 $a > 0$，对数几率是开口向上的抛物线：$x$ 走向任一侧的远处，方差大的类 1 最终都会胜出，所以类 1 的判决区域分成两段。多维时同样的计算给出二次型 $-\\tfrac12 x^\\top(\\Sigma_1^{-1} - \\Sigma_0^{-1})x$。"
+      en: "$\\log p(x\\mid 1) - \\log p(x\\mid 0) = -\\frac{(x-m_1)^2}{2s_1^2} + \\frac{(x-m_0)^2}{2s_0^2} + \\log\\frac{s_0}{s_1}$, whose $x^2$ coefficient is $\\frac{1}{2s_0^2} - \\frac{1}{2s_1^2}$; the prior only adds a constant. With $s_0 = s_1$, $a = 0$ and we are back to LDA's straight boundary. With $s_1 > s_0$, $a > 0$ and the log-odds is an upward parabola: far enough out on either side, the wider class 1 wins, so its decision region splits in two. In several dimensions the same computation gives the quadratic form $-\\tfrac12 x^\\top(\\Sigma_1^{-1} - \\Sigma_0^{-1})x$."
+
+  - id: laplace
+    title: {zh: "拉普拉斯平滑的估计式", en: "The Laplace-smoothed estimate"}
+    prompt:
+      zh: "多项式朴素贝叶斯中，某一类的训练文本共有 $N$ 个词，其中词 $j$ 出现 $c$ 次，词表大小为 $V$。给 $(\\theta_1, \\dots, \\theta_V)$ 一个对称的狄利克雷先验 $\\mathrm{Dir}(\\alpha, \\dots, \\alpha)$，写出 $\\theta_j$ 的**后验均值**。可用变量：`c, N, V, a`（$a$ 即 $\\alpha$）。"
+      en: "In multinomial naive Bayes, one class's training text has $N$ words in total, word $j$ appears $c$ times, and the vocabulary has $V$ words. With a symmetric Dirichlet prior $\\mathrm{Dir}(\\alpha, \\dots, \\alpha)$ on $(\\theta_1, \\dots, \\theta_V)$, write the **posterior mean** of $\\theta_j$. Variables: `c, N, V, a` ($a$ is $\\alpha$)."
+    answer: "(c + a)/(N + a*V)"
+    vars: {c: [0, 10], N: [10, 50], V: [5, 20], a: [0.1, 2]}
+    solution:
+      zh: "似然是 $\\prod_j \\theta_j^{c_j}$，先验密度 $\\propto \\prod_j \\theta_j^{\\alpha-1}$，相乘得后验 $\\propto \\prod_j \\theta_j^{c_j + \\alpha - 1}$，即 $\\mathrm{Dir}(c_1+\\alpha, \\dots, c_V+\\alpha)$。狄利克雷分布 $\\mathrm{Dir}(\\beta)$ 的均值是 $\\beta_j / \\sum_k\\beta_k$，所以 $\\mathbb E[\\theta_j\\mid\\text{数据}] = \\frac{c + \\alpha}{N + \\alpha V}$。$\\alpha = 0$ 时退化为极大似然估计 $c/N$；$\\alpha = 1$ 就是拉普拉斯平滑：每个词都先有一次“虚拟出现”，从而没有任何概率为 0。"
+      en: "The likelihood is $\\prod_j \\theta_j^{c_j}$ and the prior density is $\\propto \\prod_j \\theta_j^{\\alpha-1}$, so the posterior is $\\propto \\prod_j \\theta_j^{c_j + \\alpha - 1}$, i.e. $\\mathrm{Dir}(c_1+\\alpha, \\dots, c_V+\\alpha)$. A Dirichlet $\\mathrm{Dir}(\\beta)$ has mean $\\beta_j / \\sum_k\\beta_k$, hence $\\mathbb E[\\theta_j\\mid\\text{data}] = \\frac{c + \\alpha}{N + \\alpha V}$. At $\\alpha = 0$ this is the maximum-likelihood estimate $c/N$; $\\alpha = 1$ is Laplace smoothing: every word starts with one imaginary occurrence, so no probability is ever 0."
+
+  - id: param-count
+    title: {zh: "QDA 要估计多少个参数", en: "How many parameters does QDA estimate?"}
+    prompt:
+      zh: "$K$ 个类、$d$ 维特征。QDA 为每类估计一个均值向量和一个（对称的）协方差矩阵，另有类先验（概率和为 1）。写出自由参数的总数。可用变量：`K, d`。"
+      en: "$K$ classes, $d$ features. QDA estimates a mean vector and a (symmetric) covariance matrix for each class, plus the class priors (which sum to 1). Write the total number of free parameters. Variables: `K, d`."
+    answer: "K*d + K*d*(d + 1)/2 + K - 1"
+    vars: {K: [2, 6], d: [1, 12]}
+    solution:
+      zh: "均值 $Kd$ 个；对称协方差矩阵有 $d(d+1)/2$ 个自由元素，共 $K$ 个；先验 $K-1$ 个。总计 $Kd + Kd(d+1)/2 + K - 1$，随 $d$ **平方**增长。对比：LDA 只有一个共享协方差，为 $Kd + d(d+1)/2 + K - 1$；高斯朴素贝叶斯只保留对角线，为 $2Kd + K - 1$，随 $d$ 线性增长；逻辑回归为 $(K-1)(d+1)$。参数越少，同样的数据估计得越准——这正是朴素贝叶斯在小样本时占优的原因之一。"
+      en: "The means contribute $Kd$; each symmetric covariance has $d(d+1)/2$ free entries, and there are $K$ of them; the priors add $K-1$. In total $Kd + Kd(d+1)/2 + K - 1$, growing **quadratically** in $d$. Compare LDA with one shared covariance, $Kd + d(d+1)/2 + K - 1$; Gaussian naive Bayes keeps only the diagonals, $2Kd + K - 1$, linear in $d$; logistic regression has $(K-1)(d+1)$. Fewer parameters are estimated more accurately from the same data, which is one reason naive Bayes shines with small samples."
+
+code:
+  - id: gda
+    kind: implement
+    file: gda.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现 LDA 与 QDA", en: "LDA and QDA from scratch"}
+    intro:
+      zh: "补全极大似然参数、合并协方差、高斯对数密度、判别函数与 LDA 的线性形式五个空。运行后可以并排回放：训练样本从 6 个增加到 160 个时，你的 LDA 直线和 QDA 曲线如何稳定下来，下方曲线是两者的测试准确率。"
+      en: "Fill in the maximum-likelihood parameters, the pooled covariance, the Gaussian log-density, the discriminants and LDA's linear form. Then replay side by side how your LDA line and QDA curve settle as the training set grows from 6 to 160 points; the chart tracks both test accuracies."
+    metrics:
+      - {key: lda, label: {zh: "LDA 测试准确率", en: "LDA test accuracy"}}
+      - {key: qda, label: {zh: "QDA 测试准确率", en: "QDA test accuracy"}}
+  - id: generative-library
+    kind: library
+    file: generative_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "scikit-learn 中的生成式与判别式", en: "Generative vs discriminative in scikit-learn"}
+    intro:
+      zh: "组装 LDA、QDA、高斯朴素贝叶斯和逻辑回归，画出朴素贝叶斯与逻辑回归的学习曲线并验证它们交叉，再用 CountVectorizer + MultinomialNB 复现讲义中的留言分拣例题。回放中逐一查看四个分类器在同一份数据上的边界。"
+      en: "Assemble LDA, QDA, Gaussian naive Bayes and logistic regression, compute the learning curves of naive Bayes and logistic regression and confirm that they cross, then reproduce the notes' message-sorting example with CountVectorizer + MultinomialNB. The replay flips through the four classifiers' boundaries on the same data."
+    metrics:
+      - {key: acc, label: {zh: "测试准确率", en: "Test accuracy"}}

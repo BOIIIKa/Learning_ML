@@ -1,0 +1,221 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import GaussianBoundaries from "../../components/chapters/ch05/GaussianBoundaries";
+import PosteriorShape from "../../components/chapters/ch05/PosteriorShape";
+import NaiveBayesText from "../../components/chapters/ch05/NaiveBayesText";
+import LearningCurves from "../../components/chapters/ch05/LearningCurves";
+
+<Section lang="en" k="scenario">
+
+A community clinic wants to triage two things. First, from two routine check-up measurements (standardized blood glucose and body-mass index), flag the people who **need a follow-up**. Second, sort patients' online messages into **urgent** and **routine**, so the urgent ones are answered first. The catch: very few labelled records exist. There are a few dozen check-ups with a confirmed outcome, and only a handful of messages have ever been labelled by hand.
+
+Logistic regression (Ch. 04) would go straight for the boundary between the classes. This chapter takes another route: first answer “**what does a typical member of each class look like?**”, then use Bayes' rule to work out “**which class does this person belong to?**”. Try it first:
+
+<GaussianBoundaries client:visible lang="en" />
+
+After some dragging you will notice a few things:
+
+1. Once each class's **distribution** is described (a mean and a covariance ellipse), the boundary appears by itself; nobody had to “learn” it separately.
+2. If the two classes have the same shape (a shared covariance), the boundary is a straight line; let the shapes differ and it bends into a conic.
+3. With only a few training points, the three boundaries are not equally stable.
+
+Two questions remain. How does this “model the data, then infer the class” approach relate to logistic regression? And a message is a string of discrete words: how do we describe “what each class looks like” for that?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Generative and discriminative
+
+<Box kind="definition" title="Generative classifier">
+
+For each class $k$, model a **class prior** $\pi_k = P(Y = k)$ and a **class-conditional density** $p(x\mid Y = k)$; their product is the joint distribution $p(x, y)$. To predict, obtain the posterior from Bayes' rule and, like the Bayes classifier of Ch. 01, pick the class with the largest posterior:
+
+$$
+P(Y = k\mid x) = \frac{\pi_k\,p(x\mid k)}{\sum_{l}\pi_l\,p(x\mid l)},\qquad \hat y(x) = \arg\max_k\ \big[\log\pi_k + \log p(x\mid k)\big].
+$$
+
+A **discriminative** method (such as logistic regression) skips $p(x\mid y)$ and models $P(y\mid x)$ directly.
+
+</Box>
+
+In terms of the triad:
+
+- **Model**: $\pi_k \times p(x\mid k;\ \theta_k)$, where $p(x\mid k)$ comes from some family (Gaussian, multinomial, …).
+- **Strategy**: maximize the **joint** likelihood $\prod_i \pi_{y_i}\,p(x_i\mid y_i)$. A discriminative method maximizes the **conditional** likelihood $\prod_i P(y_i\mid x_i)$ instead.
+- **Algorithm**: once the joint log-likelihood is split by class, every piece has a closed form: **counting and averaging** are enough, no iterations needed.
+
+The joint log-likelihood falls apart into unrelated pieces:
+
+$$
+\sum_{i=1}^n \log\big[\pi_{y_i}\,p(x_i\mid y_i)\big] = \underbrace{\sum_{k} n_k \log \pi_k}_{\text{priors only}} + \sum_{k}\ \underbrace{\sum_{i:\,y_i = k} \log p(x_i\mid \theta_k)}_{\text{class }k\text{'s parameters only}},
+$$
+
+so **each class fits its own distribution to its own data**, and the priors are just the class proportions.
+
+### Three choices for the class-conditional density
+
+| | Assumption | Decision boundary | Parameters ($K$ classes, $d$ features) |
+|---|---|---|---|
+| **QDA** (quadratic discriminant analysis) | $p(x\mid k) = \mathcal N(\mu_k, \Sigma_k)$ | conic | $Kd + K\frac{d(d+1)}{2}$ |
+| **LDA** (linear discriminant analysis) | all classes share one $\Sigma$ | line / hyperplane | $Kd + \frac{d(d+1)}{2}$ |
+| **Naive Bayes** | features are **conditionally independent** given the class | depends on the family | linear in $d$ |
+
+Going down the table, the assumptions get stronger and the parameters fewer. Stronger assumptions give steadier estimates, but when they are wrong they add bias: the bias–variance trade-off of Ch. 02 again.
+
+<Box kind="insight" title="One model family, two estimation strategies">
+
+We will prove below that LDA's posterior is exactly $\sigma(w^\top x + b)$: **the same model family as logistic regression**. The two differ only in strategy. LDA estimates $w$ through the joint likelihood, leaning on the Gaussian assumption; logistic regression fits $w$ directly through the conditional likelihood and assumes nothing about how $x$ is distributed. Such a pair is called a **generative–discriminative pair**.
+
+</Box>
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Toolkit: the multivariate Gaussian
+
+<Box kind="definition" title="Multivariate Gaussian density (Ch. 00)">
+
+$$
+\log\mathcal N(x;\mu,\Sigma) = -\tfrac12 (x-\mu)^\top\Sigma^{-1}(x-\mu) - \tfrac12\log\det\Sigma - \tfrac d2\log 2\pi .
+$$
+
+For a sample $x_1,\dots,x_m$ the maximum-likelihood estimates are the sample mean $\hat\mu = \frac1m\sum_i x_i$ and the sample covariance **divided by $m$**, $\hat\Sigma = \frac1m\sum_i (x_i - \hat\mu)(x_i-\hat\mu)^\top$. Contours of equal density are ellipses whose axes are the eigenvectors of $\Sigma$.
+
+</Box>
+
+### Maximum-likelihood estimates
+
+The priors appear only in $\sum_k n_k\log\pi_k$, under the constraint $\sum_k\pi_k = 1$. With a Lagrange multiplier, $\frac{n_k}{\pi_k} = \lambda$; summing over $k$ gives $\lambda = n$, so $\hat\pi_k = n_k / n$. Each class's $\mu_k, \Sigma_k$ is estimated from that class alone: its sample mean and sample covariance. LDA ties the covariances together; differentiating with respect to the shared $\Sigma$ gives the **pooled covariance**
+
+$$
+\hat\Sigma = \frac1n\sum_k\sum_{i:\,y_i=k}(x_i-\hat\mu_k)(x_i-\hat\mu_k)^\top = \sum_k \hat\pi_k\,\hat\Sigma_k .
+$$
+
+### Discriminant functions and the shape of the boundary
+
+Taking logs, the discriminant function of class $k$ is
+
+$$
+\delta_k(x) = \log\pi_k - \tfrac12\log\det\Sigma_k - \tfrac12 (x-\mu_k)^\top\Sigma_k^{-1}(x-\mu_k).
+$$
+
+The boundary between two classes is $\delta_1(x) = \delta_0(x)$. It contains the term $-\tfrac12 x^\top(\Sigma_1^{-1} - \Sigma_0^{-1})x$, so it is a **conic** (QDA; see exercise 2). If $\Sigma_0 = \Sigma_1 = \Sigma$, the quadratic term $x^\top\Sigma^{-1}x$ is the same in both classes and cancels in the difference, leaving a linear function:
+
+<Box kind="theorem" title="The LDA posterior is logistic">
+
+With a shared covariance,
+
+$$
+\log\frac{P(Y=1\mid x)}{P(Y=0\mid x)} = w^\top x + b,\qquad w = \Sigma^{-1}(\mu_1 - \mu_0),\quad b = -\tfrac12\big(\mu_1^\top\Sigma^{-1}\mu_1 - \mu_0^\top\Sigma^{-1}\mu_0\big) + \log\frac{\pi_1}{\pi_0},
+$$
+
+that is, $P(Y = 1\mid x) = \sigma(w^\top x + b)$, exactly the logistic-regression form.
+
+</Box>
+
+The direction $w = \Sigma^{-1}(\mu_1-\mu_0)$ is not simply the line joining the means: $\Sigma^{-1}$ first stretches the ellipses into circles, and only then are the means joined. Drag the spread ratio below and watch the posterior turn from a sigmoid into a non-monotone curve:
+
+<PosteriorShape client:visible lang="en" />
+
+The converse fails: a logistic posterior does **not** require Gaussian class densities (any exponential-family densities sharing their dispersion will do). So logistic regression assumes less and is more robust, while LDA also uses the information in $p(x)$ and is more efficient when the Gaussian assumption holds (Efron, 1975).
+
+### Naive Bayes
+
+When $d$ is large even the off-diagonal covariances are hard to estimate, let alone distributions over discrete words. Naive Bayes assumes the **features are independent given the class**:
+
+$$
+p(x\mid k) = \prod_{j=1}^d p(x_j\mid k).
+$$
+
+One $d$-dimensional density becomes $d$ one-dimensional ones. With a 1-D Gaussian per feature this is **Gaussian naive Bayes** (QDA with diagonal covariances). For text we use the **multinomial model**: a message $x = (x_1,\dots,x_V)$ counts how often each vocabulary word occurs, and
+
+$$
+p(x\mid k) \propto \prod_{j=1}^V \theta_{kj}^{\,x_j},\qquad \sum_j \theta_{kj} = 1 .
+$$
+
+Maximizing $\sum_j N_{kj}\log\theta_{kj}$ ($N_{kj}$ is the total count of word $j$ in class $k$'s training text) subject to $\sum_j\theta_{kj}=1$ works just like the priors and gives $\hat\theta_{kj} = N_{kj}/N_k$.
+
+That is exactly where things break: if word $j$ **never** occurred in class $k$, then $\hat\theta_{kj} = 0$. Any new message containing that word gets zero likelihood under class $k$, however strong the rest of the evidence.
+
+<Box kind="theorem" title="A Bayesian estimate: Laplace smoothing">
+
+Put a symmetric Dirichlet prior $\mathrm{Dir}(\alpha,\dots,\alpha)$ on $\theta_k$. The posterior is again Dirichlet, with mean
+
+$$
+\tilde\theta_{kj} = \frac{N_{kj} + \alpha}{N_k + \alpha V}.
+$$
+
+$\alpha = 0$ recovers the maximum-likelihood estimate; $\alpha = 1$ is called **Laplace smoothing**: every word gets one imaginary occurrence up front. The priors $\pi_k$ can be smoothed the same way. See exercise 3 for the derivation.
+
+</Box>
+
+In practice everything is added up in log space, so that multiplying dozens of small probabilities does not underflow. This also shows that the log-odds of multinomial naive Bayes, $\log\frac{\pi_1}{\pi_0} + \sum_j x_j\log\frac{\theta_{1j}}{\theta_{0j}}$, is **linear** in the word counts: it is a linear classifier too.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example 1: 1-D LDA by hand
+
+<Box kind="example" title="One measurement, two groups of patients">
+
+Scaled glucose for the routine group is $4, 5, 6$ and for the follow-up group $7, 8, 9$.
+
+- Means: $\hat\mu_0 = 5$, $\hat\mu_1 = 8$. Pooled variance (divide by $n=6$): $\hat s^2 = \frac{2 + 2}{6} = \frac23$.
+- By the theorem: $w = \frac{8-5}{2/3} = 4.5$ and $b = -\frac{64 - 25}{2\cdot 2/3} + \log\frac{\pi_1}{\pi_0} = -29.25 + \log\frac{\pi_1}{\pi_0}$.
+- With equal priors the threshold is $29.25/4.5 = 6.5$, exactly halfway between the means. At $x = 6.6$ the log-odds is $0.45$ and $P(\text{follow-up}\mid x) = \sigma(0.45) \approx 0.611$.
+- If only 20% of people need a follow-up, $b$ gains $\log\frac{0.2}{0.8} = -1.386$ and the threshold moves right to $\frac{29.25 + 1.386}{4.5} \approx 6.81$: the rarer the condition, the stronger the evidence needed to flag it.
+
+</Box>
+
+### Worked example 2: sorting messages with naive Bayes
+
+<Box kind="example" title="Can one unseen word veto a whole class?">
+
+The vocabulary is just fever, pain, refill and schedule, so $V = 4$. There are 2 urgent and 3 routine messages, so the priors are $\pi = (2/5,\ 3/5)$. Word counts:
+
+| | fever | pain | refill | schedule | total $N_k$ |
+|---|---|---|---|---|---|
+| urgent | 4 | 3 | **0** | 1 | 8 |
+| routine | 1 | 1 | 4 | 6 | 12 |
+
+New message: “fever pain refill”.
+
+- **Maximum likelihood** ($\alpha = 0$): $\hat\theta_{\text{urgent},\,\text{refill}} = 0$, so $P(\text{urgent}\mid x) = 0$, even though fever and pain both point strongly to urgent.
+- **Laplace smoothing** ($\alpha = 1$): urgent $\tilde\theta = (\frac5{12}, \frac4{12}, \frac1{12}, \frac2{12})$, routine $\tilde\theta = (\frac2{16}, \frac2{16}, \frac5{16}, \frac7{16})$.
+
+$$
+\frac25\cdot\frac5{12}\cdot\frac4{12}\cdot\frac1{12} = \frac1{216},\qquad \frac35\cdot\frac2{16}\cdot\frac2{16}\cdot\frac5{16} = \frac3{1024},
+$$
+
+so $P(\text{urgent}\mid x) = \frac{1/216}{1/216 + 3/1024} = \frac{1024}{1672} \approx 0.612$. As a log-odds ledger: prior $-0.405$, fever $+1.204$, pain $+0.981$, refill $-1.322$, total $+0.458$.
+
+</Box>
+
+<NaiveBayesText client:visible lang="en" />
+
+### Generative vs discriminative: who needs more data?
+
+Ng and Jordan (2002) compared the pair naive Bayes / logistic regression and found:
+
+- **Asymptotic error**: with unlimited data, logistic regression is never worse than naive Bayes. When independence fails, naive Bayes double-counts the evidence carried by correlated features, and its error levels off higher.
+- **Speed of convergence**: each naive Bayes parameter is a simple average estimated on its own, so about $O(\log d)$ samples bring it close to its limit; logistic regression fits all $d+1$ parameters jointly and needs $O(d)$.
+
+So the two learning curves often **cross**: with little data the generative model leads, with plenty the discriminative one overtakes it.
+
+<LearningCurves client:visible lang="en" />
+
+One caveat: a stronger L2 penalty on logistic regression (Ch. 03, 04) helps it a lot with small samples and moves the crossing to the left. The library exercise lets you reproduce these curves yourself.
+
+### Extension: when to choose a generative model
+
+- **Class proportions change**, say the share of follow-ups rises in flu season. A generative model just updates $\pi_k$; no retraining.
+- **Missing features**: when a patient lacks one measurement, integrate that coordinate out of $p(x\mid k)$ (for a Gaussian, drop the matching row and column).
+- **Unlabelled data**: treat the class as a latent variable and use EM to learn from labelled and unlabelled data together (Ch. 11).
+- **Outlier detection**: a point with a tiny $p(x) = \sum_k\pi_k p(x\mid k)$ looks like no class at all.
+- **Regularized discriminant analysis** sits between LDA and QDA: $\Sigma_k(\lambda) = \lambda\hat\Sigma_k + (1-\lambda)\hat\Sigma$, scikit-learn's `reg_param` and `shrinkage`.
+- Push “model $p(x)$” to images and text and you reach the deep generative models of Ch. 22–25.
+
+</Section>

@@ -1,0 +1,152 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import GaussianBoundaries from "../../components/chapters/ch05/GaussianBoundaries";
+import PosteriorShape from "../../components/chapters/ch05/PosteriorShape";
+import NaiveBayesText from "../../components/chapters/ch05/NaiveBayesText";
+import LearningCurves from "../../components/chapters/ch05/LearningCurves";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 05 · Animated course" title="Generative Classifiers" say="Logistic regression in the last chapter went straight for the boundary between the classes. This chapter turns that around: first describe what each class's data looks like, then work out the class with Bayes' rule.">
+
+Naive Bayes · linear and quadratic discriminant analysis · generative vs discriminative
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Two triage jobs at a clinic" say="A community clinic wants to do two things: flag who needs a follow-up from two check-up measurements, and sort patients' messages into urgent and routine. The catch is that very few records are labelled.">
+
+<Step say="On the right are two groups of patients: blue is routine, orange needs a follow-up. Each group is described by a Gaussian; the dashed ellipse is its two-standard-deviation contour.">Blue = routine, orange = follow-up; ellipse = each class's distribution</Step>
+
+<Step say="Drag a filled dot to move a mean, and the hollow handles to rotate and stretch an ellipse. Notice that the boundary is computed from the two distributions by itself.">Drag means and ellipses → the boundary appears</Step>
+
+<Step say="Tick the shared covariance option and the purple conic straightens out onto the pink LDA line; the green dashed line is logistic regression.">Shared shape ⇒ a line; different shapes ⇒ a curve</Step>
+
+<div slot="visual"><GaussianBoundaries client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" say="There are two ways to think about the same classification problem.">
+
+<Step say="Discriminative: model the posterior directly and look for the boundary. Logistic regression from chapter four works this way.">Discriminative: learn $P(y\mid x)$ directly, i.e. draw the boundary</Step>
+
+<Step say="Generative: first model each class, describing what its members usually look like, then reason backwards with Bayes' rule.">Generative: learn $p(x\mid y)$ and $P(y)$, then apply Bayes' rule</Step>
+
+<Step effect="focus" say="Two questions: how are the two related, and which one is more reliable when data is scarce?">
+<p class="big-q sm">How are they related? Which wins with little data?</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="The triad of a generative classifier" say="Let's look at a generative classifier through the triad.">
+
+<Step say="The model: the class prior times the class-conditional density, which is the joint distribution.">Model: $\pi_k \cdot p(x\mid k)$</Step>
+
+<Step say="The strategy: maximize the joint likelihood. A discriminative model maximizes the conditional likelihood instead.">Strategy: maximize the joint likelihood $\prod_i \pi_{y_i}\,p(x_i\mid y_i)$</Step>
+
+<Step say="The algorithm: the joint log-likelihood splits by class, each class fits its own distribution to its own data, and the priors are the class proportions. Counting and averaging are all it takes.">Algorithm: split by class, $\hat\pi_k = n_k/n$, count and average</Step>
+
+<Step say="To predict, pick the class with the largest posterior, that is, the largest log-prior plus log-likelihood.">Predict: $\arg\max_k\ \log\pi_k + \log p(x\mid k)$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Three choices of class density" say="The choice of class-conditional density gives the method its name.">
+
+<Step say="One mean and one covariance per class: quadratic discriminant analysis, QDA, with a conic boundary.">QDA: $\mathcal N(\mu_k, \Sigma_k)$ → quadratic boundary</Step>
+
+<Step say="All classes share one covariance: linear discriminant analysis, LDA, with a straight boundary.">LDA: shared $\Sigma$ → linear boundary</Step>
+
+<Step say="Features independent given the class: naive Bayes, whose parameter count grows only linearly with the dimension.">Naive Bayes: $p(x\mid k)=\prod_j p(x_j\mid k)$</Step>
+
+<Step effect="focus" say="Going down, the assumptions get stronger and the parameters fewer: steadier estimates, but bias when the assumption is wrong.">
+<p class="big-q sm">Stronger assumptions → less variance, more bias</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Why lines, and why curves" say="Write down each class's discriminant function.">
+
+<Step say="After taking logs, the discriminant function contains a quadratic form.">
+
+$$
+\delta_k(x) = \log\pi_k - \tfrac12\log\det\Sigma_k - \tfrac12 (x-\mu_k)^\top\Sigma_k^{-1}(x-\mu_k)
+$$
+
+</Step>
+
+<Step say="Subtracting two classes leaves a quadratic term: x transpose, times the difference of the inverse covariances, times x. With different covariances the boundary is a conic.">$\delta_1 - \delta_0 \ni -\tfrac12 x^\top(\Sigma_1^{-1}-\Sigma_0^{-1})x$ → quadratic</Step>
+
+<Step say="With equal covariances the quadratic terms cancel, only linear terms remain, and the boundary is a straight line.">$\Sigma_0 = \Sigma_1$ ⇒ the quadratic terms cancel ⇒ a line</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The LDA posterior is a sigmoid" say="With a shared covariance, the log-odds is a linear function of x.">
+
+<Step say="The weight vector is the inverse covariance times the difference of the means.">$w = \Sigma^{-1}(\mu_1 - \mu_0)$</Step>
+
+<Step say="So the posterior is exactly a sigmoid: the same model family as logistic regression, estimated differently.">$P(y=1\mid x) = \sigma(w^\top x + b)$: the logistic family</Step>
+
+<Step say="On the right, drag the spread ratio. At one, the quadratic coefficient a is zero and the posterior is a sigmoid; otherwise the wider class wins again in both tails.">Unequal spreads ⇒ $a \ne 0$ ⇒ a non-monotone posterior →</Step>
+
+<div slot="visual"><PosteriorShape client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Naive Bayes and Laplace smoothing" say="What about text? Use multinomial naive Bayes.">
+
+<Step say="Each class has a set of word probabilities theta; the maximum-likelihood estimate is the word count over the total count.">$\hat\theta_{kj} = N_{kj}/N_k$</Step>
+
+<Step say="The trouble: a word that never occurred in a class gets probability zero, and one word can veto the whole class.">One unseen word ⇒ the whole class gets probability 0</Step>
+
+<Step say="Put a Dirichlet prior on theta and take the posterior mean to get the smoothed estimate. Alpha equal to one is Laplace smoothing.">
+
+$$
+\tilde\theta_{kj} = \frac{N_{kj} + \alpha}{N_k + \alpha V}
+$$
+
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: sorting a message" say="Two urgent messages, three routine ones, and a new message: fever, pain, refill.">
+
+<Step say="Without smoothing, refill never appeared in an urgent message, so the probability of urgent drops straight to zero.">$\alpha = 0$: $P(\text{urgent}) = 0$</Step>
+
+<Step say="With Laplace smoothing, urgent scores one over two hundred sixteen and routine three over one thousand twenty-four, so the posterior of urgent is about zero point six one two.">$\alpha = 1$: $\frac{1/216}{1/216 + 3/1024} \approx 0.612$</Step>
+
+<Step say="On the right, add words to the message yourself and see which way each word pushes the log-odds.">Each word's share of the log-odds →</Step>
+
+<div slot="visual"><NaiveBayesText client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Generative vs discriminative: sample efficiency" say="Naive Bayes and logistic regression are a pair: the same model family with different estimation strategies.">
+
+<Step say="Naive Bayes converges fast, in about log d samples; logistic regression needs about d.">Generative: $O(\log d)$ samples · discriminative: $O(d)$</Step>
+
+<Step say="But when independence fails, naive Bayes levels off at a higher error.">Wrong assumption ⇒ a higher limiting error for the generative model</Step>
+
+<Step say="So the two learning curves cross. On the right, drag the correlation and watch the crossing move.">The learning curves cross →</Step>
+
+<div slot="visual"><LearningCurves client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="When to go generative" say="Generative models offer a few things discriminative ones do not.">
+
+<Step say="If the class proportions change, just update the priors; no retraining.">Class proportions change → update $\pi_k$ only</Step>
+
+<Step say="If a feature is missing, integrate that coordinate out.">A missing feature → integrate it out</Step>
+
+<Step say="Unlabelled data can be used too, with the EM algorithm of chapter eleven.">Unlabelled data → EM (Ch. 11)</Step>
+
+<Step say="Go further and model the distribution of images and text, and you reach the deep generative models of chapters twenty-two to twenty-five.">Modelling $p(x)$ → deep generative models (Ch. 22–25)</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, LDA and QDA from scratch, and a scikit-learn comparison of four classifiers with learning curves.">
+
+<Step say="After running the code exercise you can replay, side by side, how the LDA line and the QDA curve settle as the sample grows.">✎ 4 derivations · ⌨ LDA / QDA from scratch · ⚙ LDA / QDA / NB / logistic</Step>
+
+<Step effect="pop" say="Click the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/generative-classifiers/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

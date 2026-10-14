@@ -1,0 +1,97 @@
+/* chapter 05 — generative classifiers */
+.g5-svg { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; border-radius: 12px; user-select: none; touch-action: none; }
+.g5-bg { fill: var(--surface-2); }
+.g5-axis { stroke: var(--text-muted); stroke-width: 1; opacity: 0.35; }
+.g5-region.pos { fill: var(--class-pos); fill-opacity: 0.1; }
+.g5-region.neg { fill: var(--class-neg); fill-opacity: 0.1; }
+.g5-pt { stroke: var(--bg); stroke-width: 1; }
+.g5-pt.pos { fill: var(--class-pos); }
+.g5-pt.neg { fill: var(--class-neg); }
+.g5-ell { fill: none; stroke-width: 2; stroke-dasharray: 6 4; }
+.g5-ell.pos { stroke: var(--class-pos); }
+.g5-ell.neg { stroke: var(--class-neg); }
+.g5-axisline { stroke-width: 1.4; opacity: 0.7; }
+.g5-axisline.pos { stroke: var(--class-pos); }
+.g5-axisline.neg { stroke: var(--class-neg); }
+.g5-mean { stroke: var(--bg); stroke-width: 2.5; cursor: grab; }
+.g5-mean.pos { fill: var(--class-pos); }
+.g5-mean.neg { fill: var(--class-neg); }
+.g5-handle { fill: var(--surface); stroke-width: 2.5; cursor: grab; }
+.g5-handle.pos { stroke: var(--class-pos); }
+.g5-handle.neg { stroke: var(--class-neg); }
+.g5-hit { fill: transparent; cursor: grab; }
+.g5-lda { stroke: var(--accent-2); stroke-width: 3; fill: none; }
+.g5-qda { stroke: var(--accent-3); stroke-width: 3; fill: none; }
+.g5-lr { stroke: var(--success); stroke-width: 2.6; fill: none; stroke-dasharray: 8 5; }
+.g5-bayes { stroke: var(--text); stroke-width: 1.6; fill: none; stroke-dasharray: 2 4; opacity: 0.8; }
+
+.g5-legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-size: 0.8rem; color: var(--text-muted); justify-content: center; }
+.g5-legend span { display: inline-flex; align-items: center; gap: 0.4em; }
+.g5-legend i { display: inline-block; width: 22px; height: 0; border-top: 3px solid; }
+.g5-legend i.lda { border-color: var(--accent-2); }
+.g5-legend i.qda { border-color: var(--accent-3); }
+.g5-legend i.lr { border-color: var(--success); border-top-style: dashed; }
+.g5-legend i.bayes { border-color: var(--text); border-top-style: dotted; border-top-width: 2px; }
+.g5-legend i.nb { border-color: var(--class-pos); }
+.g5-legend i.lrc { border-color: var(--class-neg); }
+.g5-legend i.post { border-color: var(--accent); }
+
+/* posterior widget */
+.g5-dens { fill: none; stroke-width: 2.6; }
+.g5-dens.pos { stroke: var(--class-pos); }
+.g5-dens.neg { stroke: var(--class-neg); }
+.g5-fill.pos { fill: var(--class-pos); fill-opacity: 0.12; }
+.g5-fill.neg { fill: var(--class-neg); fill-opacity: 0.12; }
+.g5-post { fill: none; stroke: var(--accent); stroke-width: 3; }
+.g5-sig { fill: none; stroke: var(--text-muted); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.g5-band.pos { fill: var(--class-pos); opacity: 0.55; }
+.g5-band.neg { fill: var(--class-neg); opacity: 0.55; }
+.g5-thr { stroke: var(--text); stroke-width: 1.4; stroke-dasharray: 3 3; }
+.g5-tick { fill: var(--text-muted); font-size: 11px; font-family: var(--mono); }
+.g5-lab { fill: var(--text-muted); font-size: 11px; paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; stroke-linejoin: round; }
+.g5-grid { stroke: var(--border); stroke-width: 1; }
+.g5-formula { font-family: var(--mono); font-size: 0.85rem; text-align: center; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 0.45rem 0.7rem; overflow-x: auto; white-space: nowrap; }
+.g5-formula b { color: var(--accent-3); }
+
+/* learning curves */
+.g5-curve { fill: none; stroke-width: 2.8; }
+.g5-curve.nb { stroke: var(--class-pos); }
+.g5-curve.lr { stroke: var(--class-neg); }
+.g5-dot.nb { fill: var(--class-pos); }
+.g5-dot.lr { fill: var(--class-neg); }
+.g5-asym { stroke-width: 1.4; stroke-dasharray: 5 4; fill: none; }
+.g5-asym.nb { stroke: var(--class-pos); }
+.g5-asym.bayes { stroke: var(--text-muted); }
+.g5-cross { fill: var(--warning); stroke: var(--bg); stroke-width: 2; }
+.g5-cursor { stroke: var(--accent); stroke-width: 1.5; }
+.g5-alab { font-size: 11px; font-family: var(--mono); paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; stroke-linejoin: round; }
+.g5-alab.nb { fill: var(--class-pos); }
+.g5-alab.bayes { fill: var(--text-muted); }
+
+/* naive Bayes text */
+.nb5-train { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.6rem; }
+.nb5-class { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 0.5rem 0.7rem; font-size: 0.82rem; min-width: 0; }
+.nb5-class h4 { margin: 0 0 0.3rem; font-size: 0.8rem; letter-spacing: 0.04em; }
+.nb5-class.pos h4 { color: var(--class-pos); }
+.nb5-class.neg h4 { color: var(--class-neg); }
+.nb5-msg { font-family: var(--mono); font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+.nb5-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; font-family: var(--mono); }
+.nb5-table th, .nb5-table td { padding: 0.25rem 0.4rem; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.nb5-table th:first-child, .nb5-table td:first-child { text-align: left; }
+.nb5-table th { color: var(--text-muted); font-weight: 600; }
+.nb5-table td.zero { color: var(--danger); font-weight: 700; }
+.nb5-wrap { overflow-x: auto; }
+.nb5-compose { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.nb5-label { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-right: 0.3rem; }
+.nb5-token { font: inherit; font-family: var(--mono); font-size: 0.82rem; border-radius: 6px; padding: 0.15em 0.55em; border: 1px dashed var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); cursor: pointer; }
+.nb5-empty { font-size: 0.82rem; color: var(--text-muted); font-style: italic; }
+.nb5-bars { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; }
+.nb5-bar.pos { fill: var(--class-pos); }
+.nb5-bar.neg { fill: var(--class-neg); }
+.nb5-bar.inf { fill: var(--danger); }
+.nb5-zero { stroke: var(--text-muted); stroke-width: 1.2; }
+.nb5-blab { fill: var(--text); font-size: 12px; font-family: var(--mono); }
+.nb5-bval { fill: var(--text-muted); font-size: 11px; font-family: var(--mono); }
+.nb5-meter { position: relative; height: 14px; border-radius: 999px; background: var(--class-neg); overflow: hidden; }
+.nb5-meter span { position: absolute; inset: 0 auto 0 0; background: var(--class-pos); transition: width 0.3s ease; }
+.nb5-meter-lab { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
