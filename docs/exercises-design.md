@@ -94,3 +94,7 @@
 4. 写讲义 `site/src/content/{zh,en}/<slug>.mdx`（第 1–4 部分），章节页面会自动出现。
 5. 写一页纸总结 `site/src/recaps/{zh,en}/<slug>.mdx`，以及动画课程 `site/src/slides/{zh,en}/<slug>.mdx`。
 6. 如有需要，在 `site/src/handbook/{zh,en}/` 中添加实战手册条目，并在 frontmatter 的 `chapters` 中注明章号。
+
+
+> 新增章节的最新流程见 [`.claude/skills/new-chapter/SKILL.md`](../.claude/skills/new-chapter/SKILL.md)，脚手架为 `scripts/new_chapter.py`。
+> For the current chapter workflow see `.claude/skills/new-chapter/SKILL.md` and `scripts/new_chapter.py`.
