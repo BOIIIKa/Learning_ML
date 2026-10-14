@@ -31,8 +31,9 @@ def _plain(value):
 class Trace:
     """An ordered list of training states over a fixed 2-D dataset."""
 
-    def __init__(self, kind, X, y, title=None, grid=None):
+    def __init__(self, kind, X, y, title=None, grid=None, show_margin=True):
         self.kind = kind
+        self.show_margin = show_margin
         self.X = np.asarray(X, dtype=float)
         self.y = np.asarray(y)
         self.title = title
@@ -47,6 +48,8 @@ class Trace:
         out = {"kind": self.kind, "X": _plain(self.X), "y": _plain(self.y), "steps": self.steps}
         if self.title is not None:
             out["title"] = self.title
+        if not self.show_margin:
+            out["showMargin"] = False
         if self.grid is not None:
             out["grid"] = {"x": _plain(self.grid.xs), "y": _plain(self.grid.ys)}
         return out

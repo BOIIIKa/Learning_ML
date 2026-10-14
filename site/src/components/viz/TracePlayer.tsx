@@ -68,7 +68,7 @@ export default function TracePlayer({ traces, lang, metrics = [], stepMs = 650, 
           return (
             <figure key={i} className="tp-plot">
               {tr.title && <figcaption className="tp-title">{pick(tr.title, lang)}</figcaption>}
-              <Plot2D X={tr.X} y={tr.y} step={step} grid={tr.grid} tweenMs={Math.min(450, stepMs / speed)} />
+              <Plot2D X={tr.X} y={tr.y} step={step} grid={tr.grid} showMargin={tr.showMargin !== false} tweenMs={Math.min(450, stepMs / speed)} />
               <div className="tp-note">
                 <span className="tp-badge">{t(lang, "step", { k: idx + 1, n: tr.steps.length })}</span>
                 {step?.note && step.note !== "step" && <span className="tp-note-text">{step.note}</span>}

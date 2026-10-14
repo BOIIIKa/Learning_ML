@@ -21,5 +21,7 @@ export interface Trace {
   X: number[][];
   y: number[];
   grid?: { x: number[]; y: number[] };
+  /** Set to false when `w, b` describe a direction rather than a classifier (no ±1 margin lines). */
+  showMargin?: boolean;
   steps: TraceStep[];
 }

@@ -1,0 +1,65 @@
+# 第 00 章 数学工具箱 —— 课后练习 / Chapter 00 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: bernoulli-mle
+    title: {zh: "伯努利分布的极大似然", en: "Maximum likelihood for a Bernoulli"}
+    prompt:
+      zh: "抛 $n$ 次硬币得到 $k$ 次正面，对数似然为 $\\ell(p) = k\\log p + (n-k)\\log(1-p)$。令 $\\ell'(p) = 0$，写出 $\\hat p$。可用变量：`k, n`。"
+      en: "Toss a coin $n$ times and get $k$ heads. The log-likelihood is $\\ell(p) = k\\log p + (n-k)\\log(1-p)$. Set $\\ell'(p) = 0$ and write $\\hat p$. Variables: `k, n`."
+    answer: "k/n"
+    vars: {k: [1, 5], n: [6, 12]}
+    solution:
+      zh: "$\\ell'(p) = \\dfrac{k}{p} - \\dfrac{n-k}{1-p} = 0 \\Rightarrow k(1-p) = (n-k)p \\Rightarrow \\hat p = k/n$。又 $\\ell''(p) = -\\dfrac{k}{p^2} - \\dfrac{n-k}{(1-p)^2} < 0$，所以这是最大值点。极大似然估计就是样本频率——符合直觉，但这一结论是从“最大化似然”推出来的，而不是假设的。"
+      en: "$\\ell'(p) = \\dfrac{k}{p} - \\dfrac{n-k}{1-p} = 0 \\Rightarrow k(1-p) = (n-k)p \\Rightarrow \\hat p = k/n$. Since $\\ell''(p) = -\\dfrac{k}{p^2} - \\dfrac{n-k}{(1-p)^2} < 0$, it is a maximum. The MLE is the sample frequency: intuitive, but here it is derived from maximizing the likelihood rather than assumed."
+
+  - id: gauss-kl
+    title: {zh: "两个高斯之间的 KL 散度", en: "KL divergence between two Gaussians"}
+    prompt:
+      zh: "$p = \\mathcal N(\\mu_1, \\sigma^2)$，$q = \\mathcal N(\\mu_2, \\sigma^2)$（方差相同）。写出 $\\mathrm{KL}(p\\,\\|\\,q) = \\mathbb E_p[\\log p(x) - \\log q(x)]$。可用变量：`m1, m2, s`（$s = \\sigma$）。"
+      en: "$p = \\mathcal N(\\mu_1, \\sigma^2)$ and $q = \\mathcal N(\\mu_2, \\sigma^2)$ (same variance). Write $\\mathrm{KL}(p\\,\\|\\,q) = \\mathbb E_p[\\log p(x) - \\log q(x)]$. Variables: `m1, m2, s` ($s = \\sigma$)."
+    answer: "(m1 - m2)^2 / (2*s^2)"
+    vars: {m1: [-2, 2], m2: [-2, 2], s: [0.5, 2]}
+    solution:
+      zh: "归一化常数相同而抵消，$\\log p - \\log q = \\dfrac{(x-\\mu_2)^2 - (x-\\mu_1)^2}{2\\sigma^2}$。在 $p$ 下取期望：$\\mathbb E_p(x-\\mu_1)^2 = \\sigma^2$，$\\mathbb E_p(x-\\mu_2)^2 = \\sigma^2 + (\\mu_1-\\mu_2)^2$，相减得 $\\dfrac{(\\mu_1-\\mu_2)^2}{2\\sigma^2} \\ge 0$。它在 $\\mu_1 = \\mu_2$ 时为 0，符合 Jensen 不等式给出的 KL 非负。"
+      en: "The normalizing constants cancel, so $\\log p - \\log q = \\dfrac{(x-\\mu_2)^2 - (x-\\mu_1)^2}{2\\sigma^2}$. Under $p$: $\\mathbb E_p(x-\\mu_1)^2 = \\sigma^2$ and $\\mathbb E_p(x-\\mu_2)^2 = \\sigma^2 + (\\mu_1-\\mu_2)^2$, so the difference is $\\dfrac{(\\mu_1-\\mu_2)^2}{2\\sigma^2} \\ge 0$. It vanishes exactly when $\\mu_1 = \\mu_2$, in line with KL ≥ 0 from Jensen's inequality."
+
+  - id: eig2
+    title: {zh: "2×2 对称矩阵的最大特征值", en: "The largest eigenvalue of a symmetric 2×2 matrix"}
+    prompt:
+      zh: "对 $S = \\begin{pmatrix} a & b \\\\ b & c \\end{pmatrix}$，解特征方程 $\\det(S - \\lambda I) = 0$，写出**较大**的那个特征值。可用变量：`a, b, c`。"
+      en: "For $S = \\begin{pmatrix} a & b \\\\ b & c \\end{pmatrix}$, solve $\\det(S - \\lambda I) = 0$ and write the **larger** eigenvalue. Variables: `a, b, c`."
+    answer: "(a + c)/2 + sqrt(((a - c)/2)^2 + b^2)"
+    vars: {a: [-2, 3], b: [-2, 2], c: [-2, 3]}
+    solution:
+      zh: "$\\lambda^2 - (a+c)\\lambda + (ac - b^2) = 0$，所以 $\\lambda = \\dfrac{a+c}{2} \\pm \\sqrt{\\Big(\\dfrac{a-c}{2}\\Big)^2 + b^2}$。根号内恒非负，所以对称矩阵的特征值总是实数。两个特征值的和是迹 $a+c$，积是行列式 $ac-b^2$。"
+      en: "$\\lambda^2 - (a+c)\\lambda + (ac - b^2) = 0$, so $\\lambda = \\dfrac{a+c}{2} \\pm \\sqrt{\\Big(\\dfrac{a-c}{2}\\Big)^2 + b^2}$. The square root's argument is never negative, so a symmetric matrix always has real eigenvalues. Their sum is the trace $a+c$ and their product the determinant $ac-b^2$."
+
+  - id: kkt-1d
+    title: {zh: "一维的 KKT 乘子", en: "A one-dimensional KKT multiplier"}
+    prompt:
+      zh: "求解 $\\min_x (x-t)^2$，约束为 $x \\le 1$。拉格朗日函数为 $(x-t)^2 + \\lambda(x-1)$。写出最优乘子 $\\lambda^*$（用 $t$ 表示）。可用变量：`t`。"
+      en: "Solve $\\min_x (x-t)^2$ subject to $x \\le 1$, with Lagrangian $(x-t)^2 + \\lambda(x-1)$. Write the optimal multiplier $\\lambda^*$ in terms of $t$. Variable: `t`."
+    answer: "max(0, 2*(t - 1))"
+    vars: {t: [-2, 3]}
+    solution:
+      zh: "平稳性：$2(x-t) + \\lambda = 0$。若 $t \\le 1$，无约束最优点 $x = t$ 已可行，互补松弛要求 $\\lambda = 0$；若 $t > 1$，约束起作用，$x^* = 1$，于是 $\\lambda^* = 2(t-1) > 0$。合起来就是 $\\lambda^* = \\max(0, 2(t-1))$。$\\lambda^*$ 衡量约束的“价格”：把上界放宽 $\\delta$，最优值大约下降 $\\lambda^*\\delta$。"
+      en: "Stationarity: $2(x-t) + \\lambda = 0$. If $t \\le 1$, the unconstrained optimum $x = t$ is feasible and complementary slackness forces $\\lambda = 0$. If $t > 1$, the constraint is active, $x^* = 1$ and $\\lambda^* = 2(t-1) > 0$. Together, $\\lambda^* = \\max(0, 2(t-1))$. $\\lambda^*$ is the constraint's “price”: relaxing the bound by $\\delta$ lowers the optimal value by about $\\lambda^*\\delta$."
+
+code:
+  - id: pca-power
+    kind: implement
+    file: pca_power.py
+    packages: [numpy]
+    title: {zh: "手写主方向：协方差 + 幂迭代", en: "Principal directions by hand: covariance + power iteration"}
+    intro:
+      zh: "补全极大似然协方差、幂迭代一步、瑞利商与收缩四个空，并与 `numpy.linalg.eigh` 对拍。运行后回放幂迭代：直线一步步转向数据最舒展的方向。"
+      en: "Fill in the maximum-likelihood covariance, one power-iteration step, the Rayleigh quotient and deflation, then check against `numpy.linalg.eigh`. Afterwards, replay power iteration as the line turns toward the direction of greatest spread."
+  - id: toolkit-library
+    kind: library
+    file: toolkit_library.py
+    packages: [numpy, scipy, scikit-learn]
+    title: {zh: "用库完成同样的事：PCA 与约束优化", en: "The same with libraries: PCA and constrained optimization"}
+    intro:
+      zh: "用 scikit-learn 的 `PCA` 求主方向，再用 SciPy 的 `minimize`（SLSQP）求解带约束的投影问题，并与 KKT 条件推出的闭式解比较。"
+      en: "Get the principal directions with scikit-learn's `PCA`, then solve a constrained projection with SciPy's `minimize` (SLSQP) and compare it with the closed form derived from the KKT conditions."

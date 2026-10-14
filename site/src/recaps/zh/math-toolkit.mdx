@@ -1,0 +1,6 @@
+- **矩阵是变换**：任何矩阵都是“旋转 → 沿坐标轴拉伸 → 再旋转”（SVD，$A = U\Sigma V^\top$）；单位圆被映成椭圆，半轴长就是奇异值。
+- **谱定理**：对称矩阵 $S = Q\Lambda Q^\top$，特征值为实数、特征向量正交；协方差的特征向量就是数据点云的主轴。
+- **极大似然**：$\hat\theta = \arg\max\sum\log p(x_i\mid\theta)$；高斯分布的 $\hat\mu$ 是样本均值，$\hat\Sigma$ 是除以 $n$ 的样本协方差。MAP 多一个先验项，也就是正则。
+- **Jensen 不等式与 KL**：对凸函数 $f$，$f(\mathbb E X) \le \mathbb E f(X)$ ⇒ $\mathrm{KL}(p\|q) \ge 0$；最大化似然等价于最小化 $\mathrm{KL}(p_{\text{data}}\|p_\theta)$。
+- **梯度下降**：$w \leftarrow w - \eta\nabla f$；对二次函数，收敛要求 $\eta < 2/\lambda_{\max}$，最优收敛率为 $(\kappa-1)/(\kappa+1)$。
+- **KKT 条件**：平稳性、原始可行、对偶可行、互补松弛；凸问题满足 Slater 条件时，KKT 是最优的充要条件。$\lambda^*$ 是约束的影子价格。

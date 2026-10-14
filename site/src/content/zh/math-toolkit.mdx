@@ -1,0 +1,179 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import GaussianFit from "../../components/chapters/ch00/GaussianFit";
+import LinearMap from "../../components/chapters/ch00/LinearMap";
+import JensenKL from "../../components/chapters/ch00/JensenKL";
+import GradientBowl from "../../components/chapters/ch00/GradientBowl";
+import KKTPlayground from "../../components/chapters/ch00/KKTPlayground";
+
+<Section lang="zh" k="scenario">
+
+你拿到一张体检中心的表格：每一行是一个人，两列分别是身高和体重（都已标准化）。画出来是一团斜着的点云。
+
+<GaussianFit client:visible lang="zh" />
+
+面对这团数据，机器学习里最常见的三个问题马上就出现了：
+
+1. **形状**：这团点往哪个方向伸展得最开？伸展了多少？这需要**线性代数**：矩阵、特征值与 SVD。
+2. **描述**：用什么分布描述它？参数应该取多少，才“最符合”数据？这需要**概率**：极大似然、KL 散度与 Jensen 不等式。
+3. **求解**：参数往往要通过最小化一个损失来求，有时还带着约束（例如概率必须非负、和为 1）。这需要**优化**：梯度、条件数、拉格朗日对偶与 KKT 条件。
+
+本章只讲后面真正会用到的数学，每一样都先给出几何图像，再给出严格推导。
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 线性代数：矩阵是一个变换
+
+矩阵 $A$ 把向量 $x$ 变成 $Ax$。与其把它看成一张数表，不如看它对**整个平面**做了什么：网格被拉伸、剪切、旋转，单位圆变成椭圆。
+
+<LinearMap client:visible lang="zh" />
+
+<Box kind="theorem" title="奇异值分解（SVD）">
+
+任意矩阵 $A$ 都可以写成 $A = U\Sigma V^\top$，其中 $U$、$V$ 是正交矩阵（旋转或反射），$\Sigma$ 是对角矩阵，对角元 $\sigma_1 \ge \sigma_2 \ge \dots \ge 0$ 称为奇异值。几何上，任何线性变换都等于**旋转 → 沿坐标轴拉伸 → 再旋转**。
+
+</Box>
+
+对**对称**矩阵（例如协方差矩阵），两次旋转是同一个：$S = Q\Lambda Q^\top$，$Q$ 的列是互相正交的特征向量。点云的椭圆形状就由它决定：特征向量是椭圆的轴向，$\sqrt{\lambda_i}$ 是沿该方向的标准差。
+
+### 概率：用似然挑选参数
+
+给定一族分布 $p(x \mid \theta)$ 和独立样本 $x_1, \dots, x_n$，**极大似然估计（MLE）**选择让观测数据最“可能”的参数：
+
+$$
+\hat\theta_{\text{MLE}} = \arg\max_\theta \sum_{i=1}^n \log p(x_i \mid \theta).
+$$
+
+如果对参数还有先验信念 $p(\theta)$，就最大化后验，得到 **MAP** 估计：$\hat\theta_{\text{MAP}} = \arg\max_\theta \big[\sum_i \log p(x_i\mid\theta) + \log p(\theta)\big]$。后面会看到，先验就是正则项：高斯先验对应 L2 正则，拉普拉斯先验对应 L1 正则。
+
+### 优化：沿负梯度走
+
+很多学习问题最终都是 $\min_w f(w)$。**梯度** $\nabla f$ 指向 $f$ 上升最快的方向，所以梯度下降沿反方向走一小步：$w \leftarrow w - \eta \nabla f(w)$。**Hessian** $\nabla^2 f$ 描述曲面的弯曲程度：它的特征值相差越悬殊（**条件数**越大），等高线越扁，梯度下降越容易走“之”字形。
+
+<GradientBowl client:visible lang="zh" />
+
+用课程的三要素来看，这三样工具分工明确：线性代数与概率用来**描述模型**，似然与损失定义**策略**，优化提供**算法**。
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 对称矩阵的谱分解
+
+<Box kind="theorem" title="谱定理（实对称矩阵）">
+
+若 $S = S^\top$，则它的特征值都是实数，不同特征值对应的特征向量互相正交。因此存在正交矩阵 $Q$，使 $S = Q\Lambda Q^\top$。
+
+</Box>
+
+**证明要点**：设 $Sv = \lambda v$，且 $v$ 可能是复向量。则 $\bar v^\top S v = \lambda \|v\|^2$；对它取共轭转置，由于 $S$ 是实对称矩阵，得到 $\bar v^\top S v = \bar\lambda \|v\|^2$，所以 $\lambda = \bar\lambda$，特征值是实数。若 $Sv_1 = \lambda_1 v_1$、$Sv_2 = \lambda_2 v_2$ 且 $\lambda_1 \ne \lambda_2$，则 $\lambda_1 v_1^\top v_2 = (Sv_1)^\top v_2 = v_1^\top S v_2 = \lambda_2 v_1^\top v_2$，只能有 $v_1^\top v_2 = 0$。
+
+**从谱分解到 SVD**：$A^\top A$ 是对称半正定矩阵，所以 $A^\top A = V\Lambda V^\top$，$\lambda_i \ge 0$。令 $\sigma_i = \sqrt{\lambda_i}$，对 $\sigma_i > 0$ 定义 $u_i = Av_i/\sigma_i$。可以验证 $u_i^\top u_j = v_i^\top A^\top A v_j/(\sigma_i\sigma_j) = \delta_{ij}$，并且 $Av_i = \sigma_i u_i$，即 $AV = U\Sigma$，也就是 $A = U\Sigma V^\top$。
+
+### 多元高斯的极大似然
+
+$d$ 维高斯分布的对数密度为
+
+$$
+\log \mathcal N(x\mid\mu,\Sigma) = -\tfrac12 (x-\mu)^\top \Sigma^{-1}(x-\mu) - \tfrac12\log\det\Sigma - \tfrac d2\log 2\pi.
+$$
+
+对 $n$ 个样本求和，并对 $\mu$ 求导：$\sum_i \Sigma^{-1}(x_i - \mu) = 0 \Rightarrow \hat\mu = \frac1n\sum_i x_i$。对 $\Sigma^{-1}$ 求导要用到两个矩阵求导公式：$\partial_{X}\log\det X = X^{-\top}$ 与 $\partial_X a^\top X a = aa^\top$。由此得到
+
+$$
+\hat\Sigma = \frac1n\sum_{i=1}^n (x_i - \hat\mu)(x_i - \hat\mu)^\top.
+$$
+
+注意分母是 $n$ 而不是 $n-1$：极大似然估计是有偏的，样本协方差的无偏版本才除以 $n-1$。场景中的椭圆正是这个 $\hat\Sigma$ 的等高线。
+
+### KL 散度与 Jensen 不等式
+
+<Box kind="theorem" title="Jensen 不等式">
+
+若 $f$ 是凸函数，则 $f(\mathbb E[X]) \le \mathbb E[f(X)]$；当 $f$ 严格凸时，等号当且仅当 $X$ 几乎处处为常数。
+
+</Box>
+
+<JensenKL client:visible lang="zh" />
+
+**KL 散度**度量分布 $q$ 与 $p$ 的差异：$\mathrm{KL}(p\,\|\,q) = \mathbb E_{p}\big[\log \tfrac{p(x)}{q(x)}\big]$。由于 $-\log$ 是凸函数，
+
+$$
+\mathrm{KL}(p\,\|\,q) = \mathbb E_p\Big[-\log\frac{q(x)}{p(x)}\Big] \ge -\log \mathbb E_p\Big[\frac{q(x)}{p(x)}\Big] = -\log \int q(x)\,dx = 0.
+$$
+
+等号当且仅当 $p = q$。KL 散度不对称：$\mathrm{KL}(p\|q) \ne \mathrm{KL}(q\|p)$。它还有一个重要性质：**最大化似然等价于最小化 $\mathrm{KL}(p_{\text{data}}\,\|\,p_\theta)$**，因为两者只差一个与 $\theta$ 无关的熵项。EM 算法（第 11 章）与 VAE（第 24 章）都建立在这条不等式上。
+
+### 梯度下降为什么怕“扁碗”
+
+对二次函数 $f(w) = \tfrac12 w^\top H w$，梯度下降为 $w_{k+1} = (I - \eta H)w_k$。在 $H$ 的特征基下，每个方向各自独立地乘以 $1 - \eta\lambda_i$：
+
+$$
+w_{k}^{(i)} = (1 - \eta\lambda_i)^k\, w_0^{(i)}.
+$$
+
+- **收敛条件**：所有 $|1 - \eta\lambda_i| < 1$，即 $0 < \eta < 2/\lambda_{\max}$；
+- **最优步长**：$\eta^* = 2/(\lambda_{\min} + \lambda_{\max})$。此时最慢方向的收缩因子为 $\dfrac{\kappa - 1}{\kappa + 1}$，其中 $\kappa = \lambda_{\max}/\lambda_{\min}$ 是条件数。
+
+$\kappa$ 越大，收敛越慢。这正是第 16 章动量法与 Adam 要解决的问题。
+
+### 拉格朗日对偶与 KKT 条件
+
+对问题 $\min_x f(x)$，约束为 $g_i(x) \le 0$，构造拉格朗日函数 $L(x, \lambda) = f(x) + \sum_i \lambda_i g_i(x)$，其中 $\lambda_i \ge 0$。**对偶函数** $D(\lambda) = \min_x L(x, \lambda)$ 总是原问题最优值的下界（**弱对偶**）：对任意可行的 $x$，都有 $L(x,\lambda) \le f(x)$。
+
+<Box kind="theorem" title="KKT 条件">
+
+若 $f$、$g_i$ 都是凸函数，且满足 Slater 条件（存在严格可行点），则强对偶成立。此时 $x^*$ 是最优解，当且仅当存在 $\lambda^*$，使得
+
+1. **平稳性**：$\nabla f(x^*) + \sum_i \lambda_i^* \nabla g_i(x^*) = 0$；
+2. **原始可行**：$g_i(x^*) \le 0$；
+3. **对偶可行**：$\lambda_i^* \ge 0$；
+4. **互补松弛**：$\lambda_i^* g_i(x^*) = 0$。
+
+</Box>
+
+**例子**：把点 $t$ 投影到半平面 $a^\top x \le c$ 上，即 $\min \|x - t\|^2$。平稳性给出 $2(x - t) + \lambda a = 0$，即 $x = t - \tfrac{\lambda}{2}a$。若 $a^\top t \le c$，取 $\lambda = 0$、$x = t$ 即可满足全部条件；否则约束必须起作用，由 $a^\top x = c$ 解得 $\lambda^* = \dfrac{2(a^\top t - c)}{\|a\|^2}$。
+
+<KKTPlayground client:visible lang="zh" />
+
+$\lambda^*$ 有一个经济学解释：它是约束的**影子价格**。把 $c$ 放宽一点 $\delta$，最优值大约下降 $\lambda^*\delta$。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题：四个点的主方向
+
+<Box kind="example" title="手算协方差、特征分解与幂迭代">
+
+四个体检样本（标准化后）：$(2,2)$、$(-2,-2)$、$(1,-1)$、$(-1,1)$。
+
+**均值**：$\hat\mu = (0, 0)$。
+
+**协方差（MLE，除以 4）**：
+
+$$
+\hat\Sigma = \frac14\begin{pmatrix} 4+4+1+1 & 4+4-1-1 \\ 4+4-1-1 & 4+4+1+1\end{pmatrix} = \begin{pmatrix} 2.5 & 1.5 \\ 1.5 & 2.5 \end{pmatrix}.
+$$
+
+**特征分解**：迹为 5，行列式为 $6.25 - 2.25 = 4$，所以特征值是 $\lambda^2 - 5\lambda + 4 = 0$ 的根：$\lambda_1 = 4$，$\lambda_2 = 1$。对应特征向量为 $\tfrac{1}{\sqrt2}(1,1)$ 与 $\tfrac1{\sqrt2}(1,-1)$。数据沿 45° 方向的标准差是 $2$，沿 −45° 方向是 $1$。
+
+**幂迭代**：从 $v_0 = (1, 0)$ 出发，$\hat\Sigma v_0 = (2.5, 1.5)$，归一化后 $v_1 \approx (0.857, 0.514)$；再乘一次得 $v_2 \approx (0.750, 0.662)$；…… 迭代逐步逼近 $(0.707, 0.707)$。误差中沿第二特征向量的分量每步乘以 $\lambda_2/\lambda_1 = 1/4$，所以收敛很快。
+
+</Box>
+
+两个特征值相差越大，幂迭代收敛越快；两者接近时，主方向本身就不稳定。这在 PCA 中很常见：如果 $\lambda_1 \approx \lambda_2$，换一批数据，主方向就可能转一个大角度。
+
+### 这些工具在后面哪里出现
+
+| 工具 | 再次出现的地方 |
+|---|---|
+| 谱分解、SVD | PCA、低秩近似与 LoRA 微调（第 12 章） |
+| 极大似然 | 逻辑回归（第 04 章）、“损失即似然”（第 15 章） |
+| KL 散度、Jensen 不等式 | EM 算法的下界（第 11 章）、VAE 的 ELBO（第 24 章）、扩散模型（第 25 章） |
+| 条件数与梯度下降 | 线性回归（第 03 章）、优化器（第 16 章） |
+| 拉格朗日对偶与 KKT | 支持向量机（第 07 章）、最大熵模型（第 04 章） |
+
+</Section>
