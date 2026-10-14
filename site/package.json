@@ -1,0 +1,49 @@
+{
+  "name": "learning-ml-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "python3 ../scripts/build_exercises.py",
+    "predev": "python3 ../scripts/build_exercises.py",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "test": "vitest run",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.2",
+    "@astrojs/mdx": "^8.0.3",
+    "@astrojs/react": "^7.0.1",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.14",
+    "@lezer/highlight": "^1.2.5",
+    "astro": "^7.3.8",
+    "codemirror": "^6.0.2",
+    "d3-contour": "^4.0.2",
+    "d3-scale": "^4.0.2",
+    "d3-shape": "^3.2.0",
+    "js-yaml": "^5.4.3",
+    "katex": "^0.16.47",
+    "mathjs": "^15.2.0",
+    "motion": "^14.2.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/d3-contour": "^3.0.6",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-shape": "^3.2.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/katex": "^0.16.8",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}

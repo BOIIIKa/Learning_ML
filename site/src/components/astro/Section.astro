@@ -1,0 +1,14 @@
+---
+import { SECTIONS, type Lang, type SectionKey } from "../../i18n/ui";
+interface Props { lang: Lang; k: SectionKey }
+const { lang, k } = Astro.props;
+const n = SECTIONS.findIndex((s) => s.key === k) + 1;
+const title = SECTIONS[n - 1][lang];
+---
+<section class="ch-section" id={`s-${k}`}>
+  <header class="sec-head reveal">
+    <span class="sec-num">{String(n).padStart(2, "0")}</span>
+    <h2>{title}</h2>
+  </header>
+  <slot />
+</section>

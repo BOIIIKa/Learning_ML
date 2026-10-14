@@ -20,6 +20,17 @@ We cite only their chapter structure; all explanations and figures are original.
 
 - [教材评估与选书 / Textbook evaluation](docs/textbook-selection.md)
 - [课程结构设计 / Curriculum design](docs/curriculum-design.md)
+- [章节结构与练习系统 / Chapter structure & exercises](docs/exercises-design.md)
+
+## 本地运行 / Run locally
+
+```bash
+cd site
+npm install
+npm run dev        # http://localhost:4321 （会先运行 scripts/build_exercises.py，需要 PyYAML）
+npm test           # 算法引擎与判题单元测试 / engine & grading unit tests
+pytest ../tests    # 练习：参考解答全过、骨架全不过 / exercises: solutions pass, skeletons fail
+```
 
 ## 贡献 / Contributing
 

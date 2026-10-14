@@ -1,0 +1,56 @@
+---
+import Base from "../../layouts/Base.astro";
+import HeroCanvas from "../../components/home/HeroCanvas";
+import TocExplorer from "../../components/home/TocExplorer";
+import { LANGS, href, pick, t, type Lang } from "../../i18n/ui";
+import { outline, readyChapters, readySlugs } from "../../lib/data";
+import "../../styles/home.css";
+
+export function getStaticPaths() {
+  return LANGS.map((lang) => ({ params: { lang } }));
+}
+const lang = Astro.params.lang as Lang;
+const first = readyChapters[0];
+const PILLARS = {
+  zh: [
+    ["∂", "严谨推导", "每个模型拆成模型–策略–算法三要素，关键推导一步不省。"],
+    ["◉", "可视化交互", "拖动数据点、拨动超参数、逐步回放训练过程，在浏览器里亲眼看到算法如何工作。"],
+    ["⌁", "前沿跟进", "每章都连到当前的研究前沿，并附上值得读的论文。"],
+  ],
+  en: [
+    ["∂", "Rigorous derivations", "Every model broken into model–strategy–algorithm, with no key step skipped."],
+    ["◉", "Interactive visuals", "Drag data, turn the knobs, replay training step by step — watch the algorithm work."],
+    ["⌁", "Research frontier", "Every chapter links to where the field is today, with papers worth reading."],
+  ],
+}[lang];
+---
+<Base lang={lang} title={`${t(lang, "siteName")} — ${t(lang, "tagline")}`} description={pick(outline.meta.audience, lang)} path="">
+  <section class="hero">
+    <HeroCanvas client:load />
+    <div class="hero-content container">
+      <p class="hero-kicker">ISL · UDL · 统计学习方法</p>
+      <h1 class="hero-title"><span class="gradient-text">{t(lang, "siteName")}</span></h1>
+      <p class="hero-sub">{t(lang, "tagline")}</p>
+      <p class="hero-audience muted">{pick(outline.meta.audience, lang)}</p>
+      <div class="hero-cta">
+        {first && <a class="btn btn-primary hero-btn" href={href(`${lang}/chapters/${first.slug}/`)}>{t(lang, "start")} → {first.id} {pick(first.title, lang)}</a>}
+        <a class="btn hero-btn" href="#contents">{t(lang, "contents")}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="pillars container">
+    {PILLARS.map(([icon, title, text], i) => (
+      <div class="pillar card reveal" style={`transition-delay:${i * 100}ms`}>
+        <span class="pillar-icon">{icon}</span>
+        <h3>{title}</h3>
+        <p class="muted">{text}</p>
+      </div>
+    ))}
+  </section>
+
+  <section id="contents" class="container contents">
+    <h2 class="reveal">{t(lang, "contents")}</h2>
+    <TocExplorer client:visible lang={lang} parts={outline.parts} tags={outline.tags} ready={readySlugs} />
+  </section>
+</Base>

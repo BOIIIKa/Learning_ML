@@ -1,0 +1,17 @@
+.progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(90deg, var(--accent), var(--accent-3), var(--accent-2)); z-index: 100; }
+
+.site-header { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.7rem clamp(16px, 4vw, 40px); backdrop-filter: blur(14px) saturate(1.4); background: color-mix(in srgb, var(--bg) 72%, transparent); border-bottom: 1px solid var(--border); }
+.brand { display: inline-flex; align-items: center; gap: 0.55rem; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
+.brand:hover { text-decoration: none; }
+.brand-mark { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; color: #061018; font-weight: 900; background: linear-gradient(135deg, var(--accent), var(--accent-3) 60%, var(--accent-2)); box-shadow: 0 0 18px -4px var(--accent-3); }
+.site-nav { display: flex; align-items: center; gap: clamp(0.6rem, 2vw, 1.4rem); font-size: 0.92rem; }
+.site-nav a { color: var(--text-muted); }
+.site-nav a:hover { color: var(--text); text-decoration: none; }
+.lang-switch { font-weight: 700; border: 1px solid var(--border); border-radius: 999px; padding: 0.1em 0.7em; }
+.theme-toggle { font: inherit; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; }
+
+main { min-height: 70vh; }
+.site-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; padding: 2rem clamp(16px, 4vw, 40px); color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 4rem; }
+
+.container { width: min(100% - 32px, 1120px); margin-inline: auto; }
+.prose { width: min(100% - 32px, 780px); margin-inline: auto; }

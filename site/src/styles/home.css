@@ -1,0 +1,19 @@
+.hero { position: relative; min-height: min(78vh, 720px); display: grid; align-items: center; overflow: hidden; border-bottom: 1px solid var(--border); }
+.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.9; }
+:root[data-theme="light"] .hero-canvas { opacity: 0.55; mix-blend-mode: multiply; }
+.hero-content { position: relative; padding: 4rem 0; }
+.hero-kicker { font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.1em; color: var(--accent); margin: 0; animation: num-in 0.9s both; }
+.hero-title { font-size: clamp(2.6rem, 9vw, 5.6rem); line-height: 1.02; margin: 0.4rem 0; letter-spacing: -0.03em; animation: num-in 0.9s 0.1s both; }
+.hero-sub { font-size: clamp(1.15rem, 2.6vw, 1.6rem); font-weight: 600; margin: 0.2rem 0; animation: num-in 0.9s 0.2s both; }
+.hero-audience { max-width: 36rem; animation: num-in 0.9s 0.3s both; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.6rem; animation: num-in 0.9s 0.4s both; }
+.hero-btn { font-size: 1rem; padding: 0.65em 1.4em; }
+@keyframes num-in { from { opacity: 0; transform: translateY(30px); filter: blur(8px); } }
+
+.pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: -3rem; position: relative; }
+.pillar { padding: 1.2rem 1.3rem; }
+.pillar h3 { margin: 0.6rem 0 0.3rem; }
+.pillar p { margin: 0; font-size: 0.93rem; }
+.pillar-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; font-size: 1.3rem; font-weight: 800; color: #061018; background: linear-gradient(135deg, var(--accent), var(--accent-3) 60%, var(--accent-2)); box-shadow: 0 8px 24px -8px var(--accent-3); }
+.contents { margin-top: 4rem; }
+.contents h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }

@@ -1,0 +1,74 @@
+/* ---------- shared ---------- */
+.ex-head h4 { margin: 0.1rem 0 0.3rem; font-size: 1.08rem; }
+.ex-head p { margin: 0; font-size: 0.92rem; }
+.ex-kind { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.1em 0.7em; border-radius: 999px; }
+.ex-kind.implement { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.ex-kind.library { color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 14%, transparent); }
+.ex-num { font-family: var(--mono); font-weight: 800; font-size: 0.85rem; color: var(--accent-3); }
+kbd { font-family: var(--mono); font-size: 0.72rem; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 0 0.35em; margin-right: 0.15em; background: var(--surface-2); }
+
+.spinner { width: 0.9em; height: 0.9em; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; display: inline-block; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- derivation ---------- */
+.deriv-ex { padding: 1.1rem 1.2rem; margin: 1rem 0; transition: box-shadow 0.4s ease, border-color 0.4s ease; }
+.deriv-ex .ex-head { display: flex; align-items: baseline; gap: 0.6rem; }
+.deriv-prompt { margin: 0.4rem 0 0.8rem; }
+.deriv-input-row { display: flex; gap: 0.6rem; align-items: stretch; }
+.deriv-input-wrap { position: relative; flex: 1; border-radius: 10px; padding: 1px; background: var(--border); }
+.deriv-input-wrap:focus-within { background: linear-gradient(90deg, var(--accent), var(--accent-3), var(--accent-2)); }
+.deriv-input-wrap.typing { background: linear-gradient(90deg, var(--accent), var(--accent-3), var(--accent-2), var(--accent)); background-size: 300% 100%; animation: shimmer 0.8s linear infinite; box-shadow: 0 0 22px -4px var(--accent-3); }
+.deriv-input { width: 100%; font: 500 0.98rem var(--mono); color: var(--text); background: var(--code-bg); border: none; border-radius: 9px; padding: 0.6em 0.8em; outline: none; }
+.deriv-tab-hint, .cm-tab-hint { position: absolute; right: 0.6rem; top: -2.1rem; font-size: 0.78rem; font-weight: 600; color: #061018; background: linear-gradient(90deg, var(--accent), var(--accent-3)); padding: 0.2em 0.7em; border-radius: 8px; white-space: nowrap; animation: hint-in 0.25s cubic-bezier(.2,1.5,.4,1) both; box-shadow: 0 6px 20px -6px var(--accent-3); }
+.cm-tab-hint { position: static; }
+@keyframes hint-in { from { transform: translateY(6px) scale(0.9); opacity: 0; } }
+@keyframes shimmer { to { background-position: -300% 0; } }
+
+.deriv-preview { min-height: 2.2em; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-top: 0.5rem; }
+.deriv-tex { color: var(--text-muted); }
+.deriv-verdict { font-weight: 700; font-size: 0.92rem; animation: hint-in 0.3s ease both; }
+.deriv-verdict.correct { color: var(--success); }
+.deriv-verdict.wrong, .deriv-verdict.error { color: var(--danger); }
+.verdict-correct { border-color: var(--success); box-shadow: 0 0 0 1px var(--success), 0 0 40px -12px var(--success); }
+.verdict-wrong .deriv-input-wrap { animation: shake 0.35s ease; }
+.verdict-revealed { border-color: var(--accent-3); }
+@keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
+
+.deriv-toggle { font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--accent); background: none; border: none; padding: 0.2rem 0; cursor: pointer; }
+.deriv-solution { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.45s cubic-bezier(.2,.8,.2,1); }
+.deriv-solution > div { overflow: hidden; }
+.deriv-solution.open { grid-template-rows: 1fr; }
+.deriv-solution p { margin: 0.5rem 0 0; padding: 0.8rem 1rem; border-left: 3px solid var(--accent-3); background: var(--surface-2); border-radius: 0 10px 10px 0; }
+
+/* ---------- code ---------- */
+.code-ex { padding: 1.2rem; margin: 1.4rem 0; display: grid; gap: 0.8rem; transition: box-shadow 0.6s ease, border-color 0.6s ease; }
+.code-ex.solved { border-color: var(--success); box-shadow: 0 0 0 1px var(--success), 0 0 60px -18px var(--success); }
+.ex-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; font-size: 0.82rem; color: var(--text-muted); }
+.ex-left { font-family: var(--mono); color: var(--warning); }
+.ex-left.done { color: var(--success); }
+.ex-editor { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.ex-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.ex-status { margin: 0; font-size: 0.88rem; color: var(--accent); animation: dot-breathe 1.6s ease-in-out infinite; }
+.ex-error { margin: 0; font-size: 0.85rem; color: var(--danger); font-family: var(--mono); white-space: pre-wrap; }
+
+.ex-results { display: grid; gap: 0.7rem; }
+.ex-summary { font-weight: 800; font-size: 1rem; }
+.ex-summary.good { background: linear-gradient(90deg, var(--success), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 1.15rem; }
+.ex-tests { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+.ex-tests li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 0.92rem; padding: 0.35rem 0.6rem; border-radius: 8px; background: var(--surface-2); animation: row-in 0.4s cubic-bezier(.2,.8,.2,1) both; }
+.ex-tests li.fail { box-shadow: inset 3px 0 0 var(--danger); }
+.ex-tests li.pass { box-shadow: inset 3px 0 0 var(--success); }
+.ex-icon { width: 18px; height: 18px; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.pass .ex-icon { stroke: var(--success); }
+.fail .ex-icon { stroke: var(--danger); }
+.ex-icon path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw 0.45s ease forwards; animation-delay: inherit; }
+.ex-msg { font-size: 0.78rem; color: var(--text-muted); }
+@keyframes row-in { from { opacity: 0; transform: translateX(-12px); } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.ex-trace h5 { margin: 0.6rem 0; font-size: 0.95rem; }
+
+/* CodeMirror blank states (class names set by blanks.ts). */
+.cm-blank { background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--warning) 12%, transparent) 0 8px, transparent 8px 16px); border-radius: 3px; }
+.cm-filling { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 35%, transparent), color-mix(in srgb, var(--accent-3) 35%, transparent), color-mix(in srgb, var(--accent-2) 35%, transparent)); background-size: 200% 100%; animation: shimmer 0.6s linear infinite; text-shadow: 0 0 8px var(--accent); border-radius: 3px; }
+.cm-filled { animation: filled-flash 1.4s ease-out both; border-radius: 3px; }
+@keyframes filled-flash { 0% { background: color-mix(in srgb, var(--success) 45%, transparent); text-shadow: 0 0 10px var(--success); } 100% { background: transparent; text-shadow: none; } }

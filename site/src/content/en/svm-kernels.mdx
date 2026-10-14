@@ -1,0 +1,196 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import ScenarioLines from "../../components/chapters/ch07/ScenarioLines";
+import SvmPlayground from "../../components/chapters/ch07/SvmPlayground";
+import SmoReplay from "../../components/chapters/ch07/SmoReplay";
+import KernelPlayground from "../../components/chapters/ch07/KernelPlayground";
+
+<Section lang="en" k="scenario">
+
+A hospital wants a first-pass screen for tumours from two imaging measurements: the radius of the mass and how irregular its edge texture is. Past cases have been confirmed by pathology and labelled **benign** (blue) or **malignant** (orange). On the training data below, a single straight line can separate the two classes perfectly.
+
+The trouble is that **infinitely many lines** separate the training data. Three of them are drawn below, and each makes zero training mistakes. Judged by training error alone, they are equally good. What the doctors actually care about, though, is **the patients who have not arrived yet**.
+
+<ScenarioLines client:visible lang="en" />
+
+Press "new patients" a few times. Lines A and B hug one of the classes and soon start misclassifying newcomers, while the line that stays far from both classes holds up best. The intuition: new patients come from the same distribution as old ones and land near the old data. The farther the boundary sits from the data, the larger the **safety buffer** it leaves for that variation.
+
+The question for this chapter is: **how do we turn "stay as far as possible from both classes" into a mathematical problem we can solve exactly?** The answer is the support vector machine (SVM).
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Measuring the safety buffer: the margin
+
+A hyperplane $w^\top x + b = 0$ splits space in two. We predict with $\mathrm{sign}(w^\top x + b)$ and use labels $y \in \{-1, +1\}$.
+
+<Box kind="definition" title="Geometric margin">
+
+The **geometric margin** of a sample $(x_i, y_i)$ is
+
+$$
+\gamma_i = \frac{y_i\,(w^\top x_i + b)}{\|w\|}.
+$$
+
+For a correctly classified point it is the distance to the hyperplane; for a misclassified point it is negative. The margin of the whole dataset is the smallest one: $\gamma = \min_i \gamma_i$.
+
+</Box>
+
+**The maximum-margin principle**: among all hyperplanes that separate the data, pick the one with the largest margin $\gamma$, i.e. solve $\max_{w,b} \min_i \gamma_i$.
+
+That looks hard, but one observation unlocks it. Scaling $(w, b)$ by any positive number leaves the hyperplane, and every $\gamma_i$, unchanged. So we may fix the scale such that **the closest points satisfy** $y_i(w^\top x_i + b) = 1$. The margin is then $1/\|w\|$, and maximizing $1/\|w\|$ is the same as minimizing $\tfrac12\|w\|^2$:
+
+<Box kind="theorem" title="Hard-margin SVM (primal)">
+
+$$
+\min_{w,b}\ \frac12\|w\|^2 \quad \text{s.t.}\quad y_i\,(w^\top x_i + b) \ge 1,\quad i = 1,\dots,n.
+$$
+
+The objective is a convex quadratic and the constraints are linear, so this is a **convex quadratic program**: it has no bad local optima, and its solution is unique.
+
+</Box>
+
+### Allowing a few mistakes: the soft margin
+
+Real data is rarely perfectly separable. Give each sample a **slack variable** $\xi_i \ge 0$ that lets it enter the margin, or even cross to the wrong side, at a price:
+
+$$
+\min_{w,b,\xi}\ \frac12\|w\|^2 + C\sum_{i=1}^n \xi_i \quad \text{s.t.}\quad y_i\,(w^\top x_i + b) \ge 1 - \xi_i,\ \ \xi_i \ge 0.
+$$
+
+At the optimum, $\xi_i = \max(0,\,1 - y_i f(x_i))$ (derivation exercise 2). Substituting this back, the soft-margin SVM becomes
+
+$$
+\min_{w,b}\ \underbrace{\sum_i \max\big(0,\,1 - y_i f(x_i)\big)}_{\text{hinge loss}} + \frac{1}{2C}\|w\|^2 \quad(\text{up to a constant factor}).
+$$
+
+In the course's triad: the **model** is a linear hyperplane, the **strategy** is hinge loss plus L2 regularization, and the **algorithm** is the dual plus SMO, covered in the next section. $C$ sets the trade-off. A large $C$ tolerates almost no mistakes and approaches the hard margin; a small $C$ favours a wide margin and is more robust to noise.
+
+<SvmPlayground client:visible lang="en" />
+
+<Box kind="insight" title="Only the points on the boundary have a say">
+
+Drag a point far from the boundary and the hyperplane does not move. Drag a point with a spinning ring and the hyperplane follows at once. The solution is determined only by the few samples that sit on the margin boundary (or inside the margin): the **support vectors**. The next section proves this rigorously from the KKT conditions.
+
+</Box>
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Tool 1: Lagrangian duality and the KKT conditions
+
+Recall from Chapter 00: for a convex problem $\min f(\theta)$ with constraints $g_i(\theta) \le 0$, introduce multipliers $\alpha_i \ge 0$ and form the Lagrangian $L = f + \sum_i \alpha_i g_i$.
+
+<Box kind="theorem" title="Strong duality and KKT">
+
+Suppose $f$ and every $g_i$ are convex, and a strictly feasible point exists (Slater's condition; for linear constraints, feasibility is enough). Then the primal and dual optimal values are equal, and $(\theta^*, \alpha^*)$ are optimal for both if and only if the KKT conditions hold:
+
+1. Stationarity: $\nabla_\theta L = 0$;
+2. Primal feasibility: $g_i(\theta^*) \le 0$;
+3. Dual feasibility: $\alpha_i^* \ge 0$;
+4. Complementary slackness: $\alpha_i^*\, g_i(\theta^*) = 0$.
+
+</Box>
+
+### Deriving the SVM dual
+
+Take the soft margin. Write the constraints as $1 - \xi_i - y_i(w^\top x_i + b) \le 0$ and $-\xi_i \le 0$, with multipliers $\alpha_i$ and $\mu_i$:
+
+$$
+L = \frac12\|w\|^2 + C\sum_i\xi_i - \sum_i \alpha_i\big[y_i(w^\top x_i + b) - 1 + \xi_i\big] - \sum_i \mu_i \xi_i.
+$$
+
+Setting the derivatives with respect to the primal variables to zero gives
+
+$$
+\frac{\partial L}{\partial w} = 0 \Rightarrow w = \sum_i \alpha_i y_i x_i, \qquad \frac{\partial L}{\partial b} = 0 \Rightarrow \sum_i \alpha_i y_i = 0, \qquad \frac{\partial L}{\partial \xi_i} = 0 \Rightarrow C - \alpha_i - \mu_i = 0.
+$$
+
+Since $\mu_i \ge 0$, it follows that $\alpha_i \le C$. Substituting these back into $L$ cancels every $\xi$ and $b$ term, leaving a problem in $\alpha$ alone:
+
+<Box kind="theorem" title="The SVM dual">
+
+$$
+\max_{\alpha}\ \sum_i \alpha_i - \frac12\sum_{i,j} \alpha_i\alpha_j y_i y_j\, x_i^\top x_j \quad \text{s.t.}\quad 0 \le \alpha_i \le C,\ \ \sum_i \alpha_i y_i = 0.
+$$
+
+Note that the data enters **only through inner products $x_i^\top x_j$**. Section 4 builds the kernel trick on exactly this fact.
+
+</Box>
+
+### Complementary slackness reveals the support vectors
+
+From $\alpha_i[y_i f(x_i) - 1 + \xi_i] = 0$ and $\mu_i\xi_i = (C - \alpha_i)\xi_i = 0$, every sample falls into exactly one of three cases:
+
+| $\alpha_i$ | Position | Meaning |
+|---|---|---|
+| $\alpha_i = 0$ | $y_i f(x_i) \ge 1$ | Outside the margin; contributes nothing to $w$ |
+| $0 < \alpha_i < C$ | $y_i f(x_i) = 1$ | Exactly on the margin boundary; a free support vector |
+| $\alpha_i = C$ | $y_i f(x_i) \le 1$ | Inside the margin or misclassified |
+
+Because $w = \sum_i \alpha_i y_i x_i$ only sums over samples with $\alpha_i > 0$, **the solution depends only on the support vectors**. That is what the dragging experiment in the previous section showed. $b$ follows from any free support vector $x_j$: $b = y_j - \sum_i \alpha_i y_i\, x_i^\top x_j$.
+
+### Tool 2: SMO — two variables at a time
+
+The dual has $n$ variables and one equality constraint $\sum_i\alpha_iy_i = 0$. If we changed just one $\alpha_i$, the equality constraint would pin it in place, so **at least two must move together**. SMO (sequential minimal optimization) proceeds as follows:
+
+1. Pick a pair $(\alpha_i, \alpha_j)$: $\alpha_i$ is the worst KKT violator, and $\alpha_j$ maximizes $|E_i - E_j|$, where $E_k = f(x_k) - y_k$.
+2. Freeze all other variables. Since $\alpha_iy_i + \alpha_jy_j$ must stay constant, the objective becomes a quadratic in $\alpha_j$ alone, with leading coefficient $-\tfrac12\eta$, where $\eta = K_{ii} + K_{jj} - 2K_{ij}$.
+3. Set its derivative to zero to get the closed form $\alpha_j^{\text{new}} = \alpha_j + y_j(E_i - E_j)/\eta$, then clip it into the feasible interval $[L, H]$. That interval is where the box $0 \le \alpha \le C$ meets the constraint line.
+4. Update $\alpha_i$ from the equality constraint, then update $b$. Repeat until every sample satisfies the KKT conditions.
+
+Each step is an exact one-dimensional maximization, so the dual objective never decreases. The replay below shows the process:
+
+<SmoReplay client:visible lang="en" />
+
+In the practice section you will fill in the five key steps of this algorithm yourself and check your results against scikit-learn (libsvm underneath).
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: an SVM you can solve by hand
+
+<Box kind="example" title="Maximum margin for five points">
+
+Positive class: $x_1 = (2,0)$, $x_2 = (0,2)$, $x_3 = (2,2)$. Negative class: $x_4 = (0,0)$, $x_5 = (-1,0)$. Find the hard-margin SVM.
+
+**Step 1: guess the support vectors.** The points closest to the other class are $x_1, x_2$ and $x_4$. Assume they lie exactly on the margin, i.e. $y_i(w^\top x_i + b) = 1$:
+
+$$
+2w_1 + b = 1,\qquad 2w_2 + b = 1,\qquad -(0 + b) = 1.
+$$
+
+Hence $b = -1$ and $w = (1, 1)$.
+
+**Step 2: check primal feasibility.** For $x_3$: $1\cdot(2 + 2 - 1) = 3 \ge 1$ ✓. For $x_5$: $-1\cdot(-1 + 0 - 1) = 2 \ge 1$ ✓.
+
+**Step 3: find the multipliers and check dual feasibility.** From $w = \sum_i\alpha_iy_ix_i = \alpha_1(2,0) + \alpha_2(0,2) - \alpha_4(0,0)$ we get $\alpha_1 = \alpha_2 = \tfrac12$. Then $\sum_i\alpha_iy_i = 0$ gives $\alpha_4 = \alpha_1 + \alpha_2 = 1$. The non-support vectors have $\alpha_3 = \alpha_5 = 0$. Every $\alpha$ is non-negative ✓.
+
+**Step 4: conclude.** All KKT conditions hold and the problem is convex, so this is the global optimum. The separating hyperplane is $x_1 + x_2 = 1$ and the margin width is $2/\|w\| = \sqrt2$. Strong duality checks out too: the dual objective $\sum\alpha - \tfrac12\|w\|^2 = 2 - 1 = 1$ equals the primal $\tfrac12\|w\|^2 = 1$ ✓.
+
+</Box>
+
+A detail that is easy to miss: $x_4$ sits at the origin and contributes nothing to $w$, yet its multiplier $\alpha_4 = 1$ is the largest of all. It acts through the equality constraint $\sum\alpha_iy_i = 0$ and through $b$. Being a "support vector" means "its constraint is active", not "it contributes a lot to $w$".
+
+### Back to the hospital: real data
+
+The scenario used illustrative 2-D data. The real Wisconsin Diagnostic Breast Cancer data has 30 features (the mean, standard error and worst value of radius, texture, perimeter, …) on wildly different scales. The "assemble a library" exercise has you build a **standardize + RBF-kernel SVM** pipeline in scikit-learn and choose $C$ and $\gamma$ by cross-validation; test accuracy can exceed 95%. Standardization is not optional here: kernels depend on distances, and a large-scale feature would dominate them.
+
+### Extension 1: not linearly separable? Change the kernel
+
+The dual only uses the inner products $x_i^\top x_j$. Replacing them with a **kernel** $K(x_i, x_j) = \phi(x_i)^\top\phi(x_j)$ amounts to mapping the data into a high-dimensional feature space $\phi(x)$ and finding the max-margin hyperplane there, without ever computing $\phi$ explicitly. As long as every kernel matrix of $K$ is positive semi-definite (Mercer's condition), the dual stays convex and SMO does not change a single line.
+
+<KernelPlayground client:visible lang="en" />
+
+### Extension 2: more scenarios
+
+- **Multi-class**: one-vs-rest (train $k$ classifiers) or one-vs-one (train $k(k-1)/2$ and vote).
+- **Regression (SVR)**: replace the hinge loss with the $\varepsilon$-insensitive loss $\max(0, |y - f(x)| - \varepsilon)$, so errors inside the $\varepsilon$-tube cost nothing.
+- **Anomaly detection (one-class SVM)**: using only normal samples, find a hyperplane that separates the data from the origin with maximum margin.
+- **Large-scale linear SVM**: with millions of samples, skip the dual and run stochastic gradient or coordinate descent directly on "hinge loss + L2" (liblinear).
+- **Probability outputs**: an SVM outputs margins, not probabilities. When you need probabilities, use Platt scaling: fit a logistic regression on top of $f(x)$.
+
+</Section>

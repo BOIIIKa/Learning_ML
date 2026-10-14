@@ -1,0 +1,71 @@
+# 第 08 章 决策树与集成学习 —— 课后练习 / Chapter 08 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: gini
+    title: {zh: "二分类的基尼指数", en: "Gini index for two classes"}
+    prompt:
+      zh: "某结点中正类比例为 $p$。写出该结点的基尼指数 $\\mathrm{Gini} = 1 - \\sum_k p_k^2$ 的化简形式。可用变量：`p`。"
+      en: "A node has positive-class proportion $p$. Simplify its Gini index $\\mathrm{Gini} = 1 - \\sum_k p_k^2$. Variable: `p`."
+    answer: "2*p*(1 - p)"
+    vars: {p: [0, 1]}
+    solution:
+      zh: "$1 - p^2 - (1-p)^2 = 2p - 2p^2 = 2p(1-p)$。它在 $p=\\tfrac12$ 时最大（最“不纯”），在 $p\\in\\{0,1\\}$ 时为零。它是熵 $-p\\log p-(1-p)\\log(1-p)$ 的二次近似，计算更便宜。"
+      en: "$1 - p^2 - (1-p)^2 = 2p - 2p^2 = 2p(1-p)$. It peaks at $p=\\tfrac12$ (most impure) and vanishes at $p\\in\\{0,1\\}$. It is a quadratic stand-in for the entropy $-p\\log p-(1-p)\\log(1-p)$ and cheaper to compute."
+
+  - id: adaboost-alpha
+    title: {zh: "指数损失下的最优 α", en: "The optimal α under exponential loss"}
+    prompt:
+      zh: "第 $m$ 轮固定弱分类器 $G$，其加权误差为 $e$（权重和为 1）。指数损失 $\\sum_i w_i e^{-\\alpha y_i G(x_i)}$ 可写成 $(1-e)e^{-\\alpha} + e\\,e^{\\alpha}$。求使其最小的 $\\alpha$。可用变量：`e`。"
+      en: "In round $m$ the weak learner $G$ is fixed with weighted error $e$ (weights sum to 1). The exponential loss $\\sum_i w_i e^{-\\alpha y_i G(x_i)}$ equals $(1-e)e^{-\\alpha} + e\\,e^{\\alpha}$. Find the minimizing $\\alpha$. Variable: `e`."
+    answer: "0.5*log((1 - e)/e)"
+    vars: {e: [0.05, 0.45]}
+    solution:
+      zh: "对 $\\alpha$ 求导并令其为零：$-(1-e)e^{-\\alpha} + e\\,e^{\\alpha} = 0 \\Rightarrow e^{2\\alpha} = \\dfrac{1-e}{e} \\Rightarrow \\alpha = \\tfrac12\\ln\\dfrac{1-e}{e}$。二阶导恒正，所以是最小值。$e<\\tfrac12$ 时 $\\alpha>0$：比随机猜好的分类器才获得正票。"
+      en: "Differentiate in $\\alpha$ and set to zero: $-(1-e)e^{-\\alpha} + e\\,e^{\\alpha} = 0 \\Rightarrow e^{2\\alpha} = \\dfrac{1-e}{e} \\Rightarrow \\alpha = \\tfrac12\\ln\\dfrac{1-e}{e}$. The second derivative is positive, so it is a minimum. For $e<\\tfrac12$, $\\alpha>0$: only better-than-chance learners get a positive vote."
+
+  - id: adaboost-z
+    title: {zh: "规范化因子与训练误差上界", en: "The normalizer and the training-error bound"}
+    prompt:
+      zh: "把上一题的最优 $\\alpha$ 代回 $Z = (1-e)e^{-\\alpha} + e\\,e^{\\alpha}$。若每一轮的加权误差都等于 $e$，$M$ 轮后训练误差的上界 $\\prod_m Z_m$ 是多少？可用变量：`e, M`。"
+      en: "Plug the optimal $\\alpha$ back into $Z = (1-e)e^{-\\alpha} + e\\,e^{\\alpha}$. If every round has weighted error $e$, what is the training-error bound $\\prod_m Z_m$ after $M$ rounds? Variables: `e, M`."
+    answer: "(2*sqrt(e*(1 - e)))^M"
+    vars: {e: [0.05, 0.45], M: [1, 10]}
+    solution:
+      zh: "$e^{\\alpha} = \\sqrt{(1-e)/e}$，所以 $Z = (1-e)\\sqrt{\\tfrac{e}{1-e}} + e\\sqrt{\\tfrac{1-e}{e}} = 2\\sqrt{e(1-e)}$，于是上界为 $\\big(2\\sqrt{e(1-e)}\\big)^M$。写 $e = \\tfrac12 - \\gamma$，有 $2\\sqrt{e(1-e)} = \\sqrt{1-4\\gamma^2} \\le e^{-2\\gamma^2}$：只要每轮比随机好一点点，训练误差就指数下降。"
+      en: "$e^{\\alpha} = \\sqrt{(1-e)/e}$, so $Z = (1-e)\\sqrt{\\tfrac{e}{1-e}} + e\\sqrt{\\tfrac{1-e}{e}} = 2\\sqrt{e(1-e)}$, and the bound is $\\big(2\\sqrt{e(1-e)}\\big)^M$. Writing $e = \\tfrac12 - \\gamma$, $2\\sqrt{e(1-e)} = \\sqrt{1-4\\gamma^2} \\le e^{-2\\gamma^2}$: being slightly better than chance each round drives training error down exponentially."
+
+  - id: gb-residual
+    title: {zh: "梯度提升拟合的是什么", en: "What gradient boosting fits"}
+    prompt:
+      zh: "平方损失 $L = \\tfrac12(y - F)^2$。梯度提升每一轮让新树去拟合负梯度 $-\\partial L/\\partial F$。写出它。可用变量：`y, F`。"
+      en: "Squared loss $L = \\tfrac12(y - F)^2$. Each round of gradient boosting fits the new tree to the negative gradient $-\\partial L/\\partial F$. Write it. Variables: `y, F`."
+    answer: "y - F"
+    vars: {y: [-3, 3], F: [-3, 3]}
+    solution:
+      zh: "$-\\partial L/\\partial F = y - F$，正是残差。因此平方损失下的梯度提升就是“不断拟合残差”。换成其他可微损失（如对数损失），只需把残差换成相应的负梯度——LightGBM 还用到了二阶导数。"
+      en: "$-\\partial L/\\partial F = y - F$: the residual. So gradient boosting with squared loss is “keep fitting the residuals”. For any other differentiable loss (e.g. log-loss) the residual is replaced by that loss's negative gradient — LightGBM also uses the second derivative."
+
+code:
+  - id: adaboost
+    kind: implement
+    file: adaboost.py
+    packages: [numpy, scikit-learn]
+    metrics:
+      - {key: error, label: {zh: "训练误差", en: "Training error"}}
+      - {key: bound, label: {zh: "理论上界", en: "Theoretical bound"}}
+    title: {zh: "手写 AdaBoost", en: "AdaBoost from scratch"}
+    intro:
+      zh: "补全误差、投票权重、样本重加权与预测四个空。运行后回放每一轮：点的大小代表样本权重，背景是集成的决策场，右侧曲线对比训练误差与理论上界。"
+      en: "Fill in the error, the vote weight, the re-weighting and the prediction. Then replay every round: point size is sample weight, the background is the ensemble's decision field, and the chart compares training error with its theoretical bound."
+  - id: lightgbm
+    kind: library
+    file: lightgbm_library.py
+    packages: [numpy, scikit-learn, lightgbm]
+    metrics:
+      - {key: error, label: {zh: "训练误差", en: "Training error"}}
+      - {key: logloss, label: {zh: "验证对数损失", en: "Validation log-loss"}}
+    title: {zh: "用 LightGBM 组装梯度提升树", en: "Assemble gradient-boosted trees with LightGBM"}
+    intro:
+      zh: "构建 LightGBM 分类器、带验证集训练、取出分阶段预测。运行后在双月牙数据上逐棵树回放决策边界，可与上面你手写的 AdaBoost 对照。"
+      en: "Build a LightGBM classifier, train it with a validation set, and pull out staged predictions. Then replay the boundary tree by tree on the two-moons data and compare it with your AdaBoost above."

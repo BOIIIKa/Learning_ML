@@ -1,0 +1,10 @@
+---
+// Definition / theorem / insight / example callouts inside chapter prose.
+interface Props { kind: "definition" | "theorem" | "insight" | "example" | "warning"; title?: string }
+const { kind, title } = Astro.props;
+const icons = { definition: "≝", theorem: "∴", insight: "✦", example: "✎", warning: "!" };
+---
+<aside class={`box box-${kind} reveal`}>
+  <div class="box-head"><span class="box-icon">{icons[kind]}</span>{title && <strong>{title}</strong>}</div>
+  <div class="box-body"><slot /></div>
+</aside>

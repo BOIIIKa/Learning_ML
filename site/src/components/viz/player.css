@@ -1,0 +1,30 @@
+.trace-player { display: grid; gap: 0.8rem; }
+.tp-plots { display: grid; gap: 1rem; }
+.tp-plots.n2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.tp-plot { margin: 0; }
+.tp-title { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; letter-spacing: 0.02em; }
+.tp-note { display: flex; gap: 0.6rem; align-items: center; margin-top: 0.4rem; font-size: 0.85rem; min-height: 1.6em; }
+.tp-badge { font-family: var(--mono); font-size: 0.78rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 0.05em 0.7em; }
+.tp-note-text { font-family: var(--mono); color: var(--text-muted); }
+
+.tp-controls { display: flex; align-items: center; gap: 0.5rem; }
+.tp-play { width: 2.6rem; height: 2.6rem; justify-content: center; padding: 0; font-size: 0.9rem; color: #061018; background: linear-gradient(135deg, var(--accent), var(--accent-3)); border: none; box-shadow: 0 0 0 0 var(--accent); }
+.tp-play:hover { box-shadow: 0 0 18px -2px var(--accent); }
+.tp-icon { width: 2rem; height: 2rem; justify-content: center; padding: 0; font-size: 1.1rem; }
+.tp-speed { font-family: var(--mono); font-size: 0.8rem; padding: 0.3em 0.7em; }
+
+.tp-scrub { flex: 1; appearance: none; height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)) no-repeat, var(--surface-2); background-size: 0% 100%, 100% 100%; outline: none; cursor: pointer; }
+.tp-scrub::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--text); box-shadow: 0 0 10px var(--accent); }
+.tp-scrub::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%; background: var(--text); box-shadow: 0 0 10px var(--accent); }
+
+.metric-chart { margin: 0; }
+.metric-chart svg { width: 100%; height: auto; display: block; }
+.mc-grid { stroke: var(--border); stroke-width: 1; }
+.mc-tick { fill: var(--text-muted); font-size: 10px; font-family: var(--mono); }
+.mc-line { fill: none; stroke-width: 2.2; }
+.mc-cursor { stroke: var(--text-muted); stroke-dasharray: 3 3; }
+.mc-dot { filter: drop-shadow(0 0 4px currentColor); transition: cy 0.3s ease, cx 0.3s ease; }
+.metric-chart figcaption { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.82rem; color: var(--text-muted); }
+.mc-legend { display: inline-flex; align-items: center; gap: 0.35em; }
+.mc-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.mc-legend b { font-family: var(--mono); color: var(--text); font-weight: 600; }
