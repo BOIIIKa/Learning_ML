@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { DRIVE_EVENT } from "../../manim/events";
 import "./widget.css";
 
 /** A framed interactive figure: title, body, optional caption and a stats/controls row. */
@@ -24,6 +25,19 @@ export function Slider({ label, value, min, max, step, onChange, format }: {
   useEffect(() => {
     input.current!.style.backgroundSize = `${(100 * (value - min)) / (max - min)}% 100%, 100% 100%`;
   }, [value, min, max]);
+  // The animated course can drive this slider (see manim/drive.ts): snap to the step and clamp.
+  const latest = useRef(onChange);
+  latest.current = onChange;
+  useEffect(() => {
+    const el = input.current!;
+    const handler = (e: Event) => {
+      const raw = (e as CustomEvent<number>).detail;
+      const snapped = Math.min(max, Math.max(min, min + Math.round((raw - min) / step) * step));
+      latest.current(+snapped.toFixed(10));
+    };
+    el.addEventListener(DRIVE_EVENT, handler);
+    return () => el.removeEventListener(DRIVE_EVENT, handler);
+  }, [min, max, step]);
   return (
     <label className="w-slider">
       <span className="w-slider-label">{label}</span>

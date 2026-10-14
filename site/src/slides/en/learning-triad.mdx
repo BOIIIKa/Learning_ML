@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import Box from "../../components/astro/Box.astro";
 import DrawYourLine from "../../components/chapters/ch01/DrawYourLine";
 import TriadComposer from "../../components/chapters/ch01/TriadComposer";
@@ -18,7 +19,7 @@ Model · strategy · algorithm, and what "learning well" really means
 
 <Step say="Drag the two orange handles to draw a line yourself. The yellow sticks are each student's error.">Drag the handles; yellow sticks = residuals →</Step>
 
-<Step say="Then try the two buttons. The line that is best by squared error is dragged down by the absentees, while the line that is best by absolute error barely moves.">Two kinds of "best": squared vs absolute error</Step>
+<Step drive="click:btn1; wait:2.2; click:btn2; wait:1" say="Then try the two buttons. The line that is best by squared error is dragged down by the absentees, while the line that is best by absolute error barely moves.">Two kinds of "best": squared vs absolute error</Step>
 
 <div slot="visual"><DrawYourLine client:visible lang="en" /></div>
 
@@ -52,11 +53,11 @@ Model · strategy · algorithm, and what "learning well" really means
 
 <Slide lang="en" part="method" title="The triad composer" say="The three pieces combine freely, and every combination is a learning algorithm.">
 
-<Step say="A constant model with squared loss gives the mean; with absolute loss it gives the median.">Constant + squared = mean; constant + absolute = median</Step>
+<Step drive="click:chip1; click:chip4; wait:2; click:chip5; wait:1.5" say="A constant model with squared loss gives the mean; with absolute loss it gives the median.">Constant + squared = mean; constant + absolute = median</Step>
 
-<Step say="A closed form exists only for squared loss; other losses need iterative methods.">A closed form exists only for squared loss</Step>
+<Step drive="click:chip2; click:chip4; click:chip7; wait:1.5" say="A closed form exists only for squared loss; other losses need iterative methods.">A closed form exists only for squared loss</Step>
 
-<Step say="Try your own combinations on the right and watch the empirical risk fall during training.">Mix and match on the right →</Step>
+<Step drive="click:chip3; click:chip6; click:chip8; wait:3.5" say="Try your own combinations on the right and watch the empirical risk fall during training.">Mix and match on the right →</Step>
 
 <div slot="visual"><TriadComposer client:visible lang="en" /></div>
 
@@ -64,13 +65,41 @@ Model · strategy · algorithm, and what "learning well" really means
 
 <Slide lang="en" part="math" title="The best prediction under squared loss" say="If we knew the true distribution, what would the best prediction be?">
 
-<Step say="Fix x and predict Y with a constant c. The expected squared loss splits into the conditional variance plus the squared gap between the mean and c.">
+<Morph>
+
+<Step effect="morph" say="Fix x and predict Y with a constant c. Look at the expected squared loss.">
 
 $$
-\mathbb E[(Y-c)^2\mid x] = \mathrm{Var}(Y\mid x) + (\mu(x) - c)^2
+\mathbb E[(Y-c)^2]
 $$
 
 </Step>
+
+<Step effect="morph" say="Subtract and add the mean μ inside the bracket.">
+
+$$
+\mathbb E[(Y-\mu+\mu-c)^2]
+$$
+
+</Step>
+
+<Step effect="morph" say="Expand the square. In the cross term, Y minus μ has expectation zero.">
+
+$$
+\mathbb E[(Y-\mu)^2] + 2(\mu-c)\,\mathbb E[Y-\mu] + (\mu-c)^2
+$$
+
+</Step>
+
+<Step effect="morph" say="Two terms remain: the variance, plus the squared gap between the mean and c.">
+
+$$
+\mathrm{Var}(Y) + (\mu-c)^2
+$$
+
+</Step>
+
+</Morph>
 
 <Step say="The first term does not depend on c; it is irreducible noise. The second term vanishes when c equals the conditional mean.">⇒ $f^*(x) = \mathbb E[Y\mid X = x]$</Step>
 
@@ -84,7 +113,7 @@ $$
 
 <Step say="Its error rate is the Bayes error, a floor no classifier can break.">Bayes error: the floor for every classifier</Step>
 
-<Step say="Drag your threshold on the right: wherever you put it, the error rate never drops below its value at the Bayes threshold.">Drag the threshold; you never beat Bayes →</Step>
+<Step drive="s1=-2/2.5; s1=2.2/4; s1=0.4/2" say="Drag your threshold on the right: wherever you put it, the error rate never drops below its value at the Bayes threshold.">Drag the threshold; you never beat Bayes →</Step>
 
 <div slot="visual"><BayesClassifier client:visible lang="en" /></div>
 
@@ -94,7 +123,7 @@ $$
 
 <Step say="On the right, we predict an exponential variable with a constant under absolute loss. Purple is the expected risk, orange the empirical risk.">Purple = expected risk, orange = empirical risk →</Step>
 
-<Step say="With few samples the two minimizers are far apart; with many, the ERM solution approaches the optimum.">As $n$ grows, the ERM solution → the optimum</Step>
+<Step drive="s1=0.6/1.5; s1=3.2/4.5" say="With few samples the two minimizers are far apart; with many, the ERM solution approaches the optimum.">As $n$ grows, the ERM solution → the optimum</Step>
 
 <Step effect="focus" say="But beware: ERM picks the function after seeing the data, so its empirical risk is always optimistic. The next chapter deals with exactly this.">
 <p class="big-q sm">Beware: $\hat R_n(\hat f)$ is optimistic → Ch. 02</p>

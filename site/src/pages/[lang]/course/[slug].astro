@@ -2,8 +2,8 @@
 import "katex/dist/katex.min.css";
 import "../../../styles/global.css";
 import "../../../styles/chapter.css";
-import "../../../styles/course.css";
 import "../../../styles/blueprint.css";
+import "../../../styles/course.css";
 import Recap from "../../../components/course/Recap.astro";
 import Slide from "../../../components/course/Slide.astro";
 import { LANGS, SECTIONS, href, otherLang, pick, t, type Lang } from "../../../i18n/ui";
@@ -19,7 +19,14 @@ const { default: Deck } = deck(lang, slug);
 const L = {
   notes: { zh: "讲义", en: "Notes" },
   recap: { zh: "本章一页纸", en: "The chapter on one page" },
-  hint: { zh: "→ / 空格 下一步 · ← 上一步 · P 自动播放 · F 全屏", en: "→ / Space next · ← back · P autoplay · F fullscreen" },
+  hint: { zh: "空格 暂停 / 继续 · ← → 上一拍 / 下一拍 · F 全屏 · 点进度条跳到某一部分", en: "Space pause / resume · ← → previous / next beat · F fullscreen · click the bar to jump to a part" },
+  start: { zh: "播放", en: "Play" },
+  startVoice: { zh: "播放并朗读", en: "Play with narration" },
+  minutes: { zh: "自动播放 · 约 {m} 分钟 · 可随时暂停、拖动和操作图形", en: "Plays by itself · about {m} min · pause, skip or play with the figures any time" },
+  end: { zh: "本章动画课程结束", en: "End of the animated course" },
+  replay: { zh: "↺ 重新播放", en: "↺ Replay" },
+  practice: { zh: "去讲义做练习 →", en: "Practise in the notes →" },
+  speed: { zh: "播放速度", en: "Playback speed" },
   play: { zh: "自动播放（P）", en: "Autoplay (P)" },
   pause: { zh: "暂停", en: "Pause" },
   voiceOn: { zh: "开启朗读", en: "Read aloud" },
@@ -28,18 +35,12 @@ const L = {
 };
 ---
 <!doctype html>
-<html lang={lang === "zh" ? "zh-CN" : "en"} data-theme="dark">
+<html lang={lang === "zh" ? "zh-CN" : "en"} data-theme="dark" class="manim">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{chapter.id} {pick(chapter.title, lang)} · {t(lang, "siteName")}</title>
     <link rel="icon" href={href("favicon.svg")} type="image/svg+xml" />
-    <script is:inline>
-      try {
-        const saved = localStorage.getItem("learnml:theme");
-        document.documentElement.dataset.theme = saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-      } catch {}
-    </script>
   </head>
   <body class="course-body">
     <div class="course" id="course" data-lang={lang}>
@@ -62,15 +63,33 @@ const L = {
 
       <div class="subtitle" aria-live="polite"><span class="subtitle-text"></span></div>
 
+      <div class="start-overlay">
+        <p class="start-kicker">{chapter.id} · {t(lang, "siteName")}</p>
+        <h1 class="start-title">{pick(chapter.title, lang)}</h1>
+        <div class="start-actions">
+          <button class="start-play" data-act="start" aria-label={L.start[lang]}><span class="start-tri"></span>{L.start[lang]}</button>
+          <button class="btn start-voice" data-act="start-voice">🔊 {L.startVoice[lang]}</button>
+        </div>
+        <p class="start-meta">{L.minutes[lang].replace("{m}", "__MIN__")}</p>
+        <p class="start-hint">{L.hint[lang]}</p>
+      </div>
+      <div class="end-overlay" hidden>
+        <p class="start-title">{L.end[lang]}</p>
+        <div class="start-actions">
+          <button class="btn" data-act="replay">{L.replay[lang]}</button>
+          <a class="btn btn-primary" href={href(`${lang}/chapters/${slug}/#s-practice`)}>{L.practice[lang]}</a>
+        </div>
+      </div>
+
       <footer class="course-controls">
         <button class="btn ctl" data-act="prev" aria-label="previous">←</button>
         <button class="btn ctl ctl-play" data-act="play" title={L.play[lang]}>▶</button>
         <button class="btn ctl" data-act="next" aria-label="next">→</button>
         <div class="segments" id="segments"></div>
+        <button class="btn ctl ctl-speed" data-act="speed" title={L.speed[lang]}>1×</button>
         <button class="btn ctl" data-act="voice" title={L.voiceOn[lang]}>🔊</button>
         <button class="btn ctl" data-act="full" title="F">⛶</button>
       </footer>
-      <p class="course-hint">{L.hint[lang]}</p>
     </div>
 
     <script define:vars={{ partNames: Object.fromEntries(SECTIONS.map((s) => [s.key, s[lang]])), introName: { zh: "开场", en: "Intro" }[lang], recapName: { zh: "总结", en: "Recap" }[lang] }}>
@@ -102,6 +121,11 @@ const L = {
         zh: { play: "自动播放（P）", pause: "暂停", voiceOn: "开启朗读", voiceOff: "关闭朗读" },
         en: { play: "Autoplay (P)", pause: "Pause", voiceOn: "Read aloud", voiceOff: "Stop reading aloud" },
       }[lang];
+      // Rough running time from the narration length, shown on the start screen.
+      const says = [...root.querySelectorAll<HTMLElement>("[data-say]")].map((e) => e.dataset.say ?? "");
+      const secs = says.reduce((t, s) => t + 0.6 + (lang === "zh" ? s.length * 0.215 : s.split(/\s+/).length * 0.33) + 0.5, 0);
+      const meta = root.querySelector<HTMLElement>(".start-meta");
+      if (meta) meta.textContent = meta.textContent!.replace("__MIN__", String(Math.max(1, Math.round(secs / 60))));
       initCourse(root, { lang, labels });
     </script>
   </body>

@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import Box from "../../components/astro/Box.astro";
 import ManualSplit from "../../components/chapters/ch08/ManualSplit";
 import TreeGrow from "../../components/chapters/ch08/TreeGrow";
@@ -19,9 +20,9 @@ import ResidualBoost from "../../components/chapters/ch08/ResidualBoost";
 
 <Step say="医生习惯的是问诊式的推理：一连串只看一个指标的是非问题。">医生想要：一串是/否问题，每次只看一个指标 ✓</Step>
 
-<Step say="右边，选一个特征，拖动阈值，亲手切第一刀。下方曲线扫描了所有阈值。">亲手切第一刀，看不纯度下降多少 →</Step>
+<Step drive="s1=15%/1.5; s1=85%/4" say="右边，选一个特征，拖动阈值，亲手切第一刀。下方曲线扫描了所有阈值。">亲手切第一刀，看不纯度下降多少 →</Step>
 
-<Step say="再点‘让算法找最佳一刀’：算法做的，就是取这条曲线的最高点。">算法 = 取曲线的最高点</Step>
+<Step drive="click:btn1; wait:1.5" say="再点‘让算法找最佳一刀’：算法做的，就是取这条曲线的最高点。">算法 = 取曲线的最高点</Step>
 
 <div slot="visual"><ManualSplit client:visible lang="zh" /></div>
 
@@ -45,7 +46,7 @@ import ResidualBoost from "../../components/chapters/ch08/ResidualBoost";
 
 <Step say="算法：从根开始贪心地递归切分，再剪枝。全局最优是 NP 难的，贪心每一步只要 n log n。">**算法**：贪心递归 + 剪枝（全局最优是 NP 难）</Step>
 
-<Step say="右边拖动最大深度：训练准确率一路上升，测试准确率却先升后降——过拟合。">拖动深度：训练 ↑，测试先 ↑ 后 ↓ →</Step>
+<Step drive="s1=1/1; s1=100%/5" say="右边拖动最大深度：训练准确率一路上升，测试准确率却先升后降——过拟合。">拖动深度：训练 ↑，测试先 ↑ 后 ↓ →</Step>
 
 <div slot="visual"><TreeGrow client:visible lang="zh" /></div>
 
@@ -57,7 +58,7 @@ import ResidualBoost from "../../components/chapters/ch08/ResidualBoost";
 
 <Step say="随机森林：每次切分只看随机挑选的一部分特征，让树之间更不相关。">**随机森林**：再加上随机特征，降低树之间的相关性</Step>
 
-<Step say="右边反复点‘换一批训练数据’：单棵树的边界剧烈跳动，森林几乎不动。">反复换数据：单棵树乱跳，森林很稳 →</Step>
+<Step drive="click:chip1; click:btn1; wait:1; click:btn1; wait:1; click:chip2; click:btn1; wait:1; click:btn1; wait:1" say="右边反复点‘换一批训练数据’：单棵树的边界剧烈跳动，森林几乎不动。">反复换数据：单棵树乱跳，森林很稳 →</Step>
 
 <div slot="visual"><ForestPlayground client:visible lang="zh" /></div>
 
@@ -103,19 +104,37 @@ $$
 
 <Slide lang="zh" part="math" title="AdaBoost 的真面目" say="把集成写成加法模型，每一轮只加一项，在指数损失下优化。">
 
-<Step say="前面轮次的效果全部折进样本权重。">
+<Morph>
+
+<Step effect="morph" say="前面轮次的效果全部折进样本权重。">
 
 $$
-\min_{\alpha,G}\sum_i w_{mi}\,e^{-\alpha y_iG(x_i)},\quad w_{mi}=e^{-y_iF_{m-1}(x_i)}
+\sum_i w_{mi}\, e^{-\alpha y_i G(x_i)}
 $$
 
 </Step>
 
-<Step say="按分对、分错拆开，变成关于加权误差 e 的简单函数。">$= e^{-\alpha}(1-e_m) + e^{\alpha}e_m$</Step>
+<Step effect="morph" say="按分对、分错拆成两组。">
+
+$$
+e^{-\alpha}\sum_{y_i = G(x_i)} w_{mi} + e^{\alpha}\sum_{y_i \ne G(x_i)} w_{mi}
+$$
+
+</Step>
+
+<Step effect="morph" say="两组的权重和分别是一减 e 和 e，变成关于加权误差 e 的简单函数。">
+
+$$
+e^{-\alpha}(1-e_m) + e^{\alpha}e_m
+$$
+
+</Step>
+
+</Morph>
 
 <Step say="对 G：选加权误差最小的分类器。对 α：求导得到二分之一倍的对数几率。">⇒ $G_m$ 选加权误差最小者，$\alpha_m = \tfrac12\ln\frac{1-e_m}{e_m}$</Step>
 
-<Step say="右边是 AdaBoost 的回放：被分错的点逐轮变大，训练误差始终在理论上界之下。">右侧：被分错的点变大；误差始终低于上界 →</Step>
+<Step drive="click:.tp-play; wait:7" say="右边是 AdaBoost 的回放：被分错的点逐轮变大，训练误差始终在理论上界之下。">右侧：被分错的点变大；误差始终低于上界 →</Step>
 
 <div slot="visual"><AdaBoostReplay client:visible lang="zh" /></div>
 
@@ -129,7 +148,7 @@ $$
 
 <Step say="XGBoost 和 LightGBM 再加上二阶导，叶结点最优权重有闭式解。">二阶展开 ⇒ $w^* = -G/(H+\lambda)$</Step>
 
-<Step say="右边看梯度提升怎样一轮轮把残差吃掉。">右侧：残差逐轮被“吃掉” →</Step>
+<Step drive="s1=1/1; s1=100%/6" say="右边看梯度提升怎样一轮轮把残差吃掉。">右侧：残差逐轮被“吃掉” →</Step>
 
 <div slot="visual"><ResidualBoost client:visible lang="zh" /></div>
 

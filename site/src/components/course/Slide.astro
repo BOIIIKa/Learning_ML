@@ -22,7 +22,8 @@ const partLabel = n >= 0 ? SECTIONS[n][lang] : "";
   {layout === "title" ? (
     <div class="slide-title-card">
       {kicker && <p class="slide-kicker">{kicker}</p>}
-      <h1 class="slide-h1"><span class="gradient-text">{title}</span></h1>
+      <h1 class="slide-h1">{title}</h1>
+      <span class="slide-rule" aria-hidden="true"></span>
       <slot />
     </div>
   ) : (
@@ -30,6 +31,7 @@ const partLabel = n >= 0 ? SECTIONS[n][lang] : "";
       <header class="slide-head">
         {partLabel && <span class="slide-part">{String(n + 1).padStart(2, "0")} · {partLabel}</span>}
         {title && <h2 class="slide-h2">{title}</h2>}
+        {title && <span class="slide-rule" aria-hidden="true"></span>}
       </header>
       <div class="slide-body">
         <div class="slide-main"><slot /></div>
