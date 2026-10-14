@@ -1,0 +1,69 @@
+# 第 04 章 线性分类：感知机、逻辑回归与最大熵 —— 课后练习 / Chapter 04 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: novikoff
+    title: {zh: "Novikoff 定理的最后一步", en: "The last step of Novikoff's theorem"}
+    prompt:
+      zh: "用增广向量 $\\hat x = (x, 1)$、$\\hat w = (w, b)$，从 $\\hat w_0 = 0$、步长 $\\eta$ 出发。设 $\\|\\hat w_{\\text{opt}}\\| = 1$，$\\gamma = \\min_i y_i\\,\\hat w_{\\text{opt}}\\cdot\\hat x_i > 0$，$R = \\max_i \\|\\hat x_i\\|$。已知第 $k$ 次更新后 $\\hat w_k\\cdot\\hat w_{\\text{opt}} \\ge k\\eta\\gamma$ 且 $\\|\\hat w_k\\|^2 \\le k\\eta^2R^2$。用柯西–施瓦茨不等式写出更新次数 $k$ 的上界。可用变量：`R, gamma`。"
+      en: "Use augmented vectors $\\hat x = (x, 1)$, $\\hat w = (w, b)$, starting from $\\hat w_0 = 0$ with step $\\eta$. Let $\\|\\hat w_{\\text{opt}}\\| = 1$, $\\gamma = \\min_i y_i\\,\\hat w_{\\text{opt}}\\cdot\\hat x_i > 0$ and $R = \\max_i \\|\\hat x_i\\|$. After the $k$-th update we know $\\hat w_k\\cdot\\hat w_{\\text{opt}} \\ge k\\eta\\gamma$ and $\\|\\hat w_k\\|^2 \\le k\\eta^2R^2$. Use Cauchy–Schwarz to bound the number of updates $k$. Variables: `R, gamma`."
+    answer: "(R/gamma)^2"
+    vars: {R: [1, 5], gamma: [0.1, 1]}
+    solution:
+      zh: "柯西–施瓦茨：$k\\eta\\gamma \\le \\hat w_k\\cdot\\hat w_{\\text{opt}} \\le \\|\\hat w_k\\|\\,\\|\\hat w_{\\text{opt}}\\| = \\|\\hat w_k\\| \\le \\sqrt k\\,\\eta R$。两边除以 $\\sqrt k\\,\\eta\\gamma$ 得 $\\sqrt k \\le R/\\gamma$，即 $k \\le (R/\\gamma)^2$。注意 $\\eta$ 被约掉了：步长不影响更新次数（从 0 出发时，它只把整条轨迹等比例缩放）。两个前提各用一次归纳：每次更新都在误分类点上，所以 $\\hat w_{k}\\cdot\\hat w_{\\text{opt}} = \\hat w_{k-1}\\cdot\\hat w_{\\text{opt}} + \\eta y_i\\hat w_{\\text{opt}}\\cdot\\hat x_i \\ge \\hat w_{k-1}\\cdot\\hat w_{\\text{opt}} + \\eta\\gamma$；而 $\\|\\hat w_k\\|^2 = \\|\\hat w_{k-1}\\|^2 + 2\\eta y_i\\hat w_{k-1}\\cdot\\hat x_i + \\eta^2\\|\\hat x_i\\|^2 \\le \\|\\hat w_{k-1}\\|^2 + \\eta^2R^2$，因为中间项 $\\le 0$（这正是“误分类”的定义）。"
+      en: "By Cauchy–Schwarz, $k\\eta\\gamma \\le \\hat w_k\\cdot\\hat w_{\\text{opt}} \\le \\|\\hat w_k\\|\\,\\|\\hat w_{\\text{opt}}\\| = \\|\\hat w_k\\| \\le \\sqrt k\\,\\eta R$. Dividing by $\\sqrt k\\,\\eta\\gamma$ gives $\\sqrt k \\le R/\\gamma$, i.e. $k \\le (R/\\gamma)^2$. Note that $\\eta$ cancels: the step size does not change the number of updates (starting from 0 it only rescales the whole run). Each premise is one induction: every update happens at a misclassified point, so $\\hat w_{k}\\cdot\\hat w_{\\text{opt}} = \\hat w_{k-1}\\cdot\\hat w_{\\text{opt}} + \\eta y_i\\hat w_{\\text{opt}}\\cdot\\hat x_i \\ge \\hat w_{k-1}\\cdot\\hat w_{\\text{opt}} + \\eta\\gamma$; and $\\|\\hat w_k\\|^2 = \\|\\hat w_{k-1}\\|^2 + 2\\eta y_i\\hat w_{k-1}\\cdot\\hat x_i + \\eta^2\\|\\hat x_i\\|^2 \\le \\|\\hat w_{k-1}\\|^2 + \\eta^2R^2$, because the middle term is $\\le 0$ (that is exactly what “misclassified” means)."
+
+  - id: ce-grad
+    title: {zh: "交叉熵对 logit 的导数", en: "The derivative of cross-entropy with respect to the logit"}
+    prompt:
+      zh: "一个样本的交叉熵损失为 $\\ell(z) = -t\\log\\sigma(z) - (1-t)\\log(1-\\sigma(z))$，其中 $z = w\\cdot x + b$，$t\\in[0,1]$。写出 $\\dfrac{d\\ell}{dz}$。提示：$\\sigma'(z) = \\sigma(z)(1-\\sigma(z))$。可用变量：`z, t`。"
+      en: "One sample's cross-entropy loss is $\\ell(z) = -t\\log\\sigma(z) - (1-t)\\log(1-\\sigma(z))$ with $z = w\\cdot x + b$ and $t\\in[0,1]$. Write $\\dfrac{d\\ell}{dz}$. Hint: $\\sigma'(z) = \\sigma(z)(1-\\sigma(z))$. Variables: `z, t`."
+    answer: "1/(1 + exp(-z)) - t"
+    vars: {z: [-4, 4], t: [0, 1]}
+    solution:
+      zh: "$\\frac{d}{dz}\\log\\sigma(z) = 1-\\sigma(z)$，$\\frac{d}{dz}\\log(1-\\sigma(z)) = -\\sigma(z)$。所以 $\\ell'(z) = -t(1-\\sigma) + (1-t)\\sigma = \\sigma(z) - t$：**预测减标签**。由链式法则，整体梯度 $\\nabla_w = \\sum_i(\\sigma(z_i) - t_i)x_i$，再求一次导得到 Hessian $\\sum_i\\sigma_i(1-\\sigma_i)x_ix_i^\\top \\succeq 0$，所以负对数似然是凸的、对数似然是凹的。线性回归的平方损失梯度也是“预测减标签”乘 $x$——这是广义线性模型配上典范连接函数时的共同形式。"
+      en: "$\\frac{d}{dz}\\log\\sigma(z) = 1-\\sigma(z)$ and $\\frac{d}{dz}\\log(1-\\sigma(z)) = -\\sigma(z)$, so $\\ell'(z) = -t(1-\\sigma) + (1-t)\\sigma = \\sigma(z) - t$: **prediction minus label**. By the chain rule the full gradient is $\\nabla_w = \\sum_i(\\sigma(z_i) - t_i)x_i$; differentiating again gives the Hessian $\\sum_i\\sigma_i(1-\\sigma_i)x_ix_i^\\top \\succeq 0$, so the negative log-likelihood is convex and the log-likelihood concave. Squared loss in linear regression has the same “prediction minus label, times $x$” gradient: the common form of every generalized linear model with its canonical link."
+
+  - id: newton-step
+    title: {zh: "从零出发的一步牛顿法", en: "One Newton step from zero"}
+    prompt:
+      zh: "没有截距的一维逻辑回归 $P(t=1\\mid x) = \\sigma(wx)$，两个样本 $(x_1, t_1)$、$(x_2, t_2)$。从 $w = 0$ 出发走一步牛顿法，写出新的 $w$。可用变量：`x1, x2, t1, t2`。"
+      en: "One-dimensional logistic regression without intercept, $P(t=1\\mid x) = \\sigma(wx)$, with two samples $(x_1, t_1)$, $(x_2, t_2)$. Starting from $w = 0$, take one Newton step and write the new $w$. Variables: `x1, x2, t1, t2`."
+    answer: "4*(x1*(t1 - 1/2) + x2*(t2 - 1/2))/(x1^2 + x2^2)"
+    vars: {x1: [0.5, 2], x2: [-2, -0.5], t1: [0, 1], t2: [0, 1]}
+    solution:
+      zh: "在 $w=0$ 处所有 $p_i = \\sigma(0) = \\tfrac12$。负对数似然的梯度 $g = \\sum_i x_i(p_i - t_i) = \\sum_i x_i(\\tfrac12 - t_i)$，二阶导 $H = \\sum_i p_i(1-p_i)x_i^2 = \\tfrac14\\sum_i x_i^2$。牛顿步 $w_1 = 0 - g/H = \\dfrac{4\\sum_i x_i(t_i - \\frac12)}{\\sum_i x_i^2}$。它恰好是把 $4(t_i - \\tfrac12)$ 当作目标、对 $x_i$ 做最小二乘的结果——这就是“迭代重加权最小二乘”（IRLS）名字的由来：每一步都是一次加权最小二乘，权重为 $p_i(1-p_i)$。"
+      en: "At $w=0$ every $p_i = \\sigma(0) = \\tfrac12$. The gradient of the negative log-likelihood is $g = \\sum_i x_i(p_i - t_i) = \\sum_i x_i(\\tfrac12 - t_i)$ and the second derivative is $H = \\sum_i p_i(1-p_i)x_i^2 = \\tfrac14\\sum_i x_i^2$. The Newton step gives $w_1 = 0 - g/H = \\dfrac{4\\sum_i x_i(t_i - \\frac12)}{\\sum_i x_i^2}$. This is exactly least squares of the targets $4(t_i - \\tfrac12)$ on $x_i$, which is where the name iteratively reweighted least squares (IRLS) comes from: every step is a weighted least-squares fit with weights $p_i(1-p_i)$."
+
+  - id: maxent-logit
+    title: {zh: "两点分布的最大熵就是 logit", en: "Maximum entropy on two outcomes is the logit"}
+    prompt:
+      zh: "随机变量 $Y\\in\\{0, 1\\}$，唯一的约束是 $\\mathbb E[Y] = \\mu$。最大熵分布形如 $P(Y=y)\\propto e^{\\lambda y}$。写出满足约束的乘子 $\\lambda$。可用变量：`mu`。"
+      en: "A random variable $Y\\in\\{0, 1\\}$ has a single constraint $\\mathbb E[Y] = \\mu$. The maximum-entropy distribution has the form $P(Y=y)\\propto e^{\\lambda y}$. Write the multiplier $\\lambda$ that meets the constraint. Variable: `mu`."
+    answer: "log(mu/(1 - mu))"
+    vars: {mu: [0.1, 0.9]}
+    solution:
+      zh: "$P(Y=1) = \\dfrac{e^{\\lambda}}{1+e^{\\lambda}} = \\sigma(\\lambda)$。令它等于 $\\mu$，得 $\\lambda = \\sigma^{-1}(\\mu) = \\log\\dfrac{\\mu}{1-\\mu}$，正是 **logit**（对数几率）。如果约束换成“在每个 $x$ 上 $\\mathbb E[Y f(x)]$ 与数据一致”，乘子就变成 $w\\cdot x + b$ 的形式，得到 $P(Y=1\\mid x) = \\sigma(w\\cdot x+b)$——逻辑回归。逻辑回归的线性 logit 不是拍脑袋的假设，而是最大熵原则在线性特征约束下的必然结果。"
+      en: "$P(Y=1) = \\dfrac{e^{\\lambda}}{1+e^{\\lambda}} = \\sigma(\\lambda)$. Setting it equal to $\\mu$ gives $\\lambda = \\sigma^{-1}(\\mu) = \\log\\dfrac{\\mu}{1-\\mu}$, exactly the **logit** (log-odds). If the constraint becomes “$\\mathbb E[Y f(x)]$ matches the data at every $x$”, the multiplier takes the form $w\\cdot x + b$ and we get $P(Y=1\\mid x) = \\sigma(w\\cdot x+b)$: logistic regression. Its linear logit is not an arbitrary assumption but what the maximum-entropy principle forces under linear feature constraints."
+
+code:
+  - id: linear-classifiers
+    kind: implement
+    file: linear_classifiers.py
+    packages: [numpy, scikit-learn]
+    metrics:
+      - {key: nll, label: {zh: "平均负对数似然", en: "Mean negative log-likelihood"}}
+    title: {zh: "从零实现感知机与牛顿法逻辑回归", en: "The perceptron and Newton's-method logistic regression from scratch"}
+    intro:
+      zh: "补全感知机的误分类判断与更新，以及逻辑回归的 sigmoid、梯度、Hessian 和牛顿步。运行后与 scikit-learn 的极大似然解对拍，并并排回放：左边牛顿法几步就收敛（看下方的损失曲线），右边感知机每次被一个误分类点（黄圈）拽着转动。"
+      en: "Fill in the perceptron's mistake test and update, then logistic regression's sigmoid, gradient, Hessian and Newton step. Your fit is checked against scikit-learn's maximum-likelihood solution, and two replays run side by side: Newton's method converges in a handful of steps (watch the loss curve), while the perceptron is yanked around by one misclassified point (yellow ring) at a time."
+  - id: sklearn-linear
+    kind: library
+    file: sklearn_linear.py
+    packages: [numpy, scikit-learn]
+    metrics:
+      - {key: logloss, label: {zh: "训练交叉熵", en: "Training cross-entropy"}}
+    title: {zh: "scikit-learn：逻辑回归 vs 感知机，再到 softmax", en: "scikit-learn: logistic regression vs the perceptron, then softmax"}
+    intro:
+      zh: "在乳腺癌数据上组装两条“标准化 + 线性分类器”流水线：逻辑回归给出概率，感知机只给出类别。再在鸢尾花三分类上验证 predict_proba 就是决策分数的 softmax。回放中左边是正则化强度 C 从小到大的逻辑回归，右边是换随机种子的感知机——在不可分数据上它每次停在不同的地方。"
+      en: "Assemble two standardize + linear-classifier pipelines on the breast-cancer data: logistic regression gives probabilities, the perceptron only labels. Then confirm on the three-class iris data that predict_proba is the softmax of the decision scores. In the replay, the left panel is logistic regression as C grows; the right is the perceptron with different random seeds, which on non-separable data stops somewhere different every time."

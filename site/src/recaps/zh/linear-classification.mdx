@@ -1,0 +1,7 @@
+- **感知机**：模型 $\mathrm{sign}(w\cdot x+b)$；损失 $-\sum_{i\in M}y_i(w\cdot x_i+b)$（误分类点到超平面的距离和）；遇到误分类点就 $w\leftarrow w+\eta y_ix_i,\ b\leftarrow b+\eta y_i$。解不唯一，不可分时不收敛。
+- **对偶形式**：$w=\sum_i\alpha_iy_ix_i$，$b=\sum_i\alpha_iy_i$，$\alpha_i$ = 点 $i$ 被用的次数 × $\eta$；只需 Gram 矩阵 $x_i\cdot x_j$，为核方法（第 07 章）铺路。
+- **Novikoff 定理**：线性可分（间隔 $\gamma$）时，更新次数 $\le (R/\gamma)^2$，与 $\eta$ 无关。
+- **逻辑回归**：对数几率线性，$P(Y=1\mid x)=\sigma(w\cdot x+b)$；伯努利极大似然 = 最小化交叉熵。梯度 $\hat X^\top(p-t)$，Hessian $\hat X^\top S\hat X\succeq0$，负对数似然是凸的。可分数据上 MLE 不存在，需要正则。
+- **牛顿法 = IRLS**：每步是一次以 $p_i(1-p_i)$ 为权重的加权最小二乘，二次收敛。
+- **最大熵**：满足特征期望约束的最大熵分布必为 $P_w(y\mid x)\propto e^{w\cdot f(x,y)}$；其对偶问题就是该模型的极大似然，取线性特征即 softmax，两类即逻辑回归。
+- **损失动物园**：都是间隔 $m=yf(x)$ 的函数——0-1、感知机 $\max(0,-m)$、交叉熵 $\log(1+e^{-m})$、合页 $\max(0,1-m)$、指数 $e^{-m}$。

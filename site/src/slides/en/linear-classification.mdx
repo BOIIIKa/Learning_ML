@@ -1,0 +1,224 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import PerceptronSteps from "../../components/chapters/ch04/PerceptronSteps";
+import LogisticSurface from "../../components/chapters/ch04/LogisticSurface";
+import MaxEntDice from "../../components/chapters/ch04/MaxEntDice";
+import LossZoo from "../../components/chapters/ch04/LossZoo";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 04 · Animated course" title="Linear Classification: Perceptron, Logistic Regression and Maximum Entropy" say="This chapter classifies with a straight line. We meet three methods: the perceptron, which only says yes or no; logistic regression, which gives a probability; and the maximum-entropy principle, which explains why that probability looks the way it does.">
+
+One line · one probability · one principle
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Diabetes screening at a clinic" say="A community clinic has the fasting glucose and BMI of past patients, and knows which of them were later diagnosed with diabetes. The doctor wants a rule for deciding whom to call back.">
+
+<Step say="Each patient is a point in the plane: orange for those later diagnosed, blue for those who were not.">Orange = later diagnosed, blue = not</Step>
+
+<Step say="The perceptron tries a line. The pulsing yellow ring is the point it currently gets wrong, and the purple arrow is that point's correction to w.">Yellow ring = a mistake; purple arrow = the correction →</Step>
+
+<Step say="Press play and watch the line being yanked around by one misclassified point after another, until every point is right.">One mistake, one fix, until none are left</Step>
+
+<div slot="visual"><PerceptronSteps client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" say="The replay raises three questions, and they map onto the three methods of this chapter.">
+
+<Step say="First, is it guaranteed to stop? If a straight line can separate the data, yes. That is Novikoff's theorem.">① Will it stop? → **Novikoff's theorem**</Step>
+
+<Step say="Second, is yes or no enough? The doctor would rather know how high the risk is. That calls for logistic regression.">② Is yes/no enough? → **logistic regression** gives a probability</Step>
+
+<Step say="Third, what about more than two classes? The maximum-entropy principle tells us the answer should be softmax.">③ More than two classes? → **maximum entropy** and softmax</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="The perceptron's triad" say="First, split the perceptron into model, strategy and algorithm.">
+
+<Step say="The model is a line, and we output its sign.">Model: $f(x)=\mathrm{sign}(w\cdot x+b)$</Step>
+
+<Step say="The strategy is the total distance from the misclassified points to the line. Dropping the factor one over the length of w gives the perceptron loss.">
+
+$$
+L(w,b) = -\sum_{i\in M} y_i\,(w\cdot x_i+b)
+$$
+
+</Step>
+
+<Step say="The algorithm is stochastic gradient descent: take one misclassified point, add eta times y times x to w, and eta times y to b.">Algorithm: $w\leftarrow w+\eta y_ix_i,\quad b\leftarrow b+\eta y_i$</Step>
+
+<Step effect="focus" say="A misclassified positive point pulls w towards itself, a negative one pushes it away. On separable data it always stops, but where it stops depends on the start and the order: the solution is not unique.">
+<p class="big-q sm">Positives pull, negatives push; the solution is not unique</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="The dual form: just count the uses" say="Starting from zero, the final w is just a sum of terms eta y x.">
+
+<Step say="Let alpha i be the number of updates on point i times eta. Then w is the sum of alpha i times y i times x i.">$w=\sum_i\alpha_iy_ix_i,\quad b=\sum_i\alpha_iy_i$</Step>
+
+<Step say="Deciding whether a point is misclassified needs only inner products, that is, the Gram matrix.">Inner products only: the Gram matrix $G_{ij}=x_i\cdot x_j$</Step>
+
+<Step say="Switch the widget to the dual form: point size is alpha. In the end only the few points that ever caused a mistake have a nonzero alpha.">Switch to “Dual”: bigger point, bigger α →</Step>
+
+<Step say="In Chapter 07 the inner-products-only property turns into kernel methods.">“Inner products only” ⇒ kernel methods in Ch. 07</Step>
+
+<div slot="visual"><PerceptronSteps client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Logistic regression: linear log-odds" say="The perceptron only says yes or no. Logistic regression makes the model output a probability.">
+
+<Step say="The model assumes the log-odds are linear in x, which is the same as saying the probability is the sigmoid of w x plus b.">$P(Y=1\mid x)=\sigma(w\cdot x+b)$</Step>
+
+<Step say="The strategy is Bernoulli maximum likelihood; its negative logarithm is the cross-entropy. They are the same thing.">Bernoulli maximum likelihood = minimum cross-entropy</Step>
+
+<Step say="Drag the cyan handle to change w and use the slider for b. Every probability contour is a straight line, and a longer w makes the transition steeper.">Drag w and b: every contour is a straight line →</Step>
+
+<Step say="Press one Newton step: a handful of steps reach the minimum cross-entropy.">Newton's method reaches the bottom in a few steps</Step>
+
+<div slot="visual"><LogisticSurface client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Maximum entropy: assume nothing you don't know" say="Why the sigmoid and softmax in particular? The maximum-entropy principle answers that.">
+
+<Step say="The principle: among all distributions that satisfy the known constraints, choose the one with the largest entropy.">Among distributions meeting the constraints, take the max-entropy one</Step>
+
+<Step say="On the right is a die whose mean roll is all we know. The maximum-entropy distribution always has the form e to the lambda k.">Only the mean is known ⇒ $p_k\propto e^{\lambda k}$ →</Step>
+
+<Step say="Press the button for another distribution with the same mean: its entropy is always lower.">Every other distribution has lower entropy</Step>
+
+<Step say="Replace the number of pips with feature functions and the same derivation gives softmax; with two classes, logistic regression.">With features $f(x,y)$ ⇒ softmax</Step>
+
+<div slot="visual"><MaxEntDice client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Novikoff's theorem" say="Now we prove that on separable data the perceptron always stops.">
+
+<Step say="Use augmented vectors to fold b into w. Suppose a unit vector separates all points with margin gamma, and R is the length of the longest sample.">Let $\|\hat w_{\text{opt}}\|=1$, $y_i\hat w_{\text{opt}}\cdot\hat x_i\ge\gamma$, $R=\max\|\hat x_i\|$</Step>
+
+<Step say="Each update raises the inner product of w with the best direction by at least eta gamma.">$\hat w_k\cdot\hat w_{\text{opt}}\ge k\eta\gamma$</Step>
+
+<Step say="And because updates happen at misclassified points, the squared length of w grows by at most eta squared R squared each time.">$\|\hat w_k\|^2\le k\eta^2R^2$</Step>
+
+<Step say="Squeeze the two together with Cauchy–Schwarz to bound the number of updates. Eta cancels.">
+
+$$
+k\eta\gamma\le\|\hat w_k\|\le\sqrt k\,\eta R\ \Rightarrow\ k\le\Big(\frac R\gamma\Big)^2
+$$
+
+</Step>
+
+<Step effect="focus" say="Conversely, if the data are not separable, the perceptron never stops.">
+<p class="big-q sm">Not separable ⇒ never stops</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Gradient, Hessian and convexity" say="Next, the first and second derivatives of logistic regression's negative log-likelihood.">
+
+<Step say="Differentiating one sample's cross-entropy with respect to z gives prediction minus label.">$\dfrac{\partial\ell_i}{\partial z_i}=p_i-t_i$</Step>
+
+<Step say="The chain rule gives the gradient; differentiating again gives the Hessian, where S is the diagonal matrix of p times one minus p.">
+
+$$
+\nabla\ell=\hat X^\top(p-t),\qquad \nabla^2\ell=\hat X^\top S\hat X,\quad S=\mathrm{diag}\big(p_i(1-p_i)\big)
+$$
+
+</Step>
+
+<Step say="For any vector v the quadratic form is a sum of nonnegative terms, so the negative log-likelihood is convex.">$v^\top\hat X^\top S\hat Xv=\sum_ip_i(1-p_i)(\hat x_i\cdot v)^2\ge0$ ⇒ convex</Step>
+
+<Step effect="focus" say="But beware: on separable data, stretching w forever drives the loss towards zero without reaching it. The maximum-likelihood estimate does not exist, so we regularize.">
+<p class="big-q sm">Separable ⇒ no MLE ⇒ regularize</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Newton's method = iteratively reweighted least squares" say="Here Newton's method takes a special form.">
+
+<Step say="A Newton step subtracts the inverse Hessian times the gradient.">$\theta^{\text{new}}=\theta-(\hat X^\top S\hat X)^{-1}\hat X^\top(p-t)$</Step>
+
+<Step say="Rearranged, it is exactly a weighted least-squares fit with weights S and response u.">
+
+$$
+\theta^{\text{new}}=(\hat X^\top S\hat X)^{-1}\hat X^\top S\,u,\qquad u=\hat X\theta+S^{-1}(t-p)
+$$
+
+</Step>
+
+<Step say="The weights and the response are recomputed at every step, hence iteratively reweighted least squares, or IRLS.">Each step updates the weights $S$ and the working response $u$</Step>
+
+<Step say="The objective is smooth and convex, so Newton's method converges quadratically: the error is roughly squared at every step.">Quadratic convergence: machine precision in five or six steps</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="The dual of maximum entropy is softmax" say="Finally, we show that the maximum-entropy model is softmax.">
+
+<Step say="Maximize the conditional entropy, subject to each feature's expectation under the model matching its expectation in the data, and to normalization.">$\max H(P)$ s.t. $\mathbb E_P[f_k]=\mathbb E_{\tilde P}[f_k]$, $\sum_yP(y\mid x)=1$</Step>
+
+<Step say="Write the Lagrangian, set its derivative with respect to the conditional probability to zero, and the exponential-family form appears.">
+
+$$
+P_w(y\mid x)=\frac{1}{Z_w(x)}\exp\Big(\sum_kw_kf_k(x,y)\Big)
+$$
+
+</Step>
+
+<Step say="Substituting back, the dual function is exactly this model's conditional log-likelihood.">Dual $\Psi(w)=\sum\tilde P(x,y)\log P_w(y\mid x)$ = log-likelihood</Step>
+
+<Step effect="focus" say="So maximum entropy and maximum likelihood of a log-linear model are the same thing. Linear features give softmax; two classes give logistic regression.">
+<p class="big-q sm">Maximum entropy = maximum-likelihood softmax</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The zoo of classification losses" say="Put every classification loss on one plot, with the margin y times f on the horizontal axis.">
+
+<Step say="The zero-one loss is the error rate we really care about, but it is discontinuous and cannot be optimized.">0-1 loss: the real target, but not optimizable</Step>
+
+<Step say="Cross-entropy, hinge and exponential losses all pass through the point zero, one and lie above the zero-one loss: they are its stand-ins.">Cross-entropy · hinge (Ch. 07) · exponential (Ch. 08)</Step>
+
+<Step say="The perceptron loss is already zero at zero: it asks for the right side, not for confidence. Drag the slider to compare the losses.">Perceptron loss: right side is enough →</Step>
+
+<div slot="visual"><LossZoo client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Example: the perceptron on three points" say="Positive points two two and zero two, negative point one zero, step size one, starting from zero.">
+
+<Step say="First, every point lies on the boundary, so x1 is fixed: w becomes two two and b becomes one.">① $x_1$: $w=(2,2),\ b=1$</Step>
+
+<Step say="Second, x3 is misclassified with functional margin minus three: w becomes one two, b becomes zero.">② $x_3$: $w=(1,2),\ b=0$</Step>
+
+<Step say="Third, x3 is still misclassified, with margin minus one: w becomes zero two and b minus one. Now all three points are right.">③ $x_3$: $w=(0,2),\ b=-1$ ✓</Step>
+
+<Step say="In the dual form alpha is one, zero, two, and every check computed from the Gram matrix agrees with the primal form.">Dual: $\alpha=(1,0,2)$, $w=x_1-2x_3$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Example: Newton's method on five points" say="One-dimensional data x from minus two to two, with labels zero, one, zero, one, one.">
+
+<Step say="Starting from zero, every probability is one half. The gradient is minus a half and minus two, and the Hessian is diagonal.">$\theta_0=0$: $\nabla=(-0.5,-2)$, $H=\tfrac14\mathrm{diag}(5,10)$</Step>
+
+<Step say="The very first step lands at b equals zero point four and w equals zero point eight.">$\theta_1=(0.4,\ 0.8)$</Step>
+
+<Step say="The gradient norm goes two, zero point three five, zero point zero five, two thousandths, three millionths: the error is roughly squared at every step.">$\|\nabla\|$: 2.06 → 0.355 → 0.052 → $1.8\times10^{-3}$ → $2.6\times10^{-6}$</Step>
+
+<Step effect="focus" say="At convergence the five probabilities add up to exactly three, the number of positive labels: moment matching.">
+<p class="big-q sm">$\sum_ip_i=\sum_it_i=3$: moment matching</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, the perceptron and Newton's-method logistic regression from scratch, and a scikit-learn comparison of logistic regression, the perceptron and softmax.">
+
+<Step say="After running the coding exercise, replay your Newton's method and your perceptron side by side.">✎ 4 derivations · ⌨ perceptron + IRLS · ⚙ LogisticRegression vs Perceptron</Step>
+
+<Step effect="pop" say="Use the button to start practising.">
+<a class="btn btn-primary btn-xl" href="../../chapters/linear-classification/#s-practice">Start practising →</a>
+</Step>
+
+</Slide>

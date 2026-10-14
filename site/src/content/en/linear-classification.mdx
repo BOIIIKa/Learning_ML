@@ -1,0 +1,255 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import PerceptronSteps from "../../components/chapters/ch04/PerceptronSteps";
+import LogisticSurface from "../../components/chapters/ch04/LogisticSurface";
+import MaxEntDice from "../../components/chapters/ch04/MaxEntDice";
+import LossZoo from "../../components/chapters/ch04/LossZoo";
+
+<Section lang="en" k="scenario">
+
+A community clinic wants to screen for diabetes early. Everyone who comes in for a check-up has two measurements: **fasting glucose** and **BMI** (both standardized, so 0 is the population average). The clinic has records of past patients and knows which of them were later diagnosed. The doctor wants a rule: take the two measurements and decide whether to call the person back for further tests.
+
+In the plane each patient is a point: orange for those later diagnosed, blue for those who were not. The most naive idea is to **draw a straight line that separates the two groups**. The algorithm below is called the **perceptron**, and its approach is almost crude: try a line, and whenever a point is on the wrong side, nudge the line in the direction that fixes it.
+
+<PerceptronSteps client:visible lang="en" />
+
+The replay raises three questions, and they map onto the three methods of this chapter:
+
+1. **Is it guaranteed to stop?** If a straight line can separate the data, yes, and the number of mistakes is bounded (Novikoff's theorem).
+2. **Is a yes/no answer enough?** The doctor would rather know **how high the risk is**, to decide whom to call first. That needs a probability, which brings in **logistic regression**.
+3. **What about more than two classes?** Say "normal / prediabetes / diabetes". The **maximum-entropy principle** tells us that a multi-class probability model should take the softmax form.
+
+</Section>
+
+<Section lang="en" k="method">
+
+### The perceptron: only mistakes are punished
+
+<Box kind="definition" title="The perceptron's triad">
+
+- **Model**: $f(x) = \mathrm{sign}(w\cdot x + b)$; the hypothesis space is every line in the plane (every hyperplane in higher dimensions).
+- **Strategy**: the total distance from the misclassified points to the hyperplane. The distance from $x_i$ is $|w\cdot x_i+b|/\|w\|$, and for a misclassified point $-y_i(w\cdot x_i+b) > 0$. Dropping the factor $1/\|w\|$, which does not depend on the sum, gives the loss
+  $$L(w, b) = -\sum_{i\in M} y_i\,(w\cdot x_i + b),$$
+  where $M$ is the set of points currently misclassified (including those exactly on the boundary).
+- **Algorithm**: stochastic gradient descent. $\nabla_w L = -\sum_{i\in M} y_ix_i$, using one misclassified point at a time:
+  $$w \leftarrow w + \eta\,y_ix_i,\qquad b\leftarrow b+\eta\,y_i.$$
+
+</Box>
+
+The geometry of the update is plain to see: when a positive point is misclassified, add a bit of $x_i$ to $w$ so that $w\cdot x_i$ grows; for a negative point, do the opposite. If the data are linearly separable, $L$ eventually reaches 0, but **the solution is not unique**: a different start, step size or visiting order ends at a different line.
+
+**The dual form.** Starting from $w = 0$, $b = 0$, the final $w$ is just a sum of terms $\eta y_ix_i$. If point $i$ triggered $n_i$ updates, let $\alpha_i = n_i\eta$; then
+
+$$
+w = \sum_{i=1}^N \alpha_i y_i x_i,\qquad b = \sum_{i=1}^N \alpha_i y_i,\qquad f(x) = \mathrm{sign}\Big(\sum_j \alpha_j y_j\,(x_j\cdot x) + b\Big).
+$$
+
+Checking whether $x_i$ is misclassified needs only the inner products $x_j\cdot x_i$, which can be precomputed as the **Gram matrix** $G = [x_i\cdot x_j]$. In Ch. 07 this "inner products only" property turns linear methods into kernel methods.
+
+### Logistic regression: output a probability
+
+The perceptron only tells the doctor yes or no. Logistic regression changes the model so that the **log-odds** are linear:
+
+$$
+\log\frac{P(Y=1\mid x)}{P(Y=0\mid x)} = w\cdot x + b
+\quad\Longleftrightarrow\quad
+P(Y=1\mid x) = \sigma(w\cdot x+b) = \frac{1}{1+e^{-(w\cdot x + b)}}.
+$$
+
+The strategy is **maximum likelihood**: treat each label $t_i\in\{0,1\}$ as a Bernoulli variable and maximize $\prod_i p_i^{t_i}(1-p_i)^{1-t_i}$ with $p_i = \sigma(w\cdot x_i+b)$. Its negative logarithm is the **cross-entropy**:
+
+$$
+\ell(w, b) = -\sum_{i=1}^N\big[t_i\log p_i + (1-t_i)\log(1-p_i)\big].
+$$
+
+So "Bernoulli maximum likelihood" and "minimizing cross-entropy" are two names for the same thing. Gradient descent works as the algorithm, but **Newton's method** is more common, and here it has a name of its own: iteratively reweighted least squares (IRLS).
+
+<LogisticSurface client:visible lang="en" />
+
+<Box kind="insight" title="Why a probability beats yes/no">
+
+With probabilities the doctor can rank patients by risk and, when resources are limited, call the most at-risk first. When a missed case and a false alarm cost different amounts, the threshold can move away from 0.5 (recall the Bayes classifier of Ch. 01: the best threshold depends on the costs and the priors). The perceptron's output has no such scale.
+
+</Box>
+
+### The maximum-entropy model: use what you know, assume nothing else
+
+The maximum-entropy principle says: among all distributions that satisfy the known constraints, pick the one with the **largest entropy**, the one that adds no assumption beyond the constraints. For classification, take feature functions $f_k(x, y)$ and require each feature's expectation under the model to match its empirical expectation in the training data. The next section proves that the answer must be
+
+$$
+P_w(y\mid x) = \frac{\exp\big(\sum_k w_kf_k(x,y)\big)}{\sum_{y'}\exp\big(\sum_k w_kf_k(x,y')\big)}.
+$$
+
+With features $f_{c,j}(x,y) = x_j\,\mathbb 1[y = c]$ this is multinomial logistic regression (softmax); with two classes it reduces to $\sigma(w\cdot x+b)$ above. The classic solver is improved iterative scaling (IIS); today quasi-Newton methods (L-BFGS) are more common, and they are the default in scikit-learn's `LogisticRegression`.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Convergence of the perceptron: Novikoff's theorem
+
+In augmented notation $\hat x = (x, 1)$, $\hat w = (w, b)$, the update reads $\hat w\leftarrow\hat w+\eta y_i\hat x_i$.
+
+<Box kind="theorem" title="Novikoff's theorem">
+
+Suppose some $\|\hat w_{\text{opt}}\| = 1$ satisfies $y_i\,\hat w_{\text{opt}}\cdot\hat x_i \ge \gamma > 0$ for every point, and let $R = \max_i\|\hat x_i\|$. Then the perceptron started from $\hat w_0 = 0$ makes at most
+
+$$
+k \le \Big(\frac{R}{\gamma}\Big)^2
+$$
+
+mistakes (updates) in total.
+
+</Box>
+
+**Proof.** Let the $k$-th update happen at the misclassified point $(x_i, y_i)$.
+
+- **The inner product with the best direction grows by at least $\eta\gamma$ each time**: $\hat w_k\cdot\hat w_{\text{opt}} = \hat w_{k-1}\cdot\hat w_{\text{opt}} + \eta y_i\,\hat w_{\text{opt}}\cdot\hat x_i \ge \hat w_{k-1}\cdot\hat w_{\text{opt}} + \eta\gamma$, so by induction $\hat w_k\cdot\hat w_{\text{opt}}\ge k\eta\gamma$.
+- **The length grows slowly**: $\|\hat w_k\|^2 = \|\hat w_{k-1}\|^2 + 2\eta y_i\,\hat w_{k-1}\cdot\hat x_i + \eta^2\|\hat x_i\|^2 \le \|\hat w_{k-1}\|^2 + \eta^2R^2$, because a misclassified point makes the middle term $\le 0$. By induction $\|\hat w_k\|^2\le k\eta^2R^2$.
+
+By Cauchy–Schwarz, $k\eta\gamma \le \hat w_k\cdot\hat w_{\text{opt}}\le\|\hat w_k\| \le \sqrt k\,\eta R$, i.e. $k\le(R/\gamma)^2$. $\square$
+
+Intuitively, the angle between $\hat w_k$ and the right direction closes at every step, and since the cosine of that angle cannot exceed 1, the updates cannot go on forever. A wider margin $\gamma$, i.e. data that are "easier to separate", gives a smaller bound. Conversely, **on data that are not linearly separable the perceptron never stops**; it keeps swinging back and forth.
+
+### Gradient, Hessian and convexity of logistic regression
+
+Write $z_i = w\cdot x_i+b$ and $p_i = \sigma(z_i)$. Using $\sigma'(z) = \sigma(z)(1-\sigma(z))$, the derivative of one sample's cross-entropy with respect to $z_i$ is $p_i - t_i$ (exercise 2). In augmented notation $\theta = (w, b)$, with design matrix $\hat X$ whose $i$-th row is $\hat x_i^\top$,
+
+$$
+\nabla\ell(\theta) = \sum_i (p_i - t_i)\,\hat x_i = \hat X^\top(p - t),\qquad
+\nabla^2\ell(\theta) = \sum_i p_i(1-p_i)\,\hat x_i\hat x_i^\top = \hat X^\top S\hat X,
+$$
+
+where $S = \mathrm{diag}\big(p_i(1-p_i)\big)$. For any $v$, $v^\top\hat X^\top S\hat X v = \sum_i p_i(1-p_i)(\hat x_i\cdot v)^2\ge 0$, so:
+
+<Box kind="theorem" title="Convexity">
+
+The negative log-likelihood $\ell(\theta)$ is convex (the log-likelihood is concave). If $\hat X$ has full column rank it is strictly convex, and a minimizer, if one exists, is unique.
+
+</Box>
+
+An easy trap: **on linearly separable data the maximum-likelihood estimate does not exist.** Scale $w$ up along a separating direction and every $p_i$ heads to the correct 0 or 1; the loss falls towards 0 but never reaches it. Stretch $w$ in the surface widget above and watch the surface get steeper. In practice we add an L2 penalty (scikit-learn's `C` is the inverse of its strength): the structural risk minimization of Ch. 01.
+
+### Newton's method is iteratively reweighted least squares
+
+Newton's method uses a second-order approximation: $\theta^{\text{new}} = \theta - (\hat X^\top S\hat X)^{-1}\hat X^\top(p-t)$. Folding $\theta$ in,
+
+$$
+\theta^{\text{new}} = (\hat X^\top S\hat X)^{-1}\hat X^\top S\,u,\qquad u = \hat X\theta + S^{-1}(t - p).
+$$
+
+This is weighted least squares of the **working response** $u$ on $\hat X$ with weights $S$ (recall the normal equations of Ch. 03). Each iteration updates the weights $S$ and the response $u$, hence "iteratively reweighted". Because the objective is smooth and convex, Newton's method converges **quadratically** near the optimum: the error is roughly squared at every step, and five or six steps usually reach machine precision.
+
+### The dual of maximum entropy is softmax
+
+Let $\tilde P(x, y)$ be the empirical distribution of the training data, with marginal $\tilde P(x)$. The maximum-entropy model solves
+
+$$
+\max_P\ H(P) = -\sum_x\tilde P(x)\sum_y P(y\mid x)\log P(y\mid x)
+\quad\text{s.t.}\quad
+\sum_{x,y}\tilde P(x)P(y\mid x)f_k(x,y) = \sum_{x,y}\tilde P(x,y)f_k(x,y),\ \ \sum_y P(y\mid x) = 1 .
+$$
+
+With multipliers $w_k$ for the feature constraints and $\beta_x$ for normalization, the Lagrangian is
+
+$$
+\mathcal L = H(P) + \sum_k w_k\Big(\sum_{x,y}\tilde P(x)P(y\mid x)f_k(x,y) - \mathbb E_{\tilde P}[f_k]\Big) + \sum_x\beta_x\Big(\sum_yP(y\mid x) - 1\Big).
+$$
+
+Setting the partial derivative with respect to $P(y\mid x)$ to zero gives $\tilde P(x)\big[-\log P(y\mid x) - 1 + \sum_kw_kf_k(x,y)\big] + \beta_x = 0$, so $P(y\mid x)\propto\exp\big(\sum_kw_kf_k(x,y)\big)$, and after normalizing
+
+$$
+P_w(y\mid x) = \frac{1}{Z_w(x)}\exp\Big(\sum_kw_kf_k(x,y)\Big),\qquad Z_w(x) = \sum_y\exp\Big(\sum_kw_kf_k(x,y)\Big).
+$$
+
+Substituting back into $\mathcal L$ gives the dual function
+
+$$
+\Psi(w) = \sum_{x,y}\tilde P(x,y)\sum_kw_kf_k(x,y) - \sum_x\tilde P(x)\log Z_w(x) = \sum_{x,y}\tilde P(x,y)\log P_w(y\mid x),
+$$
+
+which is exactly the **conditional log-likelihood**. Therefore:
+
+<Box kind="theorem" title="Maximum entropy = maximum likelihood of a log-linear model">
+
+The solution of the maximum-entropy problem has exponential-family (log-linear) form $P_w(y\mid x)\propto e^{w\cdot f(x,y)}$, and the dual problem for the best $w$ is maximum-likelihood estimation of that model. With $f_{c,j}(x,y) = x_j\mathbb 1[y=c]$ (plus $\mathbb 1[y=c]$ for the intercepts) we get softmax regression; with two classes, logistic regression.
+
+</Box>
+
+One consequence you can check is **moment matching**: the gradient vanishes at the maximum-likelihood solution, so $\sum_i p_i\hat x_i = \sum_i t_i\hat x_i$; the model's expected features match the data exactly. The die below draws this: the only constraint is the mean roll, and the maximum-entropy distribution is $p_k\propto e^{\lambda k}$.
+
+<MaxEntDice client:visible lang="en" />
+
+### Every classification loss in one picture
+
+For $y\in\{-1,+1\}$ and a real-valued score $f(x)$, call $m = yf(x)$ the **margin**. Logistic regression's negative log-likelihood can be written $\log(1+e^{-m})$, the perceptron loss is $\max(0, -m)$, the SVM's hinge loss from Ch. 07 is $\max(0, 1-m)$, and AdaBoost's exponential loss from Ch. 08 is $e^{-m}$. All of them stand in for the 0-1 loss $\mathbb 1[m\le 0]$:
+
+<LossZoo client:visible lang="en" />
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Example 1: the perceptron on three points
+
+<Box kind="example" title="Primal and dual forms">
+
+Positive points $x_1 = (2,2)$, $x_2 = (0,2)$; negative point $x_3 = (1,0)$. With $\eta = 1$, start from $w = 0$, $b = 0$ and check $x_1, x_2, x_3$ cyclically.
+
+| Update | Misclassified point | $y_i(w\cdot x_i+b)$ when checked | $w$ after | $b$ after |
+|---|---|---|---|---|
+| 1 | $x_1$ | $0$ | $(2, 2)$ | $1$ |
+| 2 | $x_3$ | $-(2+1) = -3$ | $(1, 2)$ | $0$ |
+| 3 | $x_3$ | $-(1+0) = -1$ | $(0, 2)$ | $-1$ |
+
+Now $y_i(w\cdot x_i+b)$ is $3, 3, 1$, all positive, so the algorithm stops with the separating line $x^{(2)} = 0.5$.
+
+**Dual form**: $\alpha = (1, 0, 2)$ and the Gram matrix is $G = \begin{pmatrix}8&4&2\\4&4&0\\2&0&1\end{pmatrix}$. Check: $w = 1\cdot(2,2) - 2\cdot(1,0) = (0,2)$ and $b = 1 - 2 = -1$. When $x_3$ is checked before the third update, $f(x_3) = \alpha_1y_1G_{13} + \alpha_3y_3G_{33} + b = 2 - 1 + 0 = 1$, so $y_3f(x_3) = -1\le 0$, exactly as in the primal form.
+
+**Convergence bound**: $R = \|(2,2,1)\| = 3$. Taking the final solution $\hat w = (0,2,-1)/\sqrt5$ as reference, $\gamma = 1/\sqrt5$ and the bound is $(R/\gamma)^2 = 45$, while only 3 updates happened. The bound is loose, but it guarantees termination.
+
+</Box>
+
+### Example 2: Newton's method on five points
+
+<Box kind="example" title="The first step already points the right way">
+
+One-dimensional data $x = (-2,-1,0,1,2)$, labels $t = (0,1,0,1,1)$, parameters $\theta = (b, w)$.
+
+**First step**: at $\theta = 0$, $p_i = \tfrac12$ and $\ell = 5\ln2\approx3.466$. The gradient is $\big(\sum(p_i-t_i),\ \sum x_i(p_i-t_i)\big) = (-0.5, -2)$ and the Hessian is $\tfrac14\begin{pmatrix}5&0\\0&10\end{pmatrix}$, so $\theta_1 = (0.5/1.25,\ 2/2.5) = (0.4, 0.8)$ with $\ell = 2.480$.
+
+| Iteration $k$ | $b$ | $w$ | $\ell$ | $\|\nabla\ell\|$ |
+|---|---|---|---|---|
+| 0 | 0 | 0 | 3.4657 | 2.06 |
+| 1 | 0.4000 | 0.8000 | 2.4795 | 0.355 |
+| 2 | 0.5797 | 1.0398 | 2.4236 | 0.052 |
+| 3 | 0.6210 | 1.0886 | 2.42197 | $1.8\times10^{-3}$ |
+| 4 | 0.6227 | 1.0904 | 2.42197 | $2.6\times10^{-6}$ |
+| 5 | 0.6227 | 1.0904 | 2.42197 | $5\times10^{-12}$ |
+
+The exponent of the gradient norm roughly doubles at every step: quadratic convergence. The final probabilities are $(0.174, 0.385, 0.651, 0.847, 0.943)$, which sum to $3.000$, exactly the number of positive labels: moment matching.
+
+</Box>
+
+### Example 3: a die with mean 4.5
+
+The mean roll is known to be $\mu = 4.5$. The maximum-entropy solution is $p_k\propto e^{\lambda k}$; solving $\sum_k k\,p_k = 4.5$ gives $\lambda\approx0.371$ and
+
+$$
+p\approx(0.054,\ 0.079,\ 0.114,\ 0.165,\ 0.240,\ 0.347),\qquad H(p)\approx1.614 .
+$$
+
+For comparison, "uniform on 3 to 6" also has mean 4.5, but its entropy is only $\ln4\approx1.386$: it adds the assumption that 1 and 2 never come up, which the data never told us.
+
+### Back to the clinic
+
+The 60 patients in the widget overlap, so the perceptron would never stop on them. Logistic regression started at $\theta = 0$ gets the gradient norm from 28 down below $10^{-9}$ in 7 Newton steps; the mean cross-entropy drops from $\ln 2\approx0.693$ to $0.243$ and the training accuracy is $86.7\%$. More importantly, every patient gets a risk score, and the clinic can schedule follow-ups in that order.
+
+### Extensions
+
+- **Two routes to multiple classes**: one-vs-rest (train $K$ binary classifiers) and softmax (model all $K$ classes jointly). The latter's probabilities are normalized by construction; it is the answer maximum entropy gives.
+- **Discriminative vs generative**: if each class is Gaussian with a shared covariance, the posterior from Bayes' rule also has the form $\sigma(w\cdot x+b)$. LDA and naive Bayes in Ch. 05 reach the same model from that side, but estimate its parameters differently.
+- **From the perceptron to neural networks**: replace $\mathrm{sign}$ with a smooth activation and stack many perceptrons, and you have the multilayer perceptron of Ch. 14; the pairing of cross-entropy and gradient descent carries over unchanged.
+- **Probabilities need calibration**: regularization and class imbalance can pull $\sigma(w\cdot x+b)$ away from the true frequencies. Check a reliability curve before using it as a risk score.
+
+</Section>

@@ -1,0 +1,61 @@
+/* chapter 04: linear classification */
+.lc-svg { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; user-select: none; touch-action: none; }
+.lc-half.pos { fill: var(--class-pos); fill-opacity: 0.12; }
+.lc-half.neg { fill: var(--class-neg); fill-opacity: 0.12; }
+.lc-axis { stroke: var(--text-muted); stroke-width: 1; opacity: 0.35; }
+.lc-sep { stroke: var(--text); stroke-width: 2.6; fill: none; }
+.lc-sep-prev { stroke: var(--text-muted); stroke-width: 1.6; stroke-dasharray: 6 5; fill: none; opacity: 0.8; }
+.lc-level { stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+.lc-level.pos { stroke: var(--class-pos); }
+.lc-level.neg { stroke: var(--class-neg); }
+.lc-level-lab { font-size: 11px; font-family: var(--mono); font-weight: 700; }
+.lc-level-lab.pos { fill: var(--class-pos); }
+.lc-level-lab.neg { fill: var(--class-neg); }
+.lc-level-lab.mid { fill: var(--text); }
+
+.lc-pt { stroke: var(--bg); stroke-width: 1.5; transition: r 0.35s ease; }
+.lc-pt.pos { fill: var(--class-pos); }
+.lc-pt.neg { fill: var(--class-neg); }
+.lc-wrong { fill: none; stroke: var(--danger); stroke-width: 2; }
+.lc-hl { fill: none; stroke: var(--warning); stroke-width: 2.5; animation: lc-pulse 0.9s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes lc-pulse { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+.lc-alpha { font-size: 10.5px; font-family: var(--mono); font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--surface-2); stroke-width: 3px; }
+
+.lc-arrow { stroke-width: 2.6; fill: none; stroke-linecap: round; }
+.lc-arrow-head { stroke: none; }
+.lc-arrow.w, .lc-arrow-head.w { stroke: var(--text); }
+.lc-arrow-head.w { fill: var(--text); }
+.lc-arrow.wprev { stroke: var(--text-muted); stroke-width: 1.8; opacity: 0.7; }
+.lc-arrow-head.wprev { fill: var(--text-muted); opacity: 0.7; }
+.lc-arrow.dw { stroke: var(--accent-3); stroke-width: 3; }
+.lc-arrow-head.dw { fill: var(--accent-3); }
+.lc-xvec { stroke: var(--accent-3); stroke-width: 1.4; stroke-dasharray: 3 4; opacity: 0.8; }
+.lc-vlab { font-size: 12px; font-weight: 700; font-family: var(--mono); paint-order: stroke; stroke: var(--surface-2); stroke-width: 3px; }
+.lc-vlab.w { fill: var(--text); }
+.lc-vlab.dw { fill: var(--accent-3); }
+.lc-handle { fill: var(--accent); stroke: var(--bg); stroke-width: 2.5; cursor: grab; filter: drop-shadow(0 0 6px var(--accent)); }
+.lc-handle:active { cursor: grabbing; }
+
+.lc-note { font-size: 0.86rem; color: var(--text-muted); min-height: 2.8em; line-height: 1.5; }
+.lc-note b { color: var(--text); }
+.lc-note code { font-family: var(--mono); font-size: 0.85em; }
+.lc-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.lc-controls .chips { margin-left: auto; }
+
+.lc-cell.pos { fill: var(--class-pos); }
+.lc-cell.neg { fill: var(--class-neg); }
+.lc-sub { font-size: 0.78rem; color: var(--text-muted); text-align: center; margin: -0.3rem 0 0; }
+
+.lc-bar { fill: var(--accent); fill-opacity: 0.75; transition: y 0.25s ease, height 0.25s ease; }
+.lc-bar-alt { fill: var(--accent-2); fill-opacity: 0.12; stroke: var(--accent-2); stroke-width: 2; stroke-dasharray: 5 3; transition: y 0.25s ease, height 0.25s ease; }
+.lc-bar-lab { font-size: 11px; font-family: var(--mono); fill: var(--text); }
+.lc-bar-lab.alt { fill: var(--accent-2); }
+.lc-face { font-size: 13px; font-weight: 700; fill: var(--text-muted); }
+.lc-mean { stroke: var(--warning); stroke-width: 2; stroke-dasharray: 5 4; }
+.lc-mean-lab { font-size: 11px; font-weight: 700; font-family: var(--mono); fill: var(--warning); }
+
+.lc-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; font-size: 0.8rem; color: var(--text-muted); justify-content: center; }
+.lc-legend span { display: inline-flex; align-items: center; gap: 0.35em; }
+.lc-legend i { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+.lc-legend i.max { background: var(--accent); opacity: 0.75; }
+.lc-legend i.alt { border: 2px dashed var(--accent-2); }
