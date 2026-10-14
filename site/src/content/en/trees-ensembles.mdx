@@ -1,0 +1,214 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import ManualSplit from "../../components/chapters/ch08/ManualSplit";
+import TreeGrow from "../../components/chapters/ch08/TreeGrow";
+import ForestPlayground from "../../components/chapters/ch08/ForestPlayground";
+import AdaBoostReplay from "../../components/chapters/ch08/AdaBoostReplay";
+import ResidualBoost from "../../components/chapters/ch08/ResidualBoost";
+
+<Section lang="en" k="scenario">
+
+Last chapter's SVM scored above 95% on the breast-cancer data. But when it was handed to the doctors, they asked a very practical question: **"Why does it say this patient's tumour is malignant?"**
+
+A kernel SVM's answer is that "a weighted sum of kernel values between this patient and a few dozen support vectors is positive". That does not go into a clinical guideline. Doctors reason more like a consultation: **a sequence of yes/no questions**. Is the mass larger than some size? If so, is its edge texture irregular? Each question looks at one measurement and one threshold, so the whole chain of reasoning is easy to follow.
+
+First, get a feel for what a single question can do. Pick a feature and drag the threshold to cut the data in two.
+
+<ManualSplit client:visible lang="en" />
+
+One cut is rarely enough: both sides still contain some of the other class. The natural next step is to **cut each half again, and keep going**. That is a decision tree. This chapter answers three questions:
+
+1. How do we find the "best cut" automatically? First we must define what "pure" means.
+2. How deep should we cut? Cutting too finely memorizes the noise.
+3. A single tree is very sensitive to its data. Can many trees work together to be both stable and accurate?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Decision trees: asking yes/no questions recursively
+
+A decision tree recursively cuts feature space into **axis-aligned rectangles**, and each rectangle (a leaf) makes one fixed prediction. In terms of the triad:
+
+- **Model**: a piecewise-constant function $f(x) = \sum_{m} c_m\, \mathbb{1}[x \in R_m]$ over disjoint rectangles $R_m$.
+- **Strategy**: each cut maximizes the decrease in the children's **impurity** (entropy and the Gini index are defined in the next part).
+- **Algorithm**: split **greedily** and recursively from the root until nodes are pure enough, too small, or at the maximum depth; then **prune**.
+
+Why greedy? Finding the globally optimal tree is NP-hard, while the locally best single cut costs only $O(d\, n \log n)$: sort each of the $d$ features once, then scan every threshold in a linear pass.
+
+<TreeGrow client:visible lang="en" />
+
+<Box kind="insight" title="Two sides of a tree">
+
+**Strengths**: the rules are interpretable; trees are insensitive to monotone transformations of features, so no scaling is needed; and they handle categorical features and missing values naturally. **Weakness**: change the training data slightly and the first cut may move, taking the whole tree with it. In statistical terms, a single deep tree has **high variance**.
+
+</Box>
+
+### Ensembles: let many trees vote
+
+If one tree has high variance, train many and average them. There are two ways to do it.
+
+**Bagging and random forests (in parallel)**: draw $B$ bootstrap samples from the training set **with replacement**, train a deep tree on each, and average their predictions (vote, for classification). A random forest also **looks at only a random subset of features at each split**, which makes the trees less alike and the average more effective.
+
+<ForestPlayground client:visible lang="en" />
+
+**Boosting (in sequence)**: each new learner corrects the errors of the ones before it. AdaBoost up-weights misclassified samples; gradient boosting fits each new tree to the current model's residuals. Both use very shallow trees, such as one-cut "stumps", and drive the **bias** down step by step. Part 3 proves that AdaBoost is in fact minimizing an exponential loss.
+
+| | Bagging / random forests | Boosting |
+|---|---|---|
+| Training | In parallel, independent | In sequence, each correcting the last |
+| Base learner | Deep trees (low bias, high variance) | Shallow trees (high bias, low variance) |
+| Mainly reduces | Variance | Bias |
+| Examples | Random Forest | AdaBoost, GBDT, XGBoost, LightGBM |
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Tool 1: entropy, information gain and the Gini index
+
+Let $p_k$ be the proportion of class $k$ in node $D$.
+
+<Box kind="definition" title="Three impurity measures">
+
+- **Entropy**: $H(D) = -\sum_k p_k \log_2 p_k$. It is 0 for a single class and largest when the classes are uniform.
+- **Information gain** (ID3): how much entropy drops when feature $a$ splits $D$ into $D_1,\dots,D_V$:
+$$
+g(D,a) = H(D) - \sum_{v=1}^V \frac{|D_v|}{|D|} H(D_v).
+$$
+- **Gini index** (CART): $\mathrm{Gini}(D) = 1 - \sum_k p_k^2$. It is the probability of a wrong label when you draw a random sample and label it at random according to $p$.
+
+</Box>
+
+Information gain favours features with many values. In the extreme, splitting on "patient ID" leaves one sample per child: every child's entropy is zero and the gain is maximal, yet the split is useless. C4.5 therefore uses the **gain ratio** $g_R(D,a) = g(D,a)/H_a(D)$, where $H_a(D) = -\sum_v \frac{|D_v|}{|D|}\log_2\frac{|D_v|}{|D|}$ is the entropy of the feature's own value distribution, which grows with the number of values.
+
+For two classes $\mathrm{Gini} = 2p(1-p)$ (derivation exercise 1). It behaves like a quadratic approximation to entropy and is cheaper to compute, so CART uses it by default.
+
+### Tool 2: cost-complexity pruning
+
+Deep trees overfit. Pruning trades training fit against tree size. For a tree $T$, define
+
+$$
+C_\alpha(T) = \sum_{t \in \text{leaves}(T)} N_t\, Q_t(T) + \alpha\, |T|,
+$$
+
+where $N_t$ is the number of samples in leaf $t$, $Q_t$ is its impurity and $|T|$ is the number of leaves. $\alpha = 0$ keeps the whole tree; as $\alpha \to \infty$, only the root survives.
+
+For each internal node $t$, compare collapsing it into a single leaf with keeping the subtree $T_t$ below it. The value of $\alpha$ at which the two cost the same is
+
+$$
+g(t) = \frac{C(t) - C(T_t)}{|T_t| - 1}.
+$$
+
+**Weakest-link pruning** repeatedly collapses the node with the smallest $g(t)$. This produces a nested sequence of subtrees $T_0 \supset T_1 \supset \dots \supset \{\text{root}\}$, each optimal for an interval of $\alpha$. Cross-validation then picks one of them.
+
+### Why averaging reduces variance
+
+Let the $B$ trees' predictions $f_b(x)$ be identically distributed with variance $\sigma^2$ and pairwise correlation $\rho$. Then
+
+$$
+\mathrm{Var}\Big(\frac1B\sum_b f_b\Big) = \frac{1}{B^2}\Big(B\sigma^2 + B(B-1)\rho\sigma^2\Big) = \rho\sigma^2 + \frac{1-\rho}{B}\sigma^2.
+$$
+
+As $B \to \infty$ the second term vanishes, but the first term $\rho\sigma^2$ does not. So the key is to **lower the correlation $\rho$ between trees**. That is exactly why a random forest considers only some of the features at each split: it gives up a little accuracy per tree in exchange for lower correlation.
+
+### AdaBoost = forward stagewise additive modelling + exponential loss
+
+Write the ensemble as an **additive model** $F(x) = \sum_{m=1}^M \alpha_m G_m(x)$ with $G_m(x)\in\{-1,+1\}$. Optimizing every $(\alpha_m, G_m)$ jointly is too hard, so proceed **stagewise**: each round adds one term and leaves the earlier ones fixed. Under the exponential loss $L(y, F) = e^{-yF}$, round $m$ solves
+
+$$
+(\alpha_m, G_m) = \arg\min_{\alpha, G} \sum_i \underbrace{e^{-y_i F_{m-1}(x_i)}}_{w_{mi}}\, e^{-\alpha y_i G(x_i)}.
+$$
+
+The effect of all earlier rounds is folded into the sample weights $w_{mi}$. Split the sum into correct and incorrect samples (with normalized weights, $e_m$ is the weighted error):
+
+$$
+\sum_i w_{mi}\, e^{-\alpha y_i G(x_i)} = e^{-\alpha}(1 - e_m) + e^{\alpha} e_m.
+$$
+
+1. **In $G$**: for $\alpha > 0$ this increases with $e_m$, so $G_m$ is the **classifier with the smallest weighted error**.
+2. **In $\alpha$**: setting the derivative to zero gives $\alpha_m = \tfrac12 \ln\dfrac{1 - e_m}{e_m}$ (derivation exercise 2).
+3. **Weight update**: $w_{m+1,i} \propto w_{mi}\, e^{-\alpha_m y_i G_m(x_i)}$, divided by the normalizer $Z_m$. Misclassified samples are multiplied by $e^{\alpha_m}$, correct ones by $e^{-\alpha_m}$.
+
+These three steps are exactly the AdaBoost algorithm. What looked like a heuristic re-weighting trick is coordinate descent on the exponential loss.
+
+<AdaBoostReplay client:visible lang="en" />
+
+<Box kind="theorem" title="Training error falls exponentially">
+
+Because $\mathbb{1}[\mathrm{sign}F(x_i) \ne y_i] \le e^{-y_iF(x_i)}$,
+
+$$
+\frac1N\sum_i \mathbb{1}[\mathrm{sign}F(x_i) \ne y_i] \le \frac1N \sum_i e^{-y_iF(x_i)} = \prod_{m=1}^M Z_m,\qquad Z_m = 2\sqrt{e_m(1-e_m)}.
+$$
+
+Writing $e_m = \tfrac12 - \gamma_m$ gives $Z_m = \sqrt{1 - 4\gamma_m^2} \le e^{-2\gamma_m^2}$. As long as every round beats random guessing by a margin ($\gamma_m \ge \gamma > 0$), training error falls at least as fast as $e^{-2M\gamma^2}$.
+
+</Box>
+
+### Gradient boosting: gradient descent in function space
+
+Generalize this idea to **any differentiable loss** $L$. In round $m$, first compute the negative gradient at each sample,
+
+$$
+r_{mi} = -\left.\frac{\partial L(y_i, F)}{\partial F}\right|_{F = F_{m-1}(x_i)},
+$$
+
+then fit a regression tree $h_m$ to the pairs $(x_i, r_{mi})$ and update $F_m = F_{m-1} + \nu h_m$ with a learning rate $\nu \in (0, 1]$. For squared loss, $r_{mi} = y_i - F_{m-1}(x_i)$ is the **residual** (derivation exercise 4). For log-loss in binary classification, $r_{mi} = y_i - p_i$.
+
+<ResidualBoost client:visible lang="en" />
+
+XGBoost and LightGBM go one step further with a **second-order Taylor expansion** of the loss. Let $g_i$ and $h_i$ be the first and second derivatives, and put an L2 penalty $\tfrac{\lambda}{2}\sum_j w_j^2$ on the leaf weights $w_j$. The samples in leaf $j$ then contribute
+
+$$
+\sum_{i \in I_j}\Big(g_i w_j + \tfrac12 h_i w_j^2\Big) + \tfrac{\lambda}{2}w_j^2 \ \Rightarrow\ w_j^* = -\frac{G_j}{H_j + \lambda},
+$$
+
+where $G_j = \sum_{i\in I_j} g_i$ and $H_j = \sum_{i\in I_j} h_i$. The optimal objective value, $-\tfrac12 G_j^2/(H_j+\lambda)$, becomes the split score directly. This is one of the main reasons these libraries are faster and more accurate than classical GBDT.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: AdaBoost on eight points
+
+<Box kind="example" title="Zero training error in three rounds">
+
+One-dimensional data: $x = 1,2,\dots,8$ with labels $+,+,-,-,+,+,-,-$. The weak learners are stumps: predict $s$ if $x \le t$ and $-s$ otherwise. All initial weights are $\tfrac18$.
+
+**Round 1**: the best stump is $t = 2.5,\ s = +$. It misclassifies $x_5, x_6$, so $e_1 = \tfrac28 = \tfrac14$ and $\alpha_1 = \tfrac12\ln 3 \approx 0.549$. After the update, the 6 correct points each weigh $\tfrac1{12}$ and the 2 wrong ones each weigh $\tfrac14$. **The misclassified points now carry exactly half the weight**, so the stump just added is no better than a coin flip under the new weights, and the next round must pick a different one.
+
+**Round 2**: $t = 6.5,\ s = +$, misclassifying $x_3, x_4$; $e_2 = \tfrac2{12} = \tfrac16$ and $\alpha_2 = \tfrac12\ln 5 \approx 0.805$. The new weights are $\tfrac1{20}$ for $x_{1,2}$, $\tfrac14$ for $x_{3,4}$, $\tfrac3{20}$ for $x_{5,6}$ and $\tfrac1{20}$ for $x_{7,8}$.
+
+**Round 3**: $t = 4.5,\ s = -$, misclassifying $x_1, x_2, x_7, x_8$; $e_3 = \tfrac4{20} = \tfrac15$ and $\alpha_3 = \tfrac12\ln 4 = \ln 2 \approx 0.693$.
+
+**Combined**: $F = 0.549\,G_1 + 0.805\,G_2 + 0.693\,G_3$ takes these values on the four segments:
+
+| $x$ | $G_1$ | $G_2$ | $G_3$ | $F(x)$ | Label |
+|---|---|---|---|---|---|
+| 1, 2 | $+$ | $+$ | $-$ | $+0.661$ | $+$ ✓ |
+| 3, 4 | $-$ | $+$ | $-$ | $-0.438$ | $-$ ✓ |
+| 5, 6 | $-$ | $+$ | $+$ | $+0.949$ | $+$ ✓ |
+| 7, 8 | $-$ | $-$ | $+$ | $-0.661$ | $-$ ✓ |
+
+Three stumps, each able to cut only once, combine into a classifier that needs three cuts, with zero training error. The bound checks out too: $Z_1Z_2Z_3 = \tfrac{\sqrt3}{2}\cdot\tfrac{\sqrt5}{3}\cdot\tfrac45 \approx 0.52$, which is indeed at least the training error of 0 ✓.
+
+</Box>
+
+### Back to the clinic: interpretability versus accuracy
+
+On the real breast-cancer data:
+
+- A tree of **depth 3** has just 8 rules that a doctor can check one by one, for example "worst perimeter above about 106 and worst concave points above about 0.14 → malignant". Across several train/test splits its test accuracy is about 92–95%.
+- **LightGBM** adds up a hundred trees and reaches about 94–97% test accuracy, but it can no longer be read rule by rule. **Feature importance**, or SHAP values from game theory, can then help explain individual predictions.
+
+The right trade-off between interpretability and accuracy depends on the setting. The "assemble a library" exercise has you build a LightGBM model and replay, tree by tree, how its boundary forms, so you can compare it with your hand-written AdaBoost.
+
+### Extensions
+
+- **Regression trees**: leaves output the sample mean, and splits maximize the decrease in squared error. Gradient boosting fits its residuals with exactly these trees.
+- **Out-of-bag (OOB) estimates**: each bootstrap sample misses about $(1-1/n)^n \approx 36.8\%$ of the data, which gives a free estimate of generalization error.
+- **XGBoost, LightGBM and CatBoost**: XGBoost uses a second-order approximation and regularization. LightGBM is fast thanks to histogram binning, leaf-wise growth and gradient-based one-side sampling. CatBoost handles categorical features with ordered target statistics.
+- **Tabular data**: on medium-sized tabular data, tree ensembles still often beat deep networks. One reason is that trees are more robust to irrelevant features and irregular target functions (see this chapter's frontier reading).
+
+</Section>

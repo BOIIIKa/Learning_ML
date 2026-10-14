@@ -1,0 +1,174 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import ManualSplit from "../../components/chapters/ch08/ManualSplit";
+import TreeGrow from "../../components/chapters/ch08/TreeGrow";
+import ForestPlayground from "../../components/chapters/ch08/ForestPlayground";
+import AdaBoostReplay from "../../components/chapters/ch08/AdaBoostReplay";
+import ResidualBoost from "../../components/chapters/ch08/ResidualBoost";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 08 · Animated course" title="Decision Trees & Ensembles" say="This chapter starts from a doctor's question: why did the model decide that? The answer is a chain of yes-or-no questions, a decision tree. Then we let many trees work together to build one of today's strongest models for tabular data.">
+
+From "a chain of questions" to random forests, AdaBoost and gradient boosting
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="The doctor's question" say="Last chapter's SVM was very accurate, but a doctor asks: why does it say this patient's tumour is malignant?">
+
+<Step say="A kernel SVM can only answer with a weighted sum of kernel values, which does not belong in a clinical guideline.">The SVM's reason: a weighted sum of dozens of kernel values ✗</Step>
+
+<Step say="Doctors reason like a consultation: a chain of yes-or-no questions, each about a single measurement.">What doctors want: a chain of yes/no questions, one measurement each ✓</Step>
+
+<Step say="On the right, pick a feature and drag the threshold to make the first cut yourself. The curve below scans every threshold.">Make the first cut yourself and watch the impurity drop →</Step>
+
+<Step say="Then press 'let the algorithm find the best cut'. All the algorithm does is take the highest point of that curve.">The algorithm simply takes the curve's peak</Step>
+
+<div slot="visual"><ManualSplit client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" say="One cut is rarely enough: both sides still contain some of the other class. So cut each half again, and keep going.">
+
+<Step effect="focus" say="That is a decision tree. This chapter answers three questions.">
+<p class="big-q">One cut not enough? Cut each half again.</p>
+</Step>
+
+<Step say="First, what is the best cut? Second, how deep should we go? Third, what if a single tree is too sensitive?">① What is the "best cut"? ② How deep? ③ What if one tree is too sensitive?</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="A tree is a piecewise-constant function" say="First, look at decision trees through the triad.">
+
+<Step say="Model: cut space into axis-aligned rectangles, each with a constant prediction.">**Model**: $f(x)=\sum_m c_m\,\mathbb{1}[x\in R_m]$</Step>
+
+<Step say="Strategy: each cut maximizes the decrease in impurity.">**Strategy**: each cut maximizes the impurity decrease</Step>
+
+<Step say="Algorithm: split greedily and recursively from the root, then prune. The global optimum is NP-hard; each greedy step costs only n log n.">**Algorithm**: greedy recursion + pruning (the global optimum is NP-hard)</Step>
+
+<Step say="Drag the maximum depth on the right: training accuracy keeps rising, but test accuracy rises and then falls. That is overfitting.">Drag the depth: training ↑, test ↑ then ↓ →</Step>
+
+<div slot="visual"><TreeGrow client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="One tree is jumpy, so grow a forest" say="A single deep tree has high variance: change the data slightly and the first cut may move.">
+
+<Step say="Bagging: draw many training sets with replacement, train a deep tree on each, and average them.">**Bagging**: bootstrap samples → many deep trees → average</Step>
+
+<Step say="A random forest also considers only a random subset of features at each split, which makes the trees less correlated.">**Random forest**: add random features to decorrelate the trees</Step>
+
+<Step say="On the right, keep drawing new training data: the single tree's boundary jumps around, while the forest barely moves.">Keep redrawing the data: the tree jumps, the forest holds →</Step>
+
+<div slot="visual"><ForestPlayground client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Two ways to ensemble" say="There are two routes to an ensemble.">
+
+<Step say="Bagging works in parallel with deep, independent trees, and mainly reduces variance.">**Bagging / random forests**: parallel · deep trees · cut **variance**</Step>
+
+<Step say="Boosting works in sequence with shallow trees, each correcting the previous one, and mainly reduces bias.">**Boosting**: sequential · shallow trees · cut **bias**</Step>
+
+<Step say="In the next part we show that AdaBoost, which looks like a heuristic, is actually minimizing an exponential loss.">Next: AdaBoost is really minimizing an **exponential loss**</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Tool: entropy and the Gini index" say="First, define what 'pure' means.">
+
+<Step say="Entropy is zero for a single class and largest when the classes are uniform.">Entropy $H(D) = -\sum_k p_k\log_2 p_k$</Step>
+
+<Step say="Information gain is how much a split lowers the entropy.">Information gain $g = H(D) - \sum_v \frac{|D_v|}{|D|}H(D_v)$</Step>
+
+<Step say="But it favours features with many values, such as a patient ID, so C4.5 uses the gain ratio instead.">Biased toward many-valued features (e.g. patient ID) ⇒ gain ratio</Step>
+
+<Step say="The Gini index for two classes is 2p times 1 minus p, a cheap stand-in for entropy and the CART default.">Gini $1-\sum p_k^2 = 2p(1-p)$ for two classes</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Why averaging reduces variance" say="Let each tree have variance sigma squared and pairwise correlation rho.">
+
+<Step effect="draw" say="For an average of B trees, the second term vanishes as B grows, but the first term, rho sigma squared, does not.">
+
+$$
+\mathrm{Var}\Big(\frac1B\sum_b f_b\Big) = \rho\sigma^2 + \frac{1-\rho}{B}\sigma^2
+$$
+
+</Step>
+
+<Step effect="focus" say="So the key is to lower the correlation between trees, which is exactly why random forests pick features at random.">
+<p class="big-q sm">Lower the correlation $\rho$ ⇒ random features</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="What AdaBoost really is" say="Write the ensemble as an additive model, add one term per round, and optimize under the exponential loss.">
+
+<Step say="The effect of all earlier rounds is folded into the sample weights.">
+
+$$
+\min_{\alpha,G}\sum_i w_{mi}\,e^{-\alpha y_iG(x_i)},\quad w_{mi}=e^{-y_iF_{m-1}(x_i)}
+$$
+
+</Step>
+
+<Step say="Split it into correct and incorrect samples and it becomes a simple function of the weighted error e.">$= e^{-\alpha}(1-e_m) + e^{\alpha}e_m$</Step>
+
+<Step say="In G: pick the classifier with the smallest weighted error. In alpha: the derivative gives half the log-odds.">⇒ $G_m$ minimizes the weighted error, $\alpha_m = \tfrac12\ln\frac{1-e_m}{e_m}$</Step>
+
+<Step say="On the right is an AdaBoost replay: misclassified points grow each round, and training error always stays under the theoretical bound.">Right: misclassified points grow; error stays under the bound →</Step>
+
+<div slot="visual"><AdaBoostReplay client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Gradient boosting: fit the negative gradient" say="Now generalize the idea to any differentiable loss.">
+
+<Step say="Each round computes the negative gradient, fits a regression tree to it, and adds it to the model scaled by the learning rate.">$r_{mi} = -\partial L/\partial F$, $F_m = F_{m-1} + \nu h_m$</Step>
+
+<Step say="For squared loss the negative gradient is the residual, so each round fits the residuals.">Squared loss: $r = y - F$, the **residual**</Step>
+
+<Step say="XGBoost and LightGBM add second derivatives, which gives the optimal leaf weight in closed form.">Second-order expansion ⇒ $w^* = -G/(H+\lambda)$</Step>
+
+<Step say="On the right, watch gradient boosting eat away the residuals round by round.">Right: the residuals get eaten away round by round →</Step>
+
+<div slot="visual"><ResidualBoost client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: eight points, three stumps" say="Let's run AdaBoost by hand on eight points labelled plus plus minus minus plus plus minus minus.">
+
+<Step say="Round one: cut at 2.5, two mistakes, error one quarter, alpha equals half of ln 3.">① $t=2.5$: $e_1=\tfrac14$, $\alpha_1=\tfrac12\ln3$</Step>
+
+<Step say="After the update, the misclassified points carry exactly half the weight, so the stump just used is a coin flip under the new weights.">The misclassified points' total weight → $\tfrac12$</Step>
+
+<Step say="Round two: cut at 6.5, error one sixth, alpha equals half of ln 5.">② $t=6.5$: $e_2=\tfrac16$, $\alpha_2=\tfrac12\ln5$</Step>
+
+<Step say="Round three: a reversed cut at 4.5, error one fifth, alpha equals ln 2.">③ $t=4.5$ (reversed): $e_3=\tfrac15$, $\alpha_3=\ln2$</Step>
+
+<Step effect="focus" say="Three stumps that can each cut only once combine into a classifier that needs three cuts, with zero training error.">
+<p class="big-q sm">Three stumps ⇒ a three-cut classifier with zero training error</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Back to the clinic" say="On the real breast-cancer data, let's see how interpretability trades off against accuracy.">
+
+<Step say="A tree of depth three has just eight rules a doctor can check one by one, with about 92 to 95 percent accuracy.">A depth-3 tree: 8 checkable rules, about 92–95%</Step>
+
+<Step say="LightGBM adds up a hundred trees for about 94 to 97 percent accuracy, but it can only be explained with feature importance or SHAP.">LightGBM: about 94–97%, explained with importance / SHAP</Step>
+
+<Step say="On tabular data, tree ensembles still often beat deep networks.">On tabular data, tree ensembles remain a strong baseline</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, then AdaBoost by hand and gradient-boosted trees assembled with LightGBM.">
+
+<Step say="Both coding exercises can be replayed: watch the boundaries of your AdaBoost and of LightGBM form round by round.">✎ 4 derivations · ⌨ AdaBoost from scratch · ⚙ assemble LightGBM and replay</Step>
+
+<Step say="If you get stuck, press Tab twice inside a blank.">Stuck? Press <kbd>Tab</kbd> twice</Step>
+
+<Step effect="pop" say="Use the button to start practising.">
+<a class="btn btn-primary btn-xl" href="../../chapters/trees-ensembles/#s-practice">Start practising →</a>
+</Step>
+
+</Slide>

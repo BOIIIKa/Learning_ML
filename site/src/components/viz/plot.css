@@ -30,3 +30,7 @@
 .pt-new.neg { stroke: var(--class-neg); }
 .pt-new.bad { stroke: var(--danger); stroke-width: 3; fill: var(--danger); fill-opacity: 0.25; }
 @keyframes pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.side-pos { fill: var(--class-pos); fill-opacity: 0.12; transition: fill 0.3s ease; }
+.side-neg { fill: var(--class-neg); fill-opacity: 0.12; transition: fill 0.3s ease; }
+.side-none { fill: none; }

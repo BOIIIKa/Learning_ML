@@ -24,6 +24,8 @@ export interface Plot2DProps {
   /** Extra hollow points (e.g. unseen test data); `bad` marks them with a red cross-ring. */
   extraPoints?: { X: number[][]; y: number[]; bad?: boolean[] };
   onDragPoint?: (index: number, p: [number, number]) => void;
+  /** Tint each side of an axis-aligned split with the colour of its majority class. */
+  highlightSide?: { feature: number; threshold: number };
   /** Fixed data domain; defaults to the data's bounding box plus padding. */
   domain?: { x: [number, number]; y: [number, number] };
   height?: number;
@@ -53,7 +55,7 @@ function clipLine(w: [number, number], c: number, [x0, x1]: [number, number], [y
 }
 
 export default function Plot2D({
-  X, y, step, grid, showMargin = true, extraLines = [], extraPoints, onDragPoint, domain, height = 380, tweenMs = 450,
+  X, y, step, grid, showMargin = true, extraLines = [], extraPoints, onDragPoint, highlightSide, domain, height = 380, tweenMs = 450,
 }: Plot2DProps) {
   const uid = useId().replace(/:/g, "");
   const svgRef = useRef<SVGSVGElement>(null);
@@ -146,6 +148,25 @@ export default function Plot2D({
           <path d={fieldPaths.zero} className="field-zero" filter={`url(#glow-${uid})`} />
         </g>
       )}
+
+      {highlightSide && (() => {
+        const { feature: f, threshold: th } = highlightSide;
+        const side = (le: boolean) => {
+          const idx = X.flatMap((p, i) => ((p[f] <= th) === le ? [i] : []));
+          const pos = idx.filter((i) => y[i] > 0).length;
+          return idx.length === 0 ? "none" : pos * 2 >= idx.length ? "pos" : "neg";
+        };
+        const c = f === 0 ? f1(sx(th)) : f1(sy(th));
+        const [a, b] = f === 0
+          ? [{ x: 0, y: 0, width: +c, height: H }, { x: +c, y: 0, width: W - +c, height: H }]
+          : [{ x: 0, y: +c, width: W, height: H - +c }, { x: 0, y: 0, width: W, height: +c }];
+        return (
+          <g>
+            <rect {...a} className={`side-${side(true)}`} />
+            <rect {...b} className={`side-${side(false)}`} />
+          </g>
+        );
+      })()}
 
       {extraLines.map((l, i) => (
         <path key={i} d={linePath(l.w, l.b)} stroke={l.color} className={`extra-line${l.dashed ? " dashed" : ""}`} />

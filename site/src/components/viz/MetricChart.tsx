@@ -9,14 +9,14 @@ export interface Series {
 }
 
 /** Small line chart of per-step metrics with a cursor at the current step. */
-export default function MetricChart({ series, cursor, height = 150 }: { series: Series[]; cursor: number; height?: number }) {
+export default function MetricChart({ series, cursor, height = 150, zero = true }: { series: Series[]; cursor: number; height?: number; zero?: boolean }) {
   const W = 460;
   const H = height;
   const pad = { l: 36, r: 10, t: 10, b: 22 };
   const n = Math.max(...series.map((s) => s.values.length));
   const all = series.flatMap((s) => s.values).filter(Number.isFinite);
   if (n < 2 || all.length === 0) return null;
-  const lo = Math.min(0, ...all);
+  const lo = zero ? Math.min(0, ...all) : Math.min(...all);
   const hi = Math.max(...all);
   const sx = scaleLinear().domain([0, n - 1]).range([pad.l, W - pad.r]);
   const sy = scaleLinear().domain([lo, hi === lo ? lo + 1 : hi]).range([H - pad.b, pad.t]).nice();

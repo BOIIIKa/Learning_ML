@@ -21,6 +21,13 @@ const setFilling = StateEffect.define<{ from: number; to: number } | null>();
 const addFlash = StateEffect.define<{ from: number; to: number }>();
 const clearFlash = StateEffect.define<null>();
 const setHint = StateEffect.define<number | null>();
+const fillActive = StateEffect.define<1 | -1>();
+
+/** Number of answers currently being typed in; the Run button waits for 0. */
+const activeFills = StateField.define<number>({
+  create: () => 0,
+  update: (n, tr) => tr.effects.reduce((acc, e) => (e.is(fillActive) ? acc + e.value : acc), n),
+});
 
 const blankMark = (id: string) => Decoration.mark({ class: "cm-blank", blankId: id, inclusive: true });
 const fillingMark = Decoration.mark({ class: "cm-filling" });
@@ -122,7 +129,7 @@ export async function fillBlank(view: EditorView, blanks: Blank[], id: string) {
   if (!answer || !range) return;
   const { from, to } = range as { from: number; to: number };
 
-  view.dispatch({ changes: { from, to, insert: "" }, effects: [removeBlank.of(id), setHint.of(null)], userEvent: "input.fill" });
+  view.dispatch({ changes: { from, to, insert: "" }, effects: [removeBlank.of(id), setHint.of(null), fillActive.of(1)], userEvent: "input.fill" });
   const chunk = Math.max(1, Math.ceil(answer.length / 36));
   let pos = from;
   for (let i = 0; i < answer.length; i += chunk) {
@@ -131,13 +138,15 @@ export async function fillBlank(view: EditorView, blanks: Blank[], id: string) {
     view.dispatch({ changes: { from: pos, insert: piece }, effects: setFilling.of({ from, to: pos + piece.length }), userEvent: "input.fill" });
     pos += piece.length;
   }
-  view.dispatch({ effects: addFlash.of({ from, to: pos }), selection: { anchor: pos } });
+  view.dispatch({ effects: [addFlash.of({ from, to: pos }), fillActive.of(-1)], selection: { anchor: pos } });
   const c = view.coordsAtPos(pos);
   if (c) burst(c.right, c.top + 8, { count: 26, power: 0.7, gravity: 0.12 });
   setTimeout(() => view.dispatch({ effects: clearFlash.of(null) }), 1400);
 }
 
-export function blanksExtension(blanks: Blank[], tabAgainText: string, onChange: (left: string[]) => void) {
+export const isFilling = (state: EditorState) => state.field(activeFills) > 0;
+
+export function blanksExtension(blanks: Blank[], tabAgainText: string, onChange: (left: string[], filling: boolean) => void) {
   let last = { time: 0, id: "" };
   const tab = (view: EditorView) => {
     const head = view.state.selection.main.head;
@@ -156,10 +165,11 @@ export function blanksExtension(blanks: Blank[], tabAgainText: string, onChange:
   return [
     blankField,
     fillingField,
+    activeFills,
     hintField(tabAgainText),
     keymap.of([{ key: "Tab", run: tab }]),
     EditorView.updateListener.of((u) => {
-      if (u.docChanged || u.transactions.some((tr) => tr.effects.some((e) => e.is(removeBlank)))) onChange(remainingBlanks(u.state));
+      if (u.docChanged || u.transactions.some((tr) => tr.effects.length)) onChange(remainingBlanks(u.state), isFilling(u.state));
     }),
   ];
 }

@@ -19,6 +19,12 @@ export function gaussian(rand: () => number): number {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
+/**
+ * Round to 1e-6 so server-side (Node) and browser renders agree exactly: Math.cos / Math.log may
+ * differ in the last ulp between JS engines, which would otherwise break React hydration.
+ */
+export const r6 = (v: number) => Math.round(v * 1e6) / 1e6;
+
 export interface Dataset {
   X: number[][];
   y: number[];
@@ -32,7 +38,7 @@ export function blobs(n = 40, seed = 7, spread = 0.9): Dataset {
   for (let i = 0; i < n; i++) {
     const label = i < n / 2 ? -1 : 1;
     const [cx, cy] = label < 0 ? [-1.2, -0.8] : [1.2, 0.9];
-    X.push([cx + spread * gaussian(rand), cy + spread * gaussian(rand)]);
+    X.push([r6(cx + spread * gaussian(rand)), r6(cy + spread * gaussian(rand))]);
     y.push(label);
   }
   return { X, y };
@@ -47,7 +53,7 @@ export function moons(n = 120, seed = 0, noise = 0.25): Dataset {
     const outer = i < n / 2;
     const t = Math.PI * rand();
     const [px, py] = outer ? [Math.cos(t), Math.sin(t)] : [1 - Math.cos(t), 0.5 - Math.sin(t)];
-    X.push([px + noise * gaussian(rand), py + noise * gaussian(rand)]);
+    X.push([r6(px + noise * gaussian(rand)), r6(py + noise * gaussian(rand))]);
     y.push(outer ? -1 : 1);
   }
   return { X, y };

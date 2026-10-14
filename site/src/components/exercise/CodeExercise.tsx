@@ -37,6 +37,7 @@ export default function CodeExercise({ item, runtime, lang }: { item: CodeItem; 
   const view = useRef<EditorView | null>(null);
   const runBtn = useRef<HTMLButtonElement>(null);
   const [left, setLeft] = useState<string[]>(item.blanks.map((b) => b.id));
+  const [filling, setFilling] = useState(false);
   const [status, setStatus] = useState<Status | "idle">("idle");
   const [result, setResult] = useState<CheckResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +51,7 @@ export default function CodeExercise({ item, runtime, lang }: { item: CodeItem; 
         basicSetup,
         python(),
         editorTheme,
-        blanksExtension(item.blanks, t(lang, "tabAgain"), setLeft),
+        blanksExtension(item.blanks, t(lang, "tabAgain"), (l, f) => { setLeft(l); setFilling(f); }),
         EditorView.updateListener.of((u) => u.docChanged && saveDraft(item.id, u.state.doc.toString())),
       ],
     });
@@ -107,16 +108,16 @@ export default function CodeExercise({ item, runtime, lang }: { item: CodeItem; 
         <span className="ex-blanks" title={t(lang, "tabHint")}>
           <kbd>Tab</kbd><kbd>Tab</kbd> {t(lang, "tabHint")}
         </span>
-        <span className={`ex-left${left.length === 0 ? " done" : ""}`}>{t(lang, "blanksLeft", { n: left.length })}</span>
+        <span className={`ex-left${left.length === 0 && !filling ? " done" : ""}`}>{t(lang, "blanksLeft", { n: left.length })}</span>
       </div>
       <div className="ex-editor" ref={host} />
 
       <div className="ex-actions">
-        <button ref={runBtn} className="btn btn-primary" onClick={run} disabled={busy}>
+        <button ref={runBtn} className="btn btn-primary" onClick={run} disabled={busy || filling}>
           {busy ? <span className="spinner" /> : "▶"} {busy ? t(lang, "running") : t(lang, "run")}
         </button>
         {busy && <button className="btn" onClick={stop}>■ Stop</button>}
-        <button className="btn" onClick={fillAll} disabled={busy || left.length === 0}>✦ {t(lang, "fillAll")}</button>
+        <button className="btn" onClick={fillAll} disabled={busy || filling || left.length === 0}>✦ {t(lang, "fillAll")}</button>
         <button className="btn" onClick={reset} disabled={busy}>↺ {t(lang, "reset")}</button>
       </div>
 
