@@ -32,4 +32,4 @@ python3 scripts/build_outline.py
 
 ## 许可 / License
 
-拟定 / Proposed: 内容 / Content CC BY-NC-SA 4.0 · 代码 / Code MIT（LICENSE 文件待添加 / LICENSE files pending）
+内容 / Content: [CC BY-NC-SA 4.0](LICENSE-CONTENT.md) · 代码 / Code: [MIT](LICENSE)
