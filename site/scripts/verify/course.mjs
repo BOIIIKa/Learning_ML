@@ -42,6 +42,7 @@ if (mode === "walk") {
   await page.goto(`${BASE}/${lang}/course/${slug}/${hash}`, { waitUntil: "networkidle" });
   await page.screenshot({ path: `${out}/${slug}-start.png` });
   await page.click("[data-act=start]");
+  await page.keyboard.press("a"); // film straight through (by default each card pauses at its end)
   const t0 = Date.now();
   for (const t of times) {
     const wait = t * 1000 - (Date.now() - t0);

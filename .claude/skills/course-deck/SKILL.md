@@ -10,6 +10,18 @@ manim-like animation, its `say` narration runs as a subtitle (optionally spoken)
 script operates the slide's widget, and the timeline moves on when all three are done
 (+0.45 s, + `hold`). Engine: `site/src/manim/` and `site/src/components/course/controller.ts`.
 
+**Playback model (user's request):** a click / Space plays the *current card* (slide) to its end,
+then the course pauses with a "click to continue" cue, giving students time to think; the next
+click fades the card out and plays the next one. "连播 / Auto" (key A) plays straight through.
+So each slide should be one complete thought that ends on something worth pondering.
+Other rules the controller now enforces:
+- When a student grabs a widget control mid-beat, the drive script stops where it is (it never snaps
+  their value back); the next beat's drive starts from whatever they set.
+- It ignores `prefers-reduced-motion`: the animation is the lesson. Notes pages still honour it.
+- The visual column is shrunk with `transform: scale`, never CSS `zoom`, which breaks range-input
+  and SVG pointer mapping in some browsers.
+- Swipes that start inside a widget are not treated as beat navigation.
+
 ## Building blocks
 
 ```mdx

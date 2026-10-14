@@ -131,7 +131,8 @@ h1, h2, h3 { line-height: 1.25; letter-spacing: -0.01em; }
 .reveal.in { opacity: 1; transform: none; filter: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  /* The animated course (html.manim) keeps its motion: it is the lesson itself. */
+  :root:not(.manim) *, :root:not(.manim) *::before, :root:not(.manim) *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
   .reveal { opacity: 1; transform: none; filter: none; }
 }
 

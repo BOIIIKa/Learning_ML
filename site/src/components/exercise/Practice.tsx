@@ -28,8 +28,22 @@ export default function Practice({ lang, derivation, code, runtime }: {
   code: CodeItem[];
   runtime: Record<string, string>;
 }) {
+  // Warm Python up while the student is still reading: once the practice section is within a few
+  // screens, boot Pyodide and fetch the packages in the worker so the first Run is fast.
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!code.length) return;
+    const pkgs = [...new Set(code.flatMap((c) => c.packages))];
+    const io = new IntersectionObserver((es) => {
+      if (!es.some((e) => e.isIntersecting)) return;
+      io.disconnect();
+      void import("../../runtime/python").then((m) => m.warm(pkgs));
+    }, { rootMargin: "1800px 0px" });
+    io.observe(root.current!);
+    return () => io.disconnect();
+  }, [code]);
   return (
-    <div className="practice">
+    <div className="practice" ref={root}>
       <h3>{t(lang, "derivationEx")}</h3>
       <p className="muted"><kbd>Tab</kbd><kbd>Tab</kbd> {t(lang, "tabHint")}</p>
       {derivation.map((item, i) => (

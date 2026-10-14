@@ -79,7 +79,12 @@
 @media (max-width: 900px) {
   .ch-goals-triad { grid-template-columns: 1fr; }
   .ch-body { grid-template-columns: 1fr; }
-  .ch-rail { display: none; }
+  /* Phones and tablets: the section rail becomes a sticky, scrollable strip under the header. */
+  .ch-rail { position: sticky; top: var(--header-h, 56px); z-index: 30; margin: 0 calc(-1 * clamp(16px, 4vw, 40px)); padding: 0.3rem clamp(16px, 4vw, 40px); background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+  .ch-rail ol { display: flex; gap: 0.2rem; border-left: none; white-space: nowrap; }
+  .ch-rail a { border-left: none; border-bottom: 2px solid transparent; padding: 0.35rem 0.6rem; font-size: 0.82rem; }
+  .ch-rail a.active { border-bottom-color: var(--accent); background: none; }
+  .ch-section { scroll-margin-top: 110px; }
   .ch-hero-inner { flex-direction: column; align-items: flex-start; }
 }
 
@@ -97,3 +102,6 @@
 .ch-recap .recap ul { padding-left: 1.2rem; columns: 2; column-gap: 2rem; }
 .ch-recap .recap li { break-inside: avoid; margin-bottom: 0.4rem; }
 @media (max-width: 900px) { .ch-recap .recap ul { columns: 1; } }
+
+.ch-crumb { color: inherit; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; }
+.ch-pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem; }

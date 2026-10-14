@@ -48,6 +48,12 @@ export function runCheck(
   });
 }
 
+/** Start the interpreter and fetch packages in the background, so the first Run is quick.
+ * Safe to call more than once: the worker boots once and loadPackage skips loaded packages. */
+export function warm(packages: string[]) {
+  getWorker().postMessage({ id: 0, warm: true, indexURL: INDEX_URL, packages });
+}
+
 /** Kill a runaway run (e.g. an infinite loop); the next run boots a fresh interpreter. */
 export function stop() {
   worker?.terminate();

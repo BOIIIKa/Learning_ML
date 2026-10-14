@@ -1,13 +1,14 @@
-// The animated course as a self-playing video, 3Blue1Brown style: every beat (<Step>) enters
-// with a manim-like animation, its narration runs as a subtitle (optionally spoken), widget
-// scripts (`drive`) operate the figures, and the timeline moves on by itself at a steady pace.
-// Space pauses, ← / → jump between beats, the progress bar jumps between parts.
+// The animated course, 3Blue1Brown style: every beat (<Step>) enters with a manim-like animation,
+// its narration runs as a subtitle (optionally spoken) and widget scripts (`drive`) operate the
+// figures. A click (or Space) plays the current card to its end and then pauses, leaving the
+// student time to think; the next click moves on. "Auto" plays straight through.
+// ← / → jump between beats, the progress bar jumps between parts.
 import { renderRich } from "../../lib/rich";
 import { Clock } from "../../manim/clock";
 import { createSvg, fadeIn, fadeOut, indicate, morph, write } from "../../manim/animations";
 import { parseDrive, runDrive } from "../../manim/drive";
 
-interface Labels { play: string; pause: string; voiceOn: string; voiceOff: string }
+interface Labels { play: string; pause: string; voiceOn: string; voiceOff: string; next: string }
 interface Options { lang: "zh" | "en"; labels: Labels }
 
 const SPEEDS = [0.75, 1, 1.25, 1.5];
@@ -22,8 +23,10 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   const speedBtn = root.querySelector<HTMLButtonElement>("[data-act=speed]")!;
   const startOverlay = root.querySelector<HTMLElement>(".start-overlay")!;
   const endOverlay = root.querySelector<HTMLElement>(".end-overlay")!;
+  const autoBtn = root.querySelector<HTMLButtonElement>("[data-act=auto]");
   const segments = [...root.querySelectorAll<HTMLElement>(".seg")];
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // The course *is* the animation, so it ignores prefers-reduced-motion: that setting is often on
+  // system-wide (e.g. Windows "animation effects" off), and the lesson would show no movement.
 
   const clock = new Clock();
   let slide = 0;
@@ -32,6 +35,9 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   let voice = false;
   let speedIdx = 1;
   let run: AbortController | null = null;
+  let active = false; // a timeline loop is running (possibly paused mid-card)
+  let auto = false; // play straight through instead of pausing after each card
+  let takeover: AbortController | null = null; // aborted when the student grabs a control
 
   const stepsOf = (i: number) => [...slides[i].querySelectorAll<HTMLElement>(".step")];
 
@@ -49,10 +55,13 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     const box = el.querySelector<HTMLElement>(".slide-visual");
     const inner = box?.firstElementChild as HTMLElement | null;
     if (!box || !inner) return;
-    inner.style.zoom = "1";
+    // A transform, not CSS zoom: zoom breaks pointer mapping for range inputs and SVG drags in
+    // some browsers. scrollHeight ignores transforms, so no reset is needed before measuring.
     const avail = box.clientHeight;
     const need = inner.scrollHeight;
-    if (avail > 0 && need > avail) inner.style.zoom = String(Math.max(0.6, avail / need));
+    const k = avail > 0 && need > avail ? Math.max(0.6, avail / need) : 1;
+    inner.style.transformOrigin = "top center";
+    inner.style.transform = k < 1 ? `scale(${k.toFixed(3)})` : "";
   };
   addEventListener("resize", () => fitVisual(slides[slide]));
 
@@ -67,7 +76,7 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   const showSubtitle = (text: string) => {
     subtitle.innerHTML = renderRich(text);
     subtitle.classList.toggle("empty", !text);
-    if (text && !reduced) subtitle.animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: 350, easing: "ease-out" });
+    if (text) subtitle.animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: 350, easing: "ease-out" });
   };
 
   /** Show the subtitle; resolve when it has been read (or spoken). */
@@ -75,7 +84,7 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     showSubtitle(text);
     if (!text) return Promise.resolve();
     if (!voice || !("speechSynthesis" in window)) return clock.wait(readingMs(text), signal);
-    return new Promise((resolve) => {
+    const spoken = new Promise<void>((resolve) => {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text.replace(/\$[^$]*\$/g, "").replace(/\*\*/g, ""));
       u.lang = lang === "zh" ? "zh-CN" : "en-US";
@@ -86,6 +95,8 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
       signal.addEventListener("abort", () => { speechSynthesis.cancel(); done(); }, { once: true });
       speechSynthesis.speak(u);
     });
+    // Some engines never fire `end` (long utterances in Chrome, missing voices): don't hang.
+    return Promise.race([spoken, clock.wait(readingMs(text) * 2 + 4000, signal)]);
   }
 
   // ---------- static state (used for jumps and before animating) ----------
@@ -126,7 +137,6 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   // ---------- entrances ----------
   async function enterSlide(signal: AbortSignal) {
     const s = slides[slide];
-    if (reduced) return;
     const jobs: Promise<void>[] = [];
     const part = s.querySelector<HTMLElement>(".slide-part, .slide-kicker");
     const title = s.querySelector<HTMLElement>(".slide-h2, .slide-h1");
@@ -146,7 +156,6 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
 
   async function enterStep(el: HTMLElement, signal: AbortSignal) {
     el.classList.add("shown");
-    if (reduced) return;
     const fx = el.dataset.fx ?? "write";
     if (fx === "morph") {
       // The beat this one transforms from: the last shown beat before it in the group. (applyState
@@ -168,20 +177,33 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     el.querySelectorAll<HTMLElement>("strong").forEach((b) => void indicate(clock, b, { signal }));
   }
 
-  async function playBeat(el: HTMLElement, signal: AbortSignal) {
+  /** Animate a beat's entrance, then run its drive script (until the student takes over). */
+  function animateBeat(el: HTMLElement, signal: AbortSignal) {
     const cmds = el.dataset.drive ? parseDrive(el.dataset.drive) : [];
     const visual = slides[slide].querySelector<HTMLElement>(".slide-visual") ?? slides[slide];
-    const animation = (async () => {
+    takeover = new AbortController();
+    const stop = takeover.signal;
+    return (async () => {
       await enterStep(el, signal);
-      if (cmds.length) await runDrive(clock, visual, stage, cmds, signal);
+      if (cmds.length) await runDrive(clock, visual, stage, cmds, signal, stop);
     })();
+  }
+
+  async function playBeat(el: HTMLElement, signal: AbortSignal) {
+    const animation = animateBeat(el, signal);
     await Promise.all([animation, narrate(el.dataset.say ?? "", signal)]);
     await clock.wait(450 + 1000 * +(el.dataset.hold ?? 0), signal);
   }
 
   // ---------- the timeline ----------
-  /** Play from the current position. `fresh` = the slide has not been introduced yet. */
-  async function timeline(signal: AbortSignal, fresh: boolean) {
+  /** Play from the current position. `fresh` = the slide has not been introduced yet; `advance`
+   * = the current card is finished and the student asked to move on. */
+  async function timeline(signal: AbortSignal, fresh: boolean, advance = false) {
+    active = true;
+    try { await loop(signal, fresh, advance); } finally { if (run?.signal === signal) active = false; }
+  }
+
+  async function loop(signal: AbortSignal, fresh: boolean, advance: boolean) {
     while (!signal.aborted) {
       if (fresh) {
         applyState();
@@ -199,43 +221,75 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
         continue;
       }
       if (slide >= slides.length - 1) { finish(); return; }
+      // End of the card: pause for thinking unless the student asked to go on (or Auto is on).
+      if (!auto && !advance) { cardDone(); return; }
+      advance = false;
       // Clear the stage (FadeOut of everything), then the next slide.
-      await Promise.all([...slides[slide].children].map((c) => (c.classList.contains("slide-bg") ? Promise.resolve() : fadeOut(clock, c, { signal }))));
+      await leaveSlide(signal);
       if (signal.aborted) return;
-      slides[slide].getAnimations({ subtree: true }).forEach((a) => a.cancel());
       slide++;
       step = 0;
       fresh = true;
     }
   }
 
-  function restart(fresh: boolean) {
+  /** FadeOut of everything on the current slide, then reset it for a later visit. */
+  async function leaveSlide(signal: AbortSignal) {
+    const s = slides[slide];
+    await Promise.all([...s.children].map((c) => (c.classList.contains("slide-bg") ? Promise.resolve() : fadeOut(clock, c, { signal }))));
+    s.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+  }
+
+  function restart(fresh: boolean, advance = false) {
     run?.abort();
+    active = false;
     clock.finishAll();
     if ("speechSynthesis" in window) speechSynthesis.cancel();
     run = new AbortController();
-    if (playing) void timeline(run.signal, fresh);
+    root.classList.remove("card-done");
+    if (playing) void timeline(run.signal, fresh, advance);
+  }
+
+  /** The card has played to its end: stop and invite the next click. */
+  function cardDone() {
+    playing = false;
+    clock.setPaused(false);
+    root.classList.remove("playing");
+    root.classList.add("card-done");
+    playBtn.textContent = "▶";
+    playBtn.title = labels.next;
   }
 
   function finish() {
     setPlaying(false);
+    root.classList.remove("card-done");
     endOverlay.hidden = false;
   }
 
   // ---------- manual navigation ----------
   /** Show beat `step` of `slide` immediately; animate just that beat if moving forward. */
-  function jumpTo(newSlide: number, newStep: number, animate: boolean) {
+  async function jumpTo(newSlide: number, newStep: number, animate: boolean) {
     run?.abort();
+    active = false;
     clock.finishAll();
     if ("speechSynthesis" in window) speechSynthesis.cancel();
+    root.classList.remove("card-done");
+    run = new AbortController();
+    const signal = run.signal;
+    newSlide = Math.max(0, Math.min(slides.length - 1, newSlide));
     const changed = newSlide !== slide;
-    if (changed) slides[slide].getAnimations({ subtree: true }).forEach((a) => a.cancel());
-    slide = Math.max(0, Math.min(slides.length - 1, newSlide));
+    if (changed && animate) {
+      // Text and figures leave before the next card comes in.
+      const wasPaused = clock.paused;
+      clock.setPaused(false);
+      await leaveSlide(signal);
+      clock.setPaused(wasPaused);
+      if (signal.aborted) return;
+    } else if (changed) slides[slide].getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    slide = newSlide;
     const steps = stepsOf(slide);
     step = Math.max(0, Math.min(steps.length, newStep));
     endOverlay.hidden = true;
-    run = new AbortController();
-    const signal = run.signal;
     if (animate && step > 0) {
       // Lay out everything before the target beat, then animate the target beat itself.
       const target = step;
@@ -244,9 +298,7 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
       step = target;
       if (changed) void enterSlide(signal);
       const el = steps[step - 1];
-      const cmds = el.dataset.drive ? parseDrive(el.dataset.drive) : [];
-      const visual = slides[slide].querySelector<HTMLElement>(".slide-visual") ?? slides[slide];
-      const beat = enterStep(el, signal).then(() => (cmds.length ? runDrive(clock, visual, stage, cmds, signal) : undefined));
+      const beat = animateBeat(el, signal);
       const said = playing ? narrate(el.dataset.say ?? "", signal) : (showSubtitle(el.dataset.say ?? ""), Promise.resolve());
       void Promise.all([beat, said]).then(async () => {
         if (signal.aborted) return;
@@ -265,12 +317,12 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
 
   const next = () => {
     const n = stepsOf(slide).length;
-    if (step < n) jumpTo(slide, step + 1, true);
-    else if (slide < slides.length - 1) jumpTo(slide + 1, 0, true);
+    if (step < n) void jumpTo(slide, step + 1, true);
+    else if (slide < slides.length - 1) void jumpTo(slide + 1, 0, true);
   };
   const prev = () => {
-    if (step > 0) jumpTo(slide, step - 1, false);
-    else if (slide > 0) jumpTo(slide - 1, stepsOf(slide - 1).length, false);
+    if (step > 0) void jumpTo(slide, step - 1, false);
+    else if (slide > 0) void jumpTo(slide - 1, stepsOf(slide - 1).length, false);
   };
 
   // ---------- play / pause / voice / speed ----------
@@ -294,10 +346,28 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     }
   }
 
-  playBtn.addEventListener("click", () => {
-    if (!playing && endOverlay.hidden === false) { replay(); return; }
-    if (!playing && run === null) { setPlaying(true); return; }
-    setPlaying(!playing);
+  /** The one "go" gesture (click, Space, ▶): start, pause / resume, or play the next card. */
+  function toggle() {
+    if (run === null) { start(false); return; }
+    if (!endOverlay.hidden) { replay(); return; }
+    if (playing) { setPlaying(false); return; }
+    if (active) { setPlaying(true); return; } // paused mid-card: resume
+    // Idle (card finished, or the student navigated by hand): play on from here. A fully shown
+    // card moves on to the next one.
+    playing = true;
+    playBtn.textContent = "❚❚";
+    playBtn.title = labels.pause;
+    root.classList.add("playing");
+    clock.setPaused(false);
+    restart(false, step >= stepsOf(slide).length);
+  }
+  playBtn.addEventListener("click", toggle);
+  root.querySelector("[data-act=continue]")?.addEventListener("click", toggle);
+  autoBtn?.addEventListener("click", () => {
+    auto = !auto;
+    autoBtn.classList.toggle("on", auto);
+    autoBtn.setAttribute("aria-pressed", String(auto));
+    if (auto && !playing && root.classList.contains("card-done")) toggle();
   });
   voiceBtn.addEventListener("click", () => {
     voice = !voice;
@@ -316,7 +386,7 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     if (document.fullscreenElement) document.exitFullscreen();
     else root.requestFullscreen?.();
   });
-  segments.forEach((seg) => seg.addEventListener("click", () => jumpTo(+seg.dataset.range!.split("-")[0], 0, true)));
+  segments.forEach((seg) => seg.addEventListener("click", () => void jumpTo(+seg.dataset.range!.split("-")[0], 0, true)));
 
   const start = (withVoice: boolean) => {
     if (withVoice && !voice) voiceBtn.click();
@@ -341,26 +411,43 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   root.querySelector("[data-act=replay]")!.addEventListener("click", replay);
 
   stage.addEventListener("click", (e) => {
-    // Clicking the canvas toggles pause, like a video; clicks on widgets and links do not.
+    // Clicking the canvas plays / pauses, like a video; clicks on widgets and links do not.
     if ((e.target as HTMLElement).closest(".widget, a, button, input, label")) return;
-    if (run === null) start(false);
-    else setPlaying(!playing);
+    toggle();
   });
+  // The start screen starts on a click anywhere, not just on its buttons.
+  startOverlay.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest("button, a")) start(false); });
+  // Grabbing a control hands the figure to the student: stop the drive script where it is.
+  const grab = (e: Event) => { if ((e.target as HTMLElement).closest(".slide-visual .widget")) takeover?.abort(); };
+  stage.addEventListener("pointerdown", grab, true);
+  stage.addEventListener("keydown", grab, true);
 
   document.addEventListener("keydown", (e) => {
-    if ((e.target as HTMLElement).closest("input, textarea, [contenteditable]")) return;
-    if (e.key === " " || e.key === "k" || e.key === "K") { e.preventDefault(); if (run === null) start(false); else setPlaying(!playing); }
+    const tgt = e.target as HTMLElement;
+    // Text fields keep their keys; a focused button keeps Space / Enter; a focused slider keeps
+    // its arrow keys (Space does nothing on a slider, so it still plays the course).
+    if (tgt.closest("textarea, [contenteditable], input:not([type=range]):not([type=checkbox])")) return;
+    if (tgt.closest("button, a") && (e.key === " " || e.key === "Enter")) return;
+    if (tgt.closest("input[type=range]") && /^(Arrow|Page|Home|End)/.test(e.key)) return;
+    if (e.key === " " || e.key === "k" || e.key === "K" || e.key === "Enter") { e.preventDefault(); toggle(); }
+    else if (e.key === "a" || e.key === "A") autoBtn?.click();
     else if (["ArrowRight", "PageDown", "l", "L"].includes(e.key)) { e.preventDefault(); next(); }
     else if (["ArrowLeft", "PageUp", "j", "J"].includes(e.key)) { e.preventDefault(); prev(); }
     else if (e.key === "f" || e.key === "F") root.querySelector<HTMLElement>("[data-act=full]")!.click();
-    else if (e.key === "Home") jumpTo(0, 0, true);
-    else if (e.key === "End") jumpTo(slides.length - 1, 0, true);
+    else if (e.key === "Home") void jumpTo(0, 0, true);
+    else if (e.key === "End") void jumpTo(slides.length - 1, 0, true);
   });
 
   // Touch: swipe to jump beats.
   let x0 = 0;
-  stage.addEventListener("touchstart", (e) => (x0 = e.touches[0].clientX), { passive: true });
+  let swipe = false;
+  stage.addEventListener("touchstart", (e) => {
+    // Dragging a slider or a point inside a figure is not a swipe.
+    swipe = !(e.target as HTMLElement).closest(".widget, input");
+    x0 = e.touches[0].clientX;
+  }, { passive: true });
   stage.addEventListener("touchend", (e) => {
+    if (!swipe) return;
     const dx = e.changedTouches[0].clientX - x0;
     if (Math.abs(dx) > 50) (dx < 0 ? next : prev)();
   });
@@ -371,5 +458,4 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
   step = 0;
   applyState();
   showSubtitle("");
-  if (reduced) root.classList.add("reduced");
 }
