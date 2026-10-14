@@ -1,0 +1,7 @@
+- **GMM**：$p(x) = \sum_k \pi_k\mathcal N(x; \mu_k, \Sigma_k)$，潜变量 $z$ 是“属于哪个分量”；对数里有求和，没有闭式解。
+- **EM（GMM）**：E 步责任度 $r_{ik} \propto \pi_k\mathcal N(x_i; \mu_k, \Sigma_k)$；M 步 $N_k = \sum_i r_{ik}$，$\pi_k = N_k/n$，$\mu_k$、$\Sigma_k$ 为加权均值与加权协方差。
+- **ELBO 分解**：$\log p(x\mid\theta) = \mathrm{ELBO}(q,\theta) + \mathrm{KL}(q\,\|\,p(z\mid x,\theta))$，KL ≥ 0 ⇒ ELBO 是下界，$q$ = 后验时取等。
+- **单调性**：E 步令 KL = 0（贴合），M 步提升 ELBO（上推）⇒ $\log p(\theta^{(t+1)}) \ge \log p(\theta^{(t)})$；GEM 只需 M 步提升；EM = $F(q,\theta)$ 的极大–极大。
+- **例题**：数据 $-1, 0, 3, 4$，均值初值 $0, 2$：$r_2 = \sigma(2x - 2) = (0.018, 0.119, 0.982, 0.998)$，一步后 $\mu = (-0.488, 3.268)$，对数似然 $-9.283 \to -7.001$。
+- **k 均值是硬极限**：等权、共享 $\sigma^2 I$，$r_2(x) = \sigma\big((\mu_2-\mu_1)^\top(x - \frac{\mu_1+\mu_2}{2})/\sigma^2\big)$，$\sigma \to 0$ 变阶跃。
+- **实践与前沿**：似然可能无界（加协方差正则）、局部极大（k 均值初始化 + 多次重启）、BIC 选 $K$ 与协方差结构；E 步换成神经网络 ⇒ VAE（第 24 章）。

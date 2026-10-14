@@ -1,0 +1,69 @@
+# 第 11 章 EM 算法与混合模型 —— 课后练习 / Chapter 11 exercises
+
+derivation:
+  - id: responsibility
+    title: {zh: "E 步：责任度", en: "E-step: the responsibility"}
+    prompt:
+      zh: "两分量混合，权重 $\\pi_1 = p$、$\\pi_2 = 1 - p$；某点在两个分量下的密度分别为 $n_1, n_2$。写出该点属于分量 1 的后验概率。可用变量：`p, n1, n2`。"
+      en: "A two-component mixture with weights $\\pi_1 = p$, $\\pi_2 = 1 - p$; a point has densities $n_1, n_2$ under the two components. Write the posterior probability that it belongs to component 1. Variables: `p, n1, n2`."
+    answer: "p*n1 / (p*n1 + (1 - p)*n2)"
+    vars: {p: [0.05, 0.95], n1: [0.01, 2], n2: [0.01, 2]}
+    solution:
+      zh: "贝叶斯公式：$r_1 = \\frac{P(z = 1)p(x \\mid z = 1)}{\\sum_k P(z = k)p(x \\mid z = k)} = \\frac{pn_1}{pn_1 + (1-p)n_2}$。这就是 E 步。它也正是 ELBO 中使 KL 为 0 的那个 $q$。实现时在对数空间里算（log-sum-exp），避免两个小密度相除时下溢。"
+      en: "Bayes' rule: $r_1 = \\frac{P(z = 1)p(x \\mid z = 1)}{\\sum_k P(z = k)p(x \\mid z = k)} = \\frac{pn_1}{pn_1 + (1-p)n_2}$. That is the E-step, and it is exactly the $q$ that makes the KL term of the ELBO vanish. Implementations work in log space (log-sum-exp) so that dividing two tiny densities does not underflow."
+
+  - id: weighted-mean
+    title: {zh: "M 步：加权均值", en: "M-step: the weighted mean"}
+    prompt:
+      zh: "三个一维点 $x_1, x_2, x_3$ 对某分量的责任度为 $r_1, r_2, r_3$。M 步给出的该分量均值是多少？可用变量：`x1, x2, x3, r1, r2, r3`。"
+      en: "Three one-dimensional points $x_1, x_2, x_3$ have responsibilities $r_1, r_2, r_3$ for a component. What mean does the M-step give that component? Variables: `x1, x2, x3, r1, r2, r3`."
+    answer: "(r1*x1 + r2*x2 + r3*x3)/(r1 + r2 + r3)"
+    vars: {x1: [-3, 3], x2: [-3, 3], x3: [-3, 3], r1: [0.05, 1], r2: [0.05, 1], r3: [0.05, 1]}
+    solution:
+      zh: "$Q$ 中与 $\\mu$ 有关的部分是 $-\\frac{1}{2\\sigma^2}\\sum_i r_i(x_i - \\mu)^2$，求导令其为零：$\\sum_i r_i(x_i - \\mu) = 0$，得 $\\mu = \\frac{\\sum_i r_ix_i}{\\sum_i r_i}$。责任度全是 0 或 1 时，它就是 k 均值的簇均值。"
+      en: "The part of $Q$ involving $\\mu$ is $-\\frac{1}{2\\sigma^2}\\sum_i r_i(x_i - \\mu)^2$; setting its derivative to 0 gives $\\sum_i r_i(x_i - \\mu) = 0$, so $\\mu = \\frac{\\sum_i r_ix_i}{\\sum_i r_i}$. When all responsibilities are 0 or 1 it is k-means' cluster mean."
+
+  - id: mixing-weight
+    title: {zh: "M 步：混合权重", en: "M-step: the mixing weight"}
+    prompt:
+      zh: "共 $n = 3$ 个点，它们对分量 1 的责任度为 $r_1, r_2, r_3$。在约束 $\\sum_k \\pi_k = 1$ 下最大化 $Q$，$\\pi_1$ 是多少？可用变量：`r1, r2, r3`。"
+      en: "There are $n = 3$ points with responsibilities $r_1, r_2, r_3$ for component 1. Maximizing $Q$ subject to $\\sum_k \\pi_k = 1$, what is $\\pi_1$? Variables: `r1, r2, r3`."
+    answer: "(r1 + r2 + r3)/3"
+    vars: {r1: [0, 1], r2: [0, 1], r3: [0, 1]}
+    solution:
+      zh: "$Q$ 中含 $\\pi$ 的部分是 $\\sum_k N_k\\log\\pi_k$，$N_k = \\sum_i r_{ik}$。拉格朗日函数 $\\sum_k N_k\\log\\pi_k + \\lambda(1 - \\sum_k\\pi_k)$ 对 $\\pi_k$ 求导：$N_k/\\pi_k = \\lambda$，再由约束得 $\\lambda = \\sum_k N_k = n$，所以 $\\pi_k = N_k/n$——分量“软地”拥有的点数占比。"
+      en: "The part of $Q$ involving $\\pi$ is $\\sum_k N_k\\log\\pi_k$ with $N_k = \\sum_i r_{ik}$. Differentiating the Lagrangian $\\sum_k N_k\\log\\pi_k + \\lambda(1 - \\sum_k\\pi_k)$ in $\\pi_k$ gives $N_k/\\pi_k = \\lambda$, and the constraint gives $\\lambda = \\sum_k N_k = n$, so $\\pi_k = N_k/n$: the share of points the component \"softly\" owns."
+
+  - id: hard-limit
+    title: {zh: "软分配与硬分配", en: "Soft and hard assignments"}
+    prompt:
+      zh: "一维两分量混合，等权、共享方差 $s = \\sigma^2$，均值 $m_1, m_2$。写出点 $x$ 属于分量 2 的责任度。可用变量：`x, m1, m2, s`。"
+      en: "A one-dimensional two-component mixture with equal weights, shared variance $s = \\sigma^2$ and means $m_1, m_2$. Write the responsibility of component 2 for a point $x$. Variables: `x, m1, m2, s`."
+    answer: "1/(1 + exp(-(m2 - m1)*(x - (m1 + m2)/2)/s))"
+    vars: {x: [-3, 3], m1: [-2, 0], m2: [0.5, 2], s: [0.3, 3]}
+    solution:
+      zh: "$r_2 = \\frac{e^{-(x-m_2)^2/2s}}{e^{-(x-m_1)^2/2s} + e^{-(x-m_2)^2/2s}} = \\sigma\\big(\\frac{(x-m_1)^2 - (x-m_2)^2}{2s}\\big)$，而 $(x-m_1)^2 - (x-m_2)^2 = 2(m_2 - m_1)\\big(x - \\frac{m_1+m_2}{2}\\big)$，得 $\\sigma\\big(\\frac{(m_2-m_1)(x - (m_1+m_2)/2)}{s}\\big)$。$s \\to 0$ 时 sigmoid 变成阶跃函数：每个点完全属于最近的均值，EM 退化为 k 均值。这与第 05 章“共享方差 ⇒ 对数几率线性”是同一个计算。"
+      en: "$r_2 = \\frac{e^{-(x-m_2)^2/2s}}{e^{-(x-m_1)^2/2s} + e^{-(x-m_2)^2/2s}} = \\sigma\\big(\\frac{(x-m_1)^2 - (x-m_2)^2}{2s}\\big)$, and $(x-m_1)^2 - (x-m_2)^2 = 2(m_2 - m_1)\\big(x - \\frac{m_1+m_2}{2}\\big)$, giving $\\sigma\\big(\\frac{(m_2-m_1)(x - (m_1+m_2)/2)}{s}\\big)$. As $s \\to 0$ the sigmoid becomes a step: every point belongs entirely to its nearest mean and EM reduces to k-means. It is the same computation as Chapter 05's \"shared variance ⇒ linear log-odds\"."
+
+code:
+  - id: gmm
+    kind: implement
+    file: gmm.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现高斯混合的 EM", en: "EM for Gaussian mixtures from scratch"}
+    intro:
+      zh: "补全数值稳定的 E 步（log-sum-exp）与 M 步（权重、均值、协方差）。检查会重现讲义例题的一步 EM，验证似然单调上升，与 scikit-learn 的 GaussianMixture 在相同初值下对拍，并确认找回了三个形状不同的亚型。运行后可以回放两分量 EM 中，边界（色带的零线）怎样一步步弯到正确的位置。"
+      en: "Fill in a numerically stable E-step (log-sum-exp) and the M-step (weights, means, covariances). The checks reproduce the worked example's EM step, verify that the likelihood never decreases, match scikit-learn's GaussianMixture from the same start, and confirm that the three differently shaped subtypes are recovered. Afterwards, replay how the boundary (the zero contour of the shading) bends into place during a two-component EM."
+    metrics:
+      - {key: loglik, label: {zh: "对数似然", en: "Log-likelihood"}}
+  - id: mixture-library
+    kind: library
+    file: mixture_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 BIC 选高斯混合，并与 k 均值比较", en: "Choose a Gaussian mixture by BIC and compare with k-means"}
+    intro:
+      zh: "在三个拉长、平行的倾斜簇上，用 BIC 同时选分量数和协方差结构（full / tied / diag / spherical），再把 GMM 与 k 均值的聚类结果用 ARI 对比。运行后可以逐个查看四种协方差结构给出的边界。"
+      en: "On three long, parallel, tilted clusters, choose the number of components and the covariance structure (full / tied / diag / spherical) jointly by BIC, then compare the GMM and k-means clusterings by ARI. Afterwards, flip through the boundaries given by the four covariance structures."
+    metrics:
+      - {key: loglik, label: {zh: "对数似然", en: "Log-likelihood"}}
+      - {key: bic, label: {zh: "BIC", en: "BIC"}}

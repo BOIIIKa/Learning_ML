@@ -1,0 +1,134 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import GmmEm from "../../components/chapters/ch11/GmmEm";
+import ElboBound from "../../components/chapters/ch11/ElboBound";
+import HardLimit from "../../components/chapters/ch11/HardLimit";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 11 · Animated course" title="The EM Algorithm and Mixture Models" say="Unseen variables make the likelihood impossible to solve directly. EM's way out: guess, solve, then improve the guess.">
+
+Latent variables · Touch and push · From k-means to VAEs
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Subtypes of different shapes" say="The three subtypes differ in shape: one elongated, one round, one tilted. k-means only knows round clusters.">
+
+<Step drive="click:chip1; s1=0/0.6; s1=40/6" say="Each subtype is a Gaussian. The E-step computes each patient's probability of belonging to each subtype; the M-step re-estimates the Gaussians from those probabilities. The ellipses settle onto the data.">E-step: responsibilities · M-step: weighted estimates</Step>
+
+<Step say="Colour strength shows confidence: a patient near a boundary is softly assigned, seventy percent A and thirty percent B.">Soft assignments, elliptical clusters</Step>
+
+<Step drive="click:chip2; s1=0/0.6; s1=20/3" say="Starting from a k-means solution converges faster. The log-likelihood rises at every step.">The log-likelihood never decreases</Step>
+
+<div slot="visual"><GmmEm client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions for this chapter" say="Three questions.">
+
+<Step effect="focus" say="How do we maximize a log with a sum inside it?">
+<p class="big-q sm">How to maximize $\log\sum_z$?</p>
+</Step>
+
+<Step say="Why does every EM step increase the likelihood?">Why does every step go up?</Step>
+
+<Step say="How is EM related to k-means, Baum–Welch and VAEs?">Links to k-means, Baum–Welch, VAEs</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Gaussian mixture models" say="The model, the E-step, the M-step.">
+
+<Step say="First pick a component by its weight, then generate the data from that Gaussian.">$p(x) = \sum_k \pi_k\,\mathcal N(x; \mu_k, \Sigma_k)$</Step>
+
+<Step say="E-step: Bayes' rule gives the responsibilities.">E-step: $r_{ik} \propto \pi_k\,\mathcal N(x_i; \mu_k, \Sigma_k)$</Step>
+
+<Step say="M-step: use the responsibilities as weights and estimate as if labels were known.">M-step: $\pi_k = N_k/n$, $\mu_k = \sum_i r_{ik}x_i / N_k$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="The ELBO decomposition" say="For any distribution q, the log-likelihood splits into two parts.">
+
+<Morph>
+
+<Step effect="morph" say="q sums to one, so the log-likelihood can be written as an expectation under q.">
+
+$$
+\log p(x) = \sum_z q(z)\log p(x)
+$$
+
+</Step>
+
+<Step effect="morph" say="p of x is the joint divided by the posterior.">
+
+$$
+\log p(x) = \sum_z q(z)\log\frac{p(x, z)}{p(z\mid x)}
+$$
+
+</Step>
+
+<Step effect="morph" say="Multiply and divide by the same q and split into two terms.">
+
+$$
+\log p(x) = \sum_z q(z)\log\frac{p(x, z)}{q(z)} + \sum_z q(z)\log\frac{q(z)}{p(z\mid x)}
+$$
+
+</Step>
+
+<Step effect="morph" say="The first term is the ELBO; the second is a KL divergence, never negative.">
+
+$$
+\log p(x) = \mathrm{ELBO}(q, \theta) + \mathrm{KL}(q\,\|\,p(z\mid x))
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="Since the KL is non-negative, the ELBO is a lower bound on the log-likelihood, tight when q is the posterior.">
+<p class="big-q sm">ELBO ≤ log p, equal when q is the posterior</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Touch, then push" say="EM is coordinate ascent on the ELBO.">
+
+<Step drive="s1=0/0.6" say="The E-step sets q to the posterior at the current parameter, and the blue lower bound touches the yellow log-likelihood at theta t.">E-step: KL = 0, the bound touches at $\theta_t$</Step>
+
+<Step drive="s1=1/1.5" say="The M-step jumps to the bound's highest point, and the log-likelihood is pushed up with it.">M-step: maximize the ELBO, $\log p$ rises too</Step>
+
+<Step drive="s1=8/4" say="Touch and push, again and again, until it stops at a local maximum. Raising the bound is enough; that is generalized EM.">$\log p(\theta_{t+1}) \ge \mathrm{ELBO}(\theta_{t+1}) \ge \mathrm{ELBO}(\theta_t) = \log p(\theta_t)$</Step>
+
+<div slot="visual"><ElboBound client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="k-means is the hard limit" say="With equal weights and a shared spherical variance, the responsibility is a sigmoid.">
+
+<Step drive="s1=1/0.6" say="With a large variance the curve is gentle, and even points well away from the midpoint are far from certain.">Large variance: soft assignments</Step>
+
+<Step drive="s1=-2/4" say="As the variance goes to zero the curve becomes a step: every point belongs entirely to its nearest centre. That is k-means.">$\sigma^2 \to 0$: hard assignments = k-means</Step>
+
+<Step say="When the posterior cannot be computed, approximate q with a neural network: the variational autoencoder, Chapter 24.">A neural E-step ⇒ the VAE (Chapter 24)</Step>
+
+<div slot="visual"><HardLimit client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked example: one EM step" say="Data minus one, zero, three, four; two unit-variance Gaussians whose means start at zero and two.">
+
+<Step say="E-step: the responsibilities are the sigmoid of two x minus two: 0.018, 0.119, 0.982 and 0.998.">$r_2 = \sigma(2x - 2) = (0.018,\ 0.119,\ 0.982,\ 0.998)$</Step>
+
+<Step say="M-step: weighted means; the two means become minus 0.488 and 3.268.">$\mu = (-0.488,\ 3.268)$</Step>
+
+<Step say="The log-likelihood rises from minus 9.283 to minus 7.001.">$\log p$: $-9.283 \to -7.001$</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, EM for Gaussian mixtures from scratch, then model selection by BIC and a comparison with k-means.">
+
+<Step say="After running your code you can replay how the boundary bends into place during a two-component EM.">✎ 4 derivations · ⌨ EM for GMMs · ⚙ BIC + GMM vs k-means</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/em-mixtures/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

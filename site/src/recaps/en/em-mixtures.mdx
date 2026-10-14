@@ -1,0 +1,7 @@
+- **GMM**: $p(x) = \sum_k \pi_k\mathcal N(x; \mu_k, \Sigma_k)$, with the latent $z$ saying which component; a sum inside the log means no closed form.
+- **EM for GMMs**: E-step responsibilities $r_{ik} \propto \pi_k\mathcal N(x_i; \mu_k, \Sigma_k)$; M-step $N_k = \sum_i r_{ik}$, $\pi_k = N_k/n$, with $\mu_k$ and $\Sigma_k$ the weighted mean and covariance.
+- **ELBO decomposition**: $\log p(x\mid\theta) = \mathrm{ELBO}(q,\theta) + \mathrm{KL}(q\,\|\,p(z\mid x,\theta))$; KL ≥ 0 ⇒ the ELBO is a lower bound, tight when $q$ is the posterior.
+- **Monotonicity**: the E-step makes the KL 0 (touch), the M-step raises the ELBO (push) ⇒ $\log p(\theta^{(t+1)}) \ge \log p(\theta^{(t)})$; GEM only needs the M-step to improve; EM = maximization–maximization of $F(q,\theta)$.
+- **Worked example**: data $-1, 0, 3, 4$, initial means $0, 2$: $r_2 = \sigma(2x - 2) = (0.018, 0.119, 0.982, 0.998)$; after one step $\mu = (-0.488, 3.268)$ and the log-likelihood goes $-9.283 \to -7.001$.
+- **k-means is the hard limit**: with equal weights and shared $\sigma^2 I$, $r_2(x) = \sigma\big((\mu_2-\mu_1)^\top(x - \frac{\mu_1+\mu_2}{2})/\sigma^2\big)$, a step as $\sigma \to 0$.
+- **Practice and frontier**: the likelihood can be unbounded (regularize covariances), only local maxima are found (k-means start + restarts), BIC chooses $K$ and the covariance type; a neural E-step ⇒ the VAE (Chapter 24).

@@ -1,0 +1,152 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import GmmEm from "../../components/chapters/ch11/GmmEm";
+import ElboBound from "../../components/chapters/ch11/ElboBound";
+import HardLimit from "../../components/chapters/ch11/HardLimit";
+
+<Section lang="en" k="scenario">
+
+Chapter 10 split the patients into subtypes with k-means, but the doctors were unhappy on two counts. k-means only recognizes round clusters, while real subtypes may be elongated or tilted. And it only says yes or no, while a patient near a boundary is plainly "70% like A, 30% like B".
+
+Think of it differently: each subtype is a Gaussian distribution; a patient first belongs to a subtype (with some probability), then has their markers "generated" from that Gaussian. The subtype itself is unseen: a **latent variable**.
+
+<GmmEm client:visible lang="en" />
+
+This chapter answers:
+
+1. With a latent variable the likelihood contains a sum over it and cannot be solved directly. What then? (The EM algorithm.)
+2. Why does every EM step increase the likelihood? (The ELBO view.)
+3. How does EM relate to k-means, to Chapter 09's Baum–Welch, and to the variational autoencoders to come?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Gaussian mixture models
+
+<Box kind="definition" title="Gaussian mixture model (GMM)">
+
+**Model**: a latent $z \in \{1, \dots, K\}$ with $P(z = k) = \pi_k$; given $z = k$, $x \sim \mathcal N(\mu_k, \Sigma_k)$. Hence
+
+$$
+p(x \mid \theta) = \sum_{k=1}^K \pi_k\,\mathcal N(x; \mu_k, \Sigma_k).
+$$
+
+**Strategy**: maximize the marginal log-likelihood $\ell(\theta) = \sum_i \log \sum_k \pi_k\,\mathcal N(x_i; \mu_k, \Sigma_k)$.
+
+**Algorithm (EM)**: alternate two steps:
+
+- **E-step**: with the current parameters compute the **responsibilities** $r_{ik} = P(z_i = k \mid x_i, \theta) = \dfrac{\pi_k\mathcal N(x_i; \mu_k, \Sigma_k)}{\sum_j \pi_j\mathcal N(x_i; \mu_j, \Sigma_j)}$;
+- **M-step**: use the responsibilities as weights and estimate as if labels were known: $N_k = \sum_i r_{ik}$, $\pi_k = N_k/n$, $\mu_k = \frac1{N_k}\sum_i r_{ik}x_i$, $\Sigma_k = \frac1{N_k}\sum_i r_{ik}(x_i - \mu_k)(x_i - \mu_k)^\top$.
+
+</Box>
+
+The difficulty is the sum inside the log: setting the derivative with respect to $\mu_k$ to zero gives an equation in which $r_{ik}$ itself depends on $\mu_k$, so there is no closed form. EM's idea: **if we knew which cluster each point belongs to, this would be Chapter 05's Gaussian discriminant analysis, solved in one pass**. Since we don't, guess a "soft" answer (E-step), solve under that answer (M-step), and use the new parameters to improve the guess.
+
+A few practical points:
+
+- The likelihood can be unbounded: if one Gaussian collapses onto a single point with variance going to 0, $\ell \to \infty$. Implementations add a small regularizer to the covariances.
+- EM only reaches a local maximum (or saddle point) and depends on the start; it is commonly started from a k-means solution, with several restarts.
+- The number of components $K$ is chosen by BIC or cross-validated likelihood.
+
+### The general EM algorithm
+
+For any latent-variable model $p(x, z \mid \theta)$ the goal is to maximize $\log p(x \mid \theta) = \log\sum_z p(x, z \mid \theta)$:
+
+- **E-step**: compute the posterior $q(z) = p(z \mid x, \theta^{(t)})$ and form $Q(\theta) = \mathbb E_{q}[\log p(x, z \mid \theta)]$;
+- **M-step**: $\theta^{(t+1)} = \arg\max_\theta Q(\theta)$.
+
+The complete-data log-likelihood is usually simple (for exponential families, "sufficient statistics times parameters"), so the M-step often has a closed form, as for GMMs and Chapter 09's Baum–Welch.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### The ELBO: a lower bound on the log-likelihood
+
+For any distribution $q(z)$ over $z$,
+
+$$
+\log p(x \mid \theta) = \underbrace{\sum_z q(z)\log\frac{p(x, z \mid \theta)}{q(z)}}_{\mathrm{ELBO}(q,\ \theta)} + \underbrace{\sum_z q(z)\log\frac{q(z)}{p(z \mid x, \theta)}}_{\mathrm{KL}(q\ \|\ p(z \mid x, \theta))}.
+$$
+
+**Derivation**: write $\log p(x \mid \theta)$ as $\sum_z q(z)\log p(x \mid \theta)$ (since $q$ sums to 1), use $p(x \mid \theta) = p(x, z \mid \theta)/p(z \mid x, \theta)$, then multiply and divide by $q(z)$ and split into two terms. The KL divergence is non-negative (Jensen), so the ELBO is a **lower bound** on $\log p(x \mid \theta)$ (the evidence lower bound), with equality exactly when $q$ is the posterior.
+
+<Box kind="theorem" title="EM never decreases the likelihood">
+
+EM is **coordinate ascent** on the ELBO:
+
+- the **E-step** fixes $\theta^{(t)}$ and maximizes over $q$: taking $q = p(z \mid x, \theta^{(t)})$ makes the KL 0, so the bound **touches** $\log p$ at $\theta^{(t)}$;
+- the **M-step** fixes $q$ and maximizes the ELBO over $\theta$ (the entropy of $q$ does not depend on $\theta$, so this is maximizing $Q(\theta)$), **pushing** the bound up.
+
+Therefore
+
+$$
+\log p(x \mid \theta^{(t+1)}) \ \ge\ \mathrm{ELBO}(q, \theta^{(t+1)}) \ \ge\ \mathrm{ELBO}(q, \theta^{(t)}) = \log p(x \mid \theta^{(t)}).
+$$
+
+</Box>
+
+<ElboBound client:visible lang="en" />
+
+The chain still holds as long as the M-step increases the ELBO (no need to maximize it). That is **generalized EM (GEM)**: the M-step may be a single gradient step or one round of coordinate ascent. Going further, write the ELBO as $F(q, \theta)$: EM is the **maximization–maximization algorithm** for $F$, maximizing one function alternately over $q$ and $\theta$.
+
+**The road to VAEs**: when the posterior $p(z \mid x, \theta)$ cannot be computed (say, the decoder is a neural network), the E-step cannot be done exactly. Variational inference instead searches a tractable family for the $q$ closest to the posterior, maximizing the ELBO with a KL that is no longer 0. The variational autoencoder (Chapter 24) goes one step further: a neural network $q_\phi(z \mid x)$ produces $q$ for every data point at once (**amortized**), and is trained together with $\theta$ by gradient ascent on the ELBO.
+
+### The GMM E-step and M-step
+
+The E-step is Bayes' rule (derivation exercise 1). The M-step maximizes
+
+$$
+Q(\theta) = \sum_i\sum_k r_{ik}\big[\log\pi_k + \log\mathcal N(x_i; \mu_k, \Sigma_k)\big].
+$$
+
+- In $\mu_k$: $\sum_i r_{ik}\Sigma_k^{-1}(x_i - \mu_k) = 0$ ⇒ $\mu_k = \sum_i r_{ik}x_i / N_k$, a weighted mean (derivation exercise 2).
+- In $\pi_k$ with the constraint $\sum_k \pi_k = 1$, a Lagrange multiplier gives $\pi_k = N_k/n$ (derivation exercise 3).
+- In $\Sigma_k$: the weighted sample covariance.
+
+### k-means is the hard-assignment limit
+
+Take all $\Sigma_k = \sigma^2 I$ and equal weights. With two components, the responsibility of the second for $x$ is
+
+$$
+r_2(x) = \frac{1}{1 + \exp\!\Big(-\dfrac{(\mu_2 - \mu_1)^\top\big(x - \tfrac{\mu_1 + \mu_2}{2}\big)}{\sigma^2}\Big)}
+$$
+
+(derivation exercise 4, one-dimensional case): a sigmoid centred on the midpoint of the two centres. As $\sigma^2 \to 0$ it becomes a step, every point belongs entirely to its nearest centre, and the M-step's weighted mean becomes the cluster mean. That is k-means.
+
+<HardLimit client:visible lang="en" />
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: one EM step
+
+<Box kind="example" title="Four points, two unit-variance Gaussians">
+
+Data $-1, 0, 3, 4$; the model has two components with variance fixed at 1, initial weights $\tfrac12$ and initial means $\mu_1 = 0$, $\mu_2 = 2$.
+
+**E-step**. With equal weights and variances, $r_{i2} = \sigma(2x_i - 2)$:
+
+| $x_i$ | $-1$ | $0$ | $3$ | $4$ |
+|---|---|---|---|---|
+| $r_{i2}$ | $0.018$ | $0.119$ | $0.982$ | $0.998$ |
+
+**M-step**. $N_2 = 2.117$ and $N_1 = 1.883$:
+
+- $\mu_1 = \dfrac{\sum_i r_{i1}x_i}{N_1} \approx -0.488$ and $\mu_2 = \dfrac{\sum_i r_{i2}x_i}{N_2} \approx 3.268$;
+- $\pi = (0.471,\ 0.529)$.
+
+The log-likelihood rises from $-9.283$ to $-7.001$; one more iteration gives $-6.943$, with the means heading for $-0.5$ and $3.5$, the means of the two groups of data.
+
+</Box>
+
+### Extensions
+
+- **Choosing $K$ and the covariance structure by BIC**: $\mathrm{BIC} = -2\ell + d\log n$ with $d$ free parameters; scikit-learn's `GaussianMixture` offers `full`, `tied`, `diag` and `spherical` covariances, `tied` being LDA's shared covariance.
+- **Missing data**: EM was designed for incomplete data in the first place (Dempster, Laird and Rubin, 1977): treat the missing features as latent variables.
+- **Variational Bayesian GMMs** put priors on the parameters too and use variational inference, which can switch off superfluous components (`BayesianGaussianMixture`).
+- **From EM to deep generative models**: the VAE (Chapter 24) uses a neural network as an amortized E-step; the training objective of diffusion models (Chapter 25) is an ELBO as well.
+
+</Section>

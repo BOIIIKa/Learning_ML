@@ -31,10 +31,11 @@
 | 06 非参数方法与基函数扩展 | ✓ | ✓ | ✓ | 4 | 4 + 2 | 非参数方法 |
 | 09 结构化预测：HMM 与 CRF | ✓ | ✓ | ✓ | 3 | 4 + 2 | 序列标注 |
 | 10 聚类 | ✓ | ✓ | ✓ | 3 | 4 + 2 | 聚类 |
+| 11 EM 算法与混合模型 | ✓ | ✓ | ✓ | 3 | 4 + 2 | 高斯混合 |
 | 07 支持向量机与核方法 | ✓ | ✓ | ✓ | 5 | 4 + 2 | SVM |
 | 08 决策树与集成学习 | ✓ | ✓ | ✓ | 5 | 4 + 2 | LightGBM |
 
-合计：30 章中完成 11 章（00–10），共有 44 个交互组件、449 拍动画（每种语言）、44 道推导题、22 道代码题。测试有 135 项前端单元测试，以及 66 项练习测试（参考答案全部通过，骨架全部不通过）。
+合计：30 章中完成 12 章（00–11），共有 47 个交互组件、484 拍动画（每种语言）、48 道推导题、24 道代码题。测试有 145 项前端单元测试，以及 72 项练习测试（参考答案全部通过，骨架全部不通过）。
 
 ## 3. 架构一览
 
@@ -102,8 +103,8 @@ review) and a 3Blue1Brown-style **animated course** that plays itself: manim-lik
 TransformMatchingTex animations, narration subtitles (optionally spoken), and drive scripts that
 operate the interactive figures.
 
-Eleven of 30 chapters are done: 00–10. They contain 44 widgets, 449 animated beats per language,
-44 derivation drills and 22 in-browser Python exercises, tested by 135 unit tests and 66 exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
+Twelve of 30 chapters are done: 00–11. They contain 47 widgets, 484 animated beats per language,
+48 derivation drills and 24 in-browser Python exercises, tested by 145 unit tests and 72 exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
 `.claude/skills/*` and `templates/chapter/`, and scaffolded by `scripts/new_chapter.py`.
 
 Next steps:

@@ -1,0 +1,152 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import GmmEm from "../../components/chapters/ch11/GmmEm";
+import ElboBound from "../../components/chapters/ch11/ElboBound";
+import HardLimit from "../../components/chapters/ch11/HardLimit";
+
+<Section lang="zh" k="scenario">
+
+第 10 章用 k 均值把病人分成了亚型，但有两点让医生不满意：k 均值只认圆形的簇，而真实的亚型可能一个细长、一个倾斜；它只给“是 / 否”，而边界附近的病人明明“七成像 A、三成像 B”。
+
+换一个想法：每个亚型是一个高斯分布，病人先（以一定概率）属于某个亚型，再从那个高斯里“生成”出指标。亚型是看不见的——**潜变量**。
+
+<GmmEm client:visible lang="zh" />
+
+这一章回答：
+
+1. 含潜变量时，似然里有“对潜变量求和”，不能直接求解，怎么办？（EM 算法）
+2. 为什么 EM 每一步都让似然上升？（ELBO 视角）
+3. EM 与 k 均值、第 09 章的 Baum–Welch，以及后面的变分自编码器是什么关系？
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 高斯混合模型
+
+<Box kind="definition" title="高斯混合模型（GMM）">
+
+**模型**：潜变量 $z \in \{1, \dots, K\}$，$P(z = k) = \pi_k$；给定 $z = k$，$x \sim \mathcal N(\mu_k, \Sigma_k)$。于是
+
+$$
+p(x \mid \theta) = \sum_{k=1}^K \pi_k\,\mathcal N(x; \mu_k, \Sigma_k).
+$$
+
+**策略**：最大化边缘对数似然 $\ell(\theta) = \sum_i \log \sum_k \pi_k\,\mathcal N(x_i; \mu_k, \Sigma_k)$。
+
+**算法（EM）**：交替两步——
+
+- **E 步**：在当前参数下计算**责任度** $r_{ik} = P(z_i = k \mid x_i, \theta) = \dfrac{\pi_k\mathcal N(x_i; \mu_k, \Sigma_k)}{\sum_j \pi_j\mathcal N(x_i; \mu_j, \Sigma_j)}$；
+- **M 步**：把责任度当作权重，像有标签一样估计：$N_k = \sum_i r_{ik}$，$\pi_k = N_k/n$，$\mu_k = \frac1{N_k}\sum_i r_{ik}x_i$，$\Sigma_k = \frac1{N_k}\sum_i r_{ik}(x_i - \mu_k)(x_i - \mu_k)^\top$。
+
+</Box>
+
+困难在于 $\log$ 里面有求和：对 $\mu_k$ 求导令其为零，得到的方程里 $r_{ik}$ 本身又依赖于 $\mu_k$，没有闭式解。EM 的思路是：**如果知道每个点属于哪个簇，问题就是第 05 章的高斯判别分析，一次就能算完**。既然不知道，就先猜一个“软”的答案（E 步），在这个答案下求解（M 步），再用新参数改进猜测。
+
+注意几个实际问题：
+
+- 似然可能无界——某个高斯缩到一个点上、方差趋于 0 时 $\ell \to \infty$。实现时给协方差加一个小的正则项。
+- EM 只收敛到局部极大（或鞍点），结果依赖初值；常用 k 均值的结果初始化，并多次重启。
+- 簇数 $K$ 用 BIC 或交叉验证的似然选择。
+
+### 一般的 EM 算法
+
+对任意含潜变量的模型 $p(x, z \mid \theta)$，目标是最大化 $\log p(x \mid \theta) = \log\sum_z p(x, z \mid \theta)$：
+
+- **E 步**：计算后验 $q(z) = p(z \mid x, \theta^{(t)})$，构造 $Q(\theta) = \mathbb E_{q}[\log p(x, z \mid \theta)]$；
+- **M 步**：$\theta^{(t+1)} = \arg\max_\theta Q(\theta)$。
+
+完整数据的对数似然通常形式简单（指数族时就是“充分统计量 × 参数”），所以 M 步往往有闭式解——GMM 和第 09 章的 Baum–Welch 都是这样。
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### ELBO：对数似然的下界
+
+对任意关于 $z$ 的分布 $q(z)$，
+
+$$
+\log p(x \mid \theta) = \underbrace{\sum_z q(z)\log\frac{p(x, z \mid \theta)}{q(z)}}_{\mathrm{ELBO}(q,\ \theta)} + \underbrace{\sum_z q(z)\log\frac{q(z)}{p(z \mid x, \theta)}}_{\mathrm{KL}(q\ \|\ p(z \mid x, \theta))}.
+$$
+
+**推导**：把 $\log p(x \mid \theta)$ 写成 $\sum_z q(z)\log p(x \mid \theta)$（$q$ 求和为 1），再用 $p(x \mid \theta) = p(x, z \mid \theta)/p(z \mid x, \theta)$，乘除同一个 $q(z)$ 拆成两项即可。KL 散度非负（Jensen 不等式），所以 ELBO 是 $\log p(x \mid \theta)$ 的**下界**（evidence lower bound），当且仅当 $q$ 等于后验时取等号。
+
+<Box kind="theorem" title="EM 单调提升似然">
+
+EM 是在 ELBO 上做**坐标上升**：
+
+- **E 步**固定 $\theta^{(t)}$，对 $q$ 最大化 ELBO：取 $q = p(z \mid x, \theta^{(t)})$，KL 变为 0，下界在 $\theta^{(t)}$ 处与 $\log p$ **贴合**；
+- **M 步**固定 $q$，对 $\theta$ 最大化 ELBO（与 $q$ 无关的熵项不影响，所以就是最大化 $Q(\theta)$），把下界**上推**。
+
+于是
+
+$$
+\log p(x \mid \theta^{(t+1)}) \ \ge\ \mathrm{ELBO}(q, \theta^{(t+1)}) \ \ge\ \mathrm{ELBO}(q, \theta^{(t)}) = \log p(x \mid \theta^{(t)}).
+$$
+
+</Box>
+
+<ElboBound client:visible lang="zh" />
+
+只要 M 步让 ELBO 增加（不必最大化），这条不等式链仍然成立——这就是**广义 EM（GEM）**：M 步可以只做一步梯度上升或一轮坐标上升。更进一步，把 ELBO 记作 $F(q, \theta)$，EM 就是 $F$ 的**极大–极大算法**：交替在 $q$ 和 $\theta$ 上最大化同一个函数。
+
+**通往 VAE 的路**：当后验 $p(z \mid x, \theta)$ 算不出来（例如解码器是神经网络），E 步无法精确执行。变分推断改为在一个可处理的分布族里找最接近后验的 $q$，最大化 ELBO 但 KL 不再为 0；变分自编码器（第 24 章）更进一步，用一个神经网络 $q_\phi(z \mid x)$ 对所有数据点**摊销**地给出 $q$，与 $\theta$ 一起用梯度上升最大化 ELBO。
+
+### GMM 的 E 步与 M 步
+
+E 步就是贝叶斯公式（推导题 1）。M 步最大化
+
+$$
+Q(\theta) = \sum_i\sum_k r_{ik}\big[\log\pi_k + \log\mathcal N(x_i; \mu_k, \Sigma_k)\big].
+$$
+
+- 对 $\mu_k$：$\sum_i r_{ik}\Sigma_k^{-1}(x_i - \mu_k) = 0$ ⇒ $\mu_k = \sum_i r_{ik}x_i / N_k$，加权平均（推导题 2）。
+- 对 $\pi_k$，带约束 $\sum_k \pi_k = 1$ 用拉格朗日乘子：$\pi_k = N_k/n$（推导题 3）。
+- 对 $\Sigma_k$：加权的样本协方差。
+
+### k 均值是硬分配极限
+
+取所有 $\Sigma_k = \sigma^2 I$、等权。两个分量时，$x$ 属于第 2 个分量的责任度是
+
+$$
+r_2(x) = \frac{1}{1 + \exp\!\Big(-\dfrac{(\mu_2 - \mu_1)^\top\big(x - \tfrac{\mu_1 + \mu_2}{2}\big)}{\sigma^2}\Big)}
+$$
+
+（推导题 4，一维情形）：一个以两中心中点为界的 sigmoid。$\sigma^2 \to 0$ 时它变成阶跃函数，每个点完全属于最近的中心，M 步的加权平均变成簇均值——正是 k 均值。
+
+<HardLimit client:visible lang="zh" />
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题：一步 EM
+
+<Box kind="example" title="四个点，两个单位方差的高斯">
+
+数据 $-1, 0, 3, 4$；模型：两个分量，方差固定为 1，权重初始 $\tfrac12$，均值初始 $\mu_1 = 0$、$\mu_2 = 2$。
+
+**E 步**。等权、等方差时 $r_{i2} = \sigma(2x_i - 2)$：
+
+| $x_i$ | $-1$ | $0$ | $3$ | $4$ |
+|---|---|---|---|---|
+| $r_{i2}$ | $0.018$ | $0.119$ | $0.982$ | $0.998$ |
+
+**M 步**。$N_2 = 2.117$，$N_1 = 1.883$：
+
+- $\mu_1 = \dfrac{\sum_i r_{i1}x_i}{N_1} \approx -0.488$，$\mu_2 = \dfrac{\sum_i r_{i2}x_i}{N_2} \approx 3.268$；
+- $\pi = (0.471,\ 0.529)$。
+
+对数似然从 $-9.283$ 升到 $-7.001$；再迭代一次到 $-6.943$，均值趋于 $-0.5$ 和 $3.5$——两组数据各自的均值。
+
+</Box>
+
+### 拓展
+
+- **用 BIC 选 $K$ 和协方差结构**：$\mathrm{BIC} = -2\ell + d\log n$，$d$ 是自由参数个数；sklearn 的 `GaussianMixture` 支持 `full`、`tied`、`diag`、`spherical` 四种协方差，`tied` 对应 LDA 式的共享协方差。
+- **缺失数据**：EM 最初就是为不完整数据设计的（Dempster、Laird、Rubin，1977）：把缺失的特征当作潜变量。
+- **变分贝叶斯 GMM**：给参数也加上先验，用变分推断，能自动关掉多余的分量（`BayesianGaussianMixture`）。
+- **从 EM 到深度生成模型**：VAE（第 24 章）用神经网络做摊销的 E 步；扩散模型（第 25 章）的训练目标也是一个 ELBO。
+
+</Section>
