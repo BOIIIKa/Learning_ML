@@ -1,0 +1,7 @@
+- **Gap**: training error falls monotonically with complexity; test error traces a U. The difference $R(\hat f) - \hat R_n(\hat f)$ is the generalization gap.
+- **Bias–variance**: expected test error = $\sigma^2$ + bias² + variance. Richer models lower the bias and raise the variance; both describe the procedure across training sets.
+- **Optimism**: for least squares, $\mathbb E[\text{train}] = \sigma^2(1 - p/n)$ and $\mathbb E[\text{test}] = \sigma^2(1 + p/n)$. $C_p$ and AIC add the gap $2p\sigma^2/n$ back.
+- **Uniform bound**: for a finite class, $R(\hat f) \le \hat R_n(\hat f) + \sqrt{(\ln M + \ln(2/\delta))/(2n)}$, i.e. gap ≈ √(capacity / n).
+- **Estimating test error**: hold-out (train / validation / test); k-fold CV with $k = 5$ or $10$; LOO, which for linear smoothers is $\frac1n\sum(e_i/(1-H_{ii}))^2$; the bootstrap, which leaves out about 36.8% of points (out-of-bag).
+- **Hygiene**: every data-dependent step goes inside the CV loop (`Pipeline`); use nested CV to tune and report; use group or time-ordered folds when rows are not independent.
+- **Double descent**: past the interpolation threshold $p = n$, minimum-norm fits can generalize better again. Parameter count is not capacity.

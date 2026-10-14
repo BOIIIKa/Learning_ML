@@ -1,5 +1,7 @@
 import { scaleLinear } from "d3-scale";
 
+const f1 = (v: number) => v.toFixed(1);
+
 export interface Series {
   key: string;
   label: string;
@@ -27,8 +29,8 @@ export default function MetricChart({ series, cursor, height = 150, zero = true 
       <svg viewBox={`0 0 ${W} ${H}`} role="img">
         {ticks.map((v) => (
           <g key={v}>
-            <line x1={pad.l} x2={W - pad.r} y1={sy(v)} y2={sy(v)} className="mc-grid" />
-            <text x={pad.l - 6} y={sy(v)} className="mc-tick" textAnchor="end" dominantBaseline="middle">{+v.toFixed(3)}</text>
+            <line x1={pad.l} x2={W - pad.r} y1={f1(sy(v))} y2={f1(sy(v))} className="mc-grid" />
+            <text x={pad.l - 6} y={f1(sy(v))} className="mc-tick" textAnchor="end" dominantBaseline="middle">{+v.toFixed(3)}</text>
           </g>
         ))}
         {series.map((s) => (
@@ -41,10 +43,10 @@ export default function MetricChart({ series, cursor, height = 150, zero = true 
             className={s.dashed ? "mc-line" : "mc-line draw"}
           />
         ))}
-        <line x1={sx(cursor)} x2={sx(cursor)} y1={pad.t} y2={H - pad.b} className="mc-cursor" />
+        <line x1={f1(sx(cursor))} x2={f1(sx(cursor))} y1={pad.t} y2={H - pad.b} className="mc-cursor" />
         {series.map((s) =>
           s.values[cursor] === undefined ? null : (
-            <circle key={s.key} cx={sx(cursor)} cy={sy(s.values[cursor])} r={4} fill={s.color} className="mc-dot" />
+            <circle key={s.key} cx={f1(sx(cursor))} cy={f1(sy(s.values[cursor]))} r={4} fill={s.color} className="mc-dot" />
           ),
         )}
       </svg>

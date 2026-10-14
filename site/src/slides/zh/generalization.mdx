@@ -1,0 +1,122 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import OverfitDegree from "../../components/chapters/ch02/OverfitDegree";
+import BiasVarianceViz from "../../components/chapters/ch02/BiasVarianceViz";
+import CVFolds from "../../components/chapters/ch02/CVFolds";
+import DoubleDescent from "../../components/chapters/ch02/DoubleDescent";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 02 章 · 动画课程" title="泛化、偏差–方差与模型选择" say="一个在去年数据上完美的模型，可能在明年的数据上一塌糊涂。这一章解释为什么，以及怎样只用手头的数据把它揪出来。">
+
+训练误差为什么会说谎，怎样识破它
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="用几次多项式？" say="成绩先涨得快、后来趋于平缓，所以老师把直线换成了多项式。可是用几次？">
+
+<Step say="把次数往上拖。训练误差只降不升，到十一次时曲线穿过了每一个点。">次数越高 → 训练误差 ↓ 到 0</Step>
+
+<Step say="现在显示明年的学生。高次曲线在点之间剧烈摆动，测试误差爆炸。">打开“明年的学生”：测试误差 ↑↑</Step>
+
+<Step effect="focus" say="所以训练误差没法告诉我们该用几次。我们需要另一种方法估计新数据上的误差。">
+<p class="big-q sm">训练误差选不出模型</p>
+</Step>
+
+<div slot="visual"><OverfitDegree client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="k 折交叉验证" say="最常用的办法是交叉验证。">
+
+<Step say="把数据分成 k 折。每一轮留出一折当明年的学生，用其余数据拟合。">每一折轮流当“明年的学生”</Step>
+
+<Step say="把 k 个留出误差取平均，就是 CV 误差，它估计的是测试误差。">$k$ 个留出误差的平均 = $\mathrm{CV}_k$</Step>
+
+<Step say="对每个次数都做一遍，选最小的。右边可以换不同的 k 试试。">对每个次数重复，选最小 →</Step>
+
+<Step say="一条规矩：任何从数据中学习的步骤，哪怕只是标准化，都必须放进循环里，否则验证折会泄漏到训练中。">所有依赖数据的步骤都放进循环</Step>
+
+<div slot="visual"><CVFolds client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="估计测试误差的三种工具" say="标准工具有三种。">
+
+<Step say="留出法：训练、验证、测试三份。简单，但数据少时很浪费。">**留出法**：训练 / 验证 / 测试，简单但浪费</Step>
+
+<Step say="k 折交叉验证：每个点当一次验证。常用五折或十折。">**k 折 CV**：$k = 5$ 或 $10$；$k = n$ 即留一法</Step>
+
+<Step say="自助法：有放回重采样。每次约百分之三十七的点没被抽中，可以拿来验证。">**自助法**：约 36.8% 袋外样本，免费验证</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="偏差–方差分解" say="为什么会有 U 形？把某一点上的期望测试误差拆成三部分。">
+
+<Step say="噪声是下限。偏差是平均拟合离真相有多远。方差是换训练集时拟合晃动多大。">
+
+$$
+\mathbb E(Y - \hat f)^2 = \sigma^2 + \text{偏差}^2 + \text{方差}
+$$
+
+</Step>
+
+<Step say="右边是三十份训练集。次数低时，曲线彼此一致，却都偏离真相。">低次：曲线一致（方差小），但都偏（偏差大）</Step>
+
+<Step say="次数高时，平均是对的，但每条曲线四处乱飞。">高次：平均是对的（偏差小），曲线四散（方差大）</Step>
+
+<div slot="visual"><BiasVarianceViz client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="训练误差乐观了多少？" say="对最小二乘，乐观度可以精确算出来。">
+
+<Step say="有 p 个参数时，期望训练误差是西格玛平方乘以一减 n 分之 p。">$\mathbb E[\text{训练}] = \sigma^2(1 - p/n)$</Step>
+
+<Step say="在同一批输入上的期望测试误差是西格玛平方乘以一加 n 分之 p。">$\mathbb E[\text{测试}] = \sigma^2(1 + p/n)$</Step>
+
+<Step say="Mallows 的 Cp 和 AIC 就是把这个差距加回训练误差。">$C_p$、AIC：加回 $2p\sigma^2/n$</Step>
+
+<Step say="对有 M 个模型的有限假设空间，并集界给出的差距量级是根号下 log M 除以 n，而且对 ERM 挑出的模型也成立。">一致界：差距 $\lesssim \sqrt{(\ln M + \ln(2/\delta))/(2n)}$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：手算留一法" say="三位学生：学习时长一、二、三，成绩二、四、九。">
+
+<Step say="常数模型的训练误差是八点六七，留一法误差却是十九点五。">常数：训练 $8.67$ → LOO $19.5$</Step>
+
+<Step say="直线的训练误差是零点五，留一法误差是六点七五。直线依然胜出。">直线：训练 $0.5$ → LOO $6.75$，直线胜出</Step>
+
+<Step say="对线性平滑器，把每个残差除以一减杠杆值，不用重新拟合就得到留一法误差。">
+
+$$
+\mathrm{LOO} = \frac1n\sum_i \Big(\frac{e_i}{1 - H_{ii}}\Big)^2
+$$
+
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="双下降" say="现代模型打破了 U 形。这里用一百个特征中的前 p 个、以最小范数解拟合三十个点。">
+
+<Step say="特征少于三十个时，是经典的 U 形。">$p \lt n$：经典 U 形</Step>
+
+<Step say="恰好三十个时，模型刚好能插值，风险冲到峰值。">$p = n$：刚好能插值，风险冲顶</Step>
+
+<Step say="再往上，最小范数解把拟合摊开，方差下降，风险第二次下降。">$p \gt n$：最小范数，第二次下降</Step>
+
+<Step effect="focus" say="参数个数不等于容量。真正起作用的是算法实际用到的容量。">
+<p class="big-q sm">参数个数 ≠ 容量</p>
+</Step>
+
+<div slot="visual"><DoubleDescent client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现 k 折交叉验证，再用 scikit-learn 做模型选择。">
+
+<Step say="代码运行后，回放次数扫描，看两条误差如何分道扬镳。">✎ 4 道推导 · ⌨ 从零实现 k 折 CV · ⚙ validation_curve + GridSearchCV</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/generalization/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

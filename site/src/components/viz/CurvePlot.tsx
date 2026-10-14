@@ -63,11 +63,11 @@ export default function CurvePlot({ xs, ys, curves = [], residualsTo, outliers =
       onPointerUp={() => (drag.current = null)} onPointerLeave={() => { drag.current = null; setHover(null); }}>
       <defs><clipPath id="cp-clip"><rect x={34} y={10} width={W - 44} height={H - 36} /></clipPath></defs>
       <rect width={W} height={H} rx={12} className="plot-bg" />
-      {sx.ticks(5).map((t) => <text key={`x${t}`} x={sx(t)} y={H - 8} textAnchor="middle" className="cp-tick">{t}</text>)}
+      {sx.ticks(5).map((t) => <text key={`x${t}`} x={f1(sx(t))} y={H - 8} textAnchor="middle" className="cp-tick">{t}</text>)}
       {sy.ticks(5).map((t) => (
         <g key={`y${t}`}>
-          <line x1={34} x2={W - 10} y1={sy(t)} y2={sy(t)} className="cp-grid" />
-          <text x={28} y={sy(t)} textAnchor="end" dominantBaseline="middle" className="cp-tick">{t}</text>
+          <line x1={34} x2={W - 10} y1={f1(sy(t))} y2={f1(sy(t))} className="cp-grid" />
+          <text x={28} y={f1(sy(t))} textAnchor="end" dominantBaseline="middle" className="cp-tick">{t}</text>
         </g>
       ))}
       {xLabel && <text x={W - 12} y={H - 30} textAnchor="end" className="cp-label">{xLabel}</text>}
@@ -75,8 +75,8 @@ export default function CurvePlot({ xs, ys, curves = [], residualsTo, outliers =
       <g clipPath="url(#cp-clip)">
         {vlines.map((v, i) => (
           <g key={`v${i}`}>
-            <line x1={sx(v.x)} x2={sx(v.x)} y1={10} y2={H - 26} stroke={v.color} className="cp-vline" />
-            {v.label && <text x={sx(v.x) + 4} y={24 + 14 * i} fill={v.color} className="cp-vlabel">{v.label}</text>}
+            <line x1={f1(sx(v.x))} x2={f1(sx(v.x))} y1={10} y2={H - 26} stroke={v.color} className="cp-vline" />
+            {v.label && <text x={f1(sx(v.x) + 4)} y={24 + 14 * i} fill={v.color} className="cp-vlabel">{v.label}</text>}
           </g>
         ))}
         {residualsTo && xs.map((x, i) => (
