@@ -1,0 +1,71 @@
+# 第 02 章 泛化、偏差–方差与模型选择 —— 课后练习 / Chapter 02 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: bv-decomp
+    title: {zh: "偏差–方差分解", en: "The bias–variance decomposition"}
+    prompt:
+      zh: "固定输入 $x_0$。真实值 $Y_0 = f + \\varepsilon$，其中 $f = f(x_0)$，噪声 $\\varepsilon$ 均值为 0、标准差为 $s$，且与训练集独立。在随机训练集上学到的预测 $\\hat f(x_0)$ 的均值为 $m$、方差为 $v$。写出期望误差 $\\mathbb E\\big[(Y_0 - \\hat f(x_0))^2\\big]$。可用变量：`f, m, v, s`。"
+      en: "Fix an input $x_0$. The outcome is $Y_0 = f + \\varepsilon$ with $f = f(x_0)$ and noise $\\varepsilon$ of mean 0 and standard deviation $s$, independent of the training set. The prediction $\\hat f(x_0)$ learned from a random training set has mean $m$ and variance $v$. Write the expected error $\\mathbb E\\big[(Y_0 - \\hat f(x_0))^2\\big]$. Variables: `f, m, v, s`."
+    answer: "s^2 + (f - m)^2 + v"
+    vars: {f: [-3, 3], m: [-3, 3], v: [0, 2], s: [0.1, 2]}
+    solution:
+      zh: "把误差拆成三段：$Y_0 - \\hat f = \\varepsilon + (f - m) + (m - \\hat f)$。平方后取期望，三个交叉项都为 0：$\\mathbb E[\\varepsilon]=0$ 且 $\\varepsilon$ 与 $\\hat f$ 独立；$f - m$ 是常数而 $\\mathbb E[m - \\hat f] = 0$。剩下 $\\mathbb E[\\varepsilon^2] + (f-m)^2 + \\mathbb E[(\\hat f - m)^2] = s^2 + (f - m)^2 + v$，依次是**噪声**、**偏差²**、**方差**。噪声与模型无关，是任何方法都消不掉的下限；偏差与方差则随模型复杂度此消彼长。"
+      en: "Split the error into three pieces: $Y_0 - \\hat f = \\varepsilon + (f - m) + (m - \\hat f)$. Square and take expectations; all three cross terms vanish, because $\\mathbb E[\\varepsilon]=0$ with $\\varepsilon$ independent of $\\hat f$, and $f - m$ is a constant while $\\mathbb E[m - \\hat f] = 0$. What remains is $\\mathbb E[\\varepsilon^2] + (f-m)^2 + \\mathbb E[(\\hat f - m)^2] = s^2 + (f - m)^2 + v$: **noise**, **bias²** and **variance**. The noise does not depend on the model and is a floor no method can remove; bias and variance trade off against each other as the model grows more complex."
+
+  - id: shrinkage
+    title: {zh: "有偏的估计反而更准", en: "A biased estimator can be more accurate"}
+    prompt:
+      zh: "从均值为 $\\mu$、标准差为 $s$ 的总体中抽 $n$ 个样本，用 $a\\bar Y$（$0 \\le a \\le 1$）估计 $\\mu$。它的均方误差是 $(1-a)^2\\mu^2 + a^2 s^2/n$。写出使均方误差最小的 $a$。可用变量：`mu, s, n`。"
+      en: "Draw $n$ samples from a population with mean $\\mu$ and standard deviation $s$, and estimate $\\mu$ by $a\\bar Y$ ($0 \\le a \\le 1$). Its mean squared error is $(1-a)^2\\mu^2 + a^2 s^2/n$. Write the $a$ that minimizes it. Variables: `mu, s, n`."
+    answer: "mu^2/(mu^2 + s^2/n)"
+    vars: {mu: [0.5, 3], s: [0.5, 3], n: [2, 50]}
+    solution:
+      zh: "偏差 $= (a-1)\\mu$，方差 $= a^2 s^2/n$。对 $a$ 求导：$-2(1-a)\\mu^2 + 2a s^2/n = 0$，解得 $a^* = \\dfrac{\\mu^2}{\\mu^2 + s^2/n}$，总是小于 1。也就是说，故意把估计往 0 “收缩”一点，引入少量偏差，换来更多的方差下降。讲义例题中 $\\mu = 2, s = 3, n = 9$，得 $a^* = 0.8$，均方误差从 1 降到 0.8。岭回归（第 03 章）正是同一个思路。"
+      en: "The bias is $(a-1)\\mu$ and the variance is $a^2 s^2/n$. Differentiating in $a$: $-2(1-a)\\mu^2 + 2a s^2/n = 0$, so $a^* = \\dfrac{\\mu^2}{\\mu^2 + s^2/n}$, which is always below 1. Deliberately shrinking the estimate toward 0 buys a large drop in variance for a little bias. In the worked example $\\mu = 2, s = 3, n = 9$ give $a^* = 0.8$, cutting the MSE from 1 to 0.8. Ridge regression (Ch. 03) runs on the same idea."
+
+  - id: hoeffding
+    title: {zh: "有限假设空间的泛化界", en: "A generalization bound for a finite hypothesis space"}
+    prompt:
+      zh: "损失取值在 $[0,1]$，假设空间有 $H$ 个函数，训练集大小为 $n$。由 Hoeffding 不等式和联合界，$P\\big(\\exists f: |R(f) - \\hat R_n(f)| > \\varepsilon\\big) \\le 2H e^{-2n\\varepsilon^2}$。令右边等于 $\\delta$，写出 $\\varepsilon$。可用变量：`H, delta, n`。"
+      en: "Losses lie in $[0,1]$, the hypothesis space has $H$ functions and the training set has $n$ samples. Hoeffding's inequality plus the union bound give $P\\big(\\exists f: |R(f) - \\hat R_n(f)| > \\varepsilon\\big) \\le 2H e^{-2n\\varepsilon^2}$. Set the right side to $\\delta$ and write $\\varepsilon$. Variables: `H, delta, n`."
+    answer: "sqrt(log(2*H/delta)/(2*n))"
+    vars: {H: [1, 1000], delta: [0.01, 0.2], n: [10, 1000]}
+    solution:
+      zh: "$2He^{-2n\\varepsilon^2} = \\delta \\Rightarrow \\varepsilon = \\sqrt{\\dfrac{\\ln(2H/\\delta)}{2n}}$。于是以至少 $1-\\delta$ 的概率，**所有** $f$ 同时满足 $R(f) \\le \\hat R_n(f) + \\varepsilon$，包括 ERM 选出的 $\\hat f$。注意三点：$\\varepsilon$ 随 $1/\\sqrt n$ 缩小；对 $H$ 只是**对数**依赖；而对无限的假设空间（如所有直线）这个界失效，需要用 VC 维或 Rademacher 复杂度来代替 $\\ln H$。例：$H = 1000, n = 1000, \\delta = 0.05$ 时 $\\varepsilon \\approx 0.073$。"
+      en: "$2He^{-2n\\varepsilon^2} = \\delta \\Rightarrow \\varepsilon = \\sqrt{\\dfrac{\\ln(2H/\\delta)}{2n}}$. So with probability at least $1-\\delta$, **every** $f$ satisfies $R(f) \\le \\hat R_n(f) + \\varepsilon$ at once, including the ERM choice $\\hat f$. Three things to notice: $\\varepsilon$ shrinks like $1/\\sqrt n$; it depends on $H$ only **logarithmically**; and for an infinite hypothesis space (all lines, say) the bound breaks, and the VC dimension or Rademacher complexity takes the place of $\\ln H$. Example: $H = 1000, n = 1000, \\delta = 0.05$ give $\\varepsilon \\approx 0.073$."
+
+  - id: loo-mean
+    title: {zh: "均值模型的留一误差", en: "Leave-one-out error of the mean"}
+    prompt:
+      zh: "用样本均值预测，训练集均方误差为 $s_2 = \\frac1n\\sum_i (y_i - \\bar y)^2$。写出留一交叉验证（LOO）误差 $\\frac1n \\sum_i (y_i - \\bar y_{-i})^2$，其中 $\\bar y_{-i}$ 是去掉第 $i$ 个样本后的均值。可用变量：`n, s2`。"
+      en: "Predict with the sample mean; the training MSE is $s_2 = \\frac1n\\sum_i (y_i - \\bar y)^2$. Write the leave-one-out (LOO) error $\\frac1n \\sum_i (y_i - \\bar y_{-i})^2$, where $\\bar y_{-i}$ is the mean without sample $i$. Variables: `n, s2`."
+    answer: "(n/(n - 1))^2 * s2"
+    vars: {n: [3, 50], s2: [0.1, 10]}
+    solution:
+      zh: "$\\bar y_{-i} = \\dfrac{n\\bar y - y_i}{n-1}$，所以 $y_i - \\bar y_{-i} = \\dfrac{(n-1)y_i - n\\bar y + y_i}{n-1} = \\dfrac{n}{n-1}(y_i - \\bar y)$。平方再平均：LOO $= \\left(\\dfrac{n}{n-1}\\right)^2 s_2$。留一误差总比训练误差大，这个比值就是训练误差“乐观”的程度。讲义例题 $52, 60, 64, 70$：$s_2 = 42.75$，LOO $= \\frac{16}{9}\\times 42.75 = 76$。对任何线性平滑器（如最小二乘）都有类似捷径：LOO 残差 $= e_i/(1 - h_{ii})$，$h_{ii}$ 是帽子矩阵的对角元。"
+      en: "$\\bar y_{-i} = \\dfrac{n\\bar y - y_i}{n-1}$, so $y_i - \\bar y_{-i} = \\dfrac{(n-1)y_i - n\\bar y + y_i}{n-1} = \\dfrac{n}{n-1}(y_i - \\bar y)$. Squaring and averaging, LOO $= \\left(\\dfrac{n}{n-1}\\right)^2 s_2$. The LOO error always exceeds the training error, and this ratio measures how optimistic the training error is. For the worked example $52, 60, 64, 70$: $s_2 = 42.75$ and LOO $= \\frac{16}{9}\\times 42.75 = 76$. Every linear smoother (least squares included) has a similar shortcut: the LOO residual is $e_i/(1 - h_{ii})$, with $h_{ii}$ the diagonal of the hat matrix."
+
+code:
+  - id: cv-bias-variance
+    kind: implement
+    file: cv_bias_variance.py
+    packages: [numpy]
+    title: {zh: "从零实现 k 折交叉验证与偏差–方差模拟", en: "k-fold cross-validation and a bias–variance simulation from scratch"}
+    intro:
+      zh: "写出 k 折划分、每一折的“训练—验证”，以及重复抽样估计偏差² 与方差。判题会用帽子矩阵捷径核对你的留一误差，并把方差与理论值 $\\sigma^2(d+1)/n$ 对比。回放展示 6 折交叉验证的每一折：闪烁的点是验证折，曲线是在其余各折上拟合的结果。"
+      en: "Write the k-fold split, the train-then-validate step for each fold, and the resampling that estimates bias² and variance. The checker compares your leave-one-out error with the hat-matrix shortcut and your variance with the theoretical $\\sigma^2(d+1)/n$. The replay walks through 6-fold cross-validation: pulsing points are the validation fold, and the curve is fitted on the other folds."
+    metrics:
+      - {key: fold, label: {zh: "这一折的 MSE", en: "MSE on this fold"}}
+      - {key: cv, label: {zh: "已完成各折的平均", en: "Average over folds so far"}}
+  - id: model-selection-library
+    kind: library
+    file: model_selection_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 scikit-learn 选模型：cross_val_score 与 validation_curve", en: "Model selection with scikit-learn: cross_val_score and validation_curve"}
+    intro:
+      zh: "把“标准化 → 多项式特征 → 最小二乘”组装成流水线，用 `cross_val_score` 得到某个阶数的 CV 误差，再用 `validation_curve` 一次扫完所有阶数并挑出最好的。回放中阶数从 1 增加到 10，下方曲线是训练误差与验证误差。"
+      en: "Assemble a standardize → polynomial features → least squares pipeline, get one degree's CV error with `cross_val_score`, then sweep every degree at once with `validation_curve` and pick the best. The replay raises the degree from 1 to 10; the chart below shows training and validation error."
+    metrics:
+      - {key: train, label: {zh: "训练误差", en: "Training error"}}
+      - {key: val, label: {zh: "验证误差", en: "Validation error"}}

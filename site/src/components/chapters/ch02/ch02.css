@@ -1,0 +1,45 @@
+/* chapter 02: generalization, bias–variance and model selection */
+.g2-svg { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; user-select: none; }
+.g2-tick { fill: var(--text-muted); font-size: 10px; font-family: var(--mono); }
+.g2-grid { stroke: var(--border); stroke-width: 1; }
+.g2-label { fill: var(--text-muted); font-size: 11px; }
+.g2-curve { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.g2-truth { fill: none; stroke: var(--text); stroke-width: 2; stroke-dasharray: 6 5; opacity: 0.75; }
+.g2-fan { fill: none; stroke: var(--accent-3); stroke-width: 1.2; opacity: 0.35; }
+.g2-mean { fill: none; stroke: var(--class-pos); stroke-width: 3; }
+.g2-fit { fill: none; stroke: var(--class-pos); stroke-width: 2.6; }
+.g2-train { fill: var(--class-neg); stroke: var(--bg); stroke-width: 1.2; }
+.g2-test { fill: none; stroke: var(--text-muted); stroke-width: 1; opacity: 0.55; }
+.g2-val { fill: var(--class-pos); stroke: var(--bg); stroke-width: 1.2; }
+.g2-val-ring { fill: none; stroke: var(--class-pos); stroke-width: 1.8; animation: g2-pulse 1.1s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.g2-dim { opacity: 0.6; }
+.g2-vline { stroke-width: 1.6; stroke-dasharray: 5 4; }
+.g2-vlabel { font-size: 11px; font-weight: 700; font-family: var(--mono); }
+.g2-cursor { stroke: var(--warning); stroke-width: 2; stroke-dasharray: 4 3; }
+.g2-dot { stroke: var(--bg); stroke-width: 1.5; }
+.g2-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem 1rem; font-size: 0.78rem; color: var(--text-muted); }
+.g2-legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 0.35em; }
+.g2-legend i.dashed { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px) !important; }
+.g2-chart { margin: 0; display: grid; gap: 0.25rem; }
+.g2-busy { display: grid; place-items: center; min-height: 215px; color: var(--text-muted); font-size: 0.85rem; }
+.g2-placeholder { fill: var(--text-muted); font-size: 12px; }
+
+/* fold strip */
+.g2-fold { stroke: var(--bg); stroke-width: 1; transition: opacity 0.3s ease; }
+.g2-fold.train { fill: var(--class-neg); opacity: 0.35; }
+.g2-fold.val { fill: var(--class-pos); }
+.g2-bar { fill: var(--accent-3); opacity: 0.5; transition: opacity 0.3s ease; }
+.g2-bar.on { fill: var(--class-pos); opacity: 1; }
+.g2-bar-mean { stroke: var(--text); stroke-width: 2; stroke-dasharray: 5 3; }
+
+/* CV estimator strip plot */
+.g2-jit { fill: var(--accent-3); opacity: 0.35; }
+.g2-jit.on { fill: var(--class-pos); opacity: 0.55; }
+.g2-meanbar { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
+.g2-sd { stroke: var(--text); stroke-width: 1.5; }
+.g2-true { stroke: var(--success); stroke-width: 2; stroke-dasharray: 6 4; }
+.g2-true-lab { fill: var(--success); font-size: 11px; font-weight: 700; font-family: var(--mono); }
+.g2-kcol { fill: var(--accent); opacity: 0.08; }
+
+@keyframes g2-pulse { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .g2-val-ring { animation: none; } }

@@ -1,0 +1,202 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import OverfitScenario from "../../components/chapters/ch02/OverfitScenario";
+import CvFolds from "../../components/chapters/ch02/CvFolds";
+import BiasVarianceSim from "../../components/chapters/ch02/BiasVarianceSim";
+import DoubleDescent from "../../components/chapters/ch02/DoubleDescent";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 02 · Animated course" title="Generalization" say="This chapter asks what it takes for a model to do well on data it has never seen, how to measure that without peeking at the future, and why today's huge models seem to break the classical rules.">
+
+Bias–variance, cross-validation and double descent
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Which curve predicts next year?" say="The teacher from chapter one now sees that scores rise slowly, then quickly, then level off. She has twelve students and tries polynomials of every degree.">
+
+<Step say="The filled dots are last year's twelve students, used for fitting. The hollow dots are next year's students, whom she cannot see.">Filled = last year (12) · hollow = next year (unseen)</Step>
+
+<Step say="Drag the degree. Training error only goes down, and at degree eleven the curve passes through every point.">Training error only falls; 0 at degree 11</Step>
+
+<Step say="On the chart below, test error first falls and then shoots up. Around degree three or four it is lowest.">Test error is U-shaped: best around $d = 3$–$4$ →</Step>
+
+<div slot="visual"><OverfitScenario client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" say="So training error cannot pick the model. This chapter answers three questions.">
+
+<Step say="First, why is test error U-shaped? The answer is the bias–variance decomposition.">① **Why** a U shape? → bias–variance</Step>
+
+<Step say="Second, how can we estimate test error without next year's data? With validation, cross-validation and the bootstrap.">② **How** to estimate test error? → cross-validation, bootstrap</Step>
+
+<Step say="Third, why do modern models with far more parameters than data still work? That is double descent.">③ Why do huge models still work? → double descent</Step>
+
+<Step effect="focus" say="The theme of the whole chapter: training error is optimistic, so we need an honest estimate of the error on new data.">
+<p class="big-q sm">Training error is optimistic. We need an honest estimate.</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Training error vs test error" say="First, the definitions.">
+
+<Step say="Training error is the average loss on the training data itself.">Training error $\hat R_n(\hat f)$: loss on the data we fitted</Step>
+
+<Step say="Test error, also called generalization error, is the average loss on new samples from the same distribution.">Test error $R(\hat f)$: loss on **new** samples</Step>
+
+<Step say="The difference is the generalization gap. It is usually positive and grows with complexity.">Gap $R(\hat f) - \hat R_n(\hat f)$ grows with complexity</Step>
+
+<Step say="In triad terms: the model is a nested family of increasing complexity, the strategy is to minimize an estimate of test error, and the algorithm is cross-validation or the bootstrap.">Model: nested family · strategy: min estimated test error · algorithm: CV / bootstrap</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="k-fold cross-validation" say="Holding out one validation set wastes data and depends on one lucky or unlucky split. Cross-validation rotates the role of validation set.">
+
+<Step say="Shuffle the students and cut them into k folds.">Shuffle, cut into $k$ folds</Step>
+
+<Step say="Each round holds one fold out, the pulsing orange points, fits on the rest, and measures the error on the held-out fold.">Hold one fold out, fit on the rest, score it →</Step>
+
+<Step say="The average of the k fold errors is the CV estimate. Pick the degree with the smallest one, then refit on all the data.">$\mathrm{CV}_k = $ average fold error; pick the min, refit on all data</Step>
+
+<Step say="The bottom panel repeats this on 150 datasets. Small k is pessimistic and noisy; leave-one-out hugs the true test error.">Small $k$: pessimistic & noisy · LOO: nearly unbiased</Step>
+
+<div slot="visual"><CvFolds client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="The bootstrap, and two rules" say="Two more tools and two rules.">
+
+<Step say="The bootstrap samples n times with replacement. A given sample is never drawn with probability one minus one over n to the n, which tends to e to the minus one, about 37 percent.">Bootstrap: $P(\text{left out}) = (1 - \frac1n)^n \to e^{-1} \approx 0.368$</Step>
+
+<Step say="Those out-of-bag samples are a free validation set. Random forests use them in chapter eight.">Out-of-bag samples = a free validation set (Ch. 08)</Step>
+
+<Step say="Rule one: the test set is touched once. Selecting by test error turns it into another optimistic training error.">Rule 1: touch the test set **once**</Step>
+
+<Step say="Rule two: preprocessing such as standardization is fitted inside each training fold, or validation information leaks into training.">Rule 2: preprocessing goes **inside** the folds</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The bias–variance decomposition" say="Fix an input x zero. The training set is random, so the prediction is random too.">
+
+<Step say="Split the error into noise, bias, and the fluctuation of the prediction around its mean.">
+
+$$
+Y_0 - \hat f = \varepsilon + (f - \bar f) + (\bar f - \hat f)
+$$
+
+</Step>
+
+<Step say="Square and take expectations. The cross terms vanish because the noise and the fluctuation both have mean zero and are independent.">Cross terms vanish (zero means, independence)</Step>
+
+<Step say="What remains is noise plus bias squared plus variance.">
+
+$$
+\mathbb E\big[(Y_0 - \hat f)^2\big] = \sigma^2 + (f - \bar f)^2 + \mathrm{Var}(\hat f)
+$$
+
+</Step>
+
+<Step effect="focus" say="Complexity lowers the bias and raises the variance. Their sum is the U.">
+<p class="big-q sm">Complexity: bias ↓, variance ↑ ⇒ U shape</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Bias–variance simulator" say="Now make the expectation over training sets concrete.">
+
+<Step say="Keep the same twelve study hours and draw two hundred cohorts with fresh noise. The thin lines are twenty of the fits.">Thin lines = fits on 20 of 200 training sets</Step>
+
+<Step say="The thick orange line is their average. Its distance to the dashed truth is the bias. The spread of the thin lines is the variance.">Average vs truth = bias · spread = variance</Step>
+
+<Step say="Drag the degree and watch bias squared fall and variance rise. For least squares the average variance is exactly sigma squared times p over n.">For least squares: average variance $= \sigma^2 p / n$ →</Step>
+
+<div slot="visual"><BiasVarianceSim client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="A bound for a finite hypothesis space" say="Chapter one asked how optimistic ERM can be. For a finite class we can answer exactly.">
+
+<Step say="For one fixed function, Hoeffding's inequality bounds the chance that empirical and true risk differ by more than epsilon.">Hoeffding: $P(|R - \hat R_n| > \varepsilon) \le 2e^{-2n\varepsilon^2}$</Step>
+
+<Step say="ERM may pick any function, so we need all of them at once. The union bound multiplies by the size of the class.">Union bound: $\times\,|\mathcal F|$</Step>
+
+<Step say="Set the total to delta and solve for epsilon.">
+
+$$
+R(f) \le \hat R_n(f) + \sqrt{\frac{\ln|\mathcal F| + \ln(2/\delta)}{2n}}
+$$
+
+</Step>
+
+<Step say="A bigger class lowers the approximation error but raises this term. It is the bias–variance trade-off again, and the cost is only logarithmic.">Bigger $\mathcal F$: approximation ↓, estimation ↑ (only $\ln|\mathcal F|$)</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="The CV estimator has a bias and a variance too" say="Cross-validation itself is an estimator.">
+
+<Step say="Each fold's model trains on n times one minus one over k samples, fewer than n, so the estimate is pessimistic, more so for small k.">Bias: trains on $n(1 - \frac1k)$ ⇒ pessimistic for small $k$</Step>
+
+<Step say="Its variance is roughly v over k plus a covariance term. Larger k averages more folds, but the training sets overlap and the fold errors become correlated.">
+
+$$
+\mathrm{Var}(\mathrm{CV}_k) \approx \frac{v}{k} + \Big(1 - \frac1k\Big)c
+$$
+
+</Step>
+
+<Step effect="focus" say="Balancing bias, variance and the cost of k fits, five or ten folds is the usual choice.">
+<p class="big-q sm">In practice: $k = 5$ or $10$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: leave-one-out" say="Four students scored fifty-two, sixty, sixty-four and seventy. We predict with the mean.">
+
+<Step say="The mean is sixty-one point five and the training mean squared error is forty-two point seven five.">Training MSE: $42.75$</Step>
+
+<Step say="Leave each student out in turn: the squared errors are about 160, 4, 11 and 128, which average to seventy-six.">LOO: $(160.44 + 4 + 11.11 + 128.44)/4 = 76$</Step>
+
+<Step say="In general, leave-one-out for the mean is n over n minus one, squared, times the training error. Here sixteen ninths times 42.75 is 76.">$\big(\frac{n}{n-1}\big)^2 \times 42.75 = \frac{16}{9}\times 42.75 = 76$</Step>
+
+<Step effect="focus" say="The training error understates the test error by almost half.">
+<p class="big-q sm">Training error: almost half too low</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: shrinkage" say="Estimate a mean of two from nine samples with standard deviation three, using a times the sample mean.">
+
+<Step say="With a equal to one, the estimator is unbiased and its variance, and error, is one.">$a = 1$: bias² $0$ + variance $1$ = $1$</Step>
+
+<Step say="With a equal to zero point eight, bias squared is 0.16 and the variance 0.64, a total of 0.8, lower than the unbiased one.">$a = 0.8$: $0.16 + 0.64 = 0.8$ ✓</Step>
+
+<Step say="The best a is mu squared over mu squared plus sigma squared over n, which is four fifths here.">$a^* = \frac{\mu^2}{\mu^2 + \sigma^2/n} = 0.8$</Step>
+
+<Step effect="focus" say="An unbiased estimator is not necessarily the most accurate. Ridge regression in chapter three uses exactly this idea.">
+<p class="big-q sm">Unbiased ≠ most accurate → ridge (Ch. 03)</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Extension: double descent" say="The classical U curve stops where the model just fits the data. Modern models go much further.">
+
+<Step say="Fit twenty students with p random cosine features. Beyond p equals n, take the interpolating solution with the smallest norm.">$p$ random features; for $p > n$ the minimum-norm interpolant</Step>
+
+<Step say="Near p equals n, the model can only just pass through every point. The coefficients explode and test error peaks.">$p \approx n$: huge coefficients, test error peaks</Step>
+
+<Step say="Keep increasing p and the minimum-norm fit gets smoother: test error falls a second time.">$p \gg n$: smoother fits, a second descent →</Step>
+
+<Step say="Switch on a little ridge and the peak vanishes. The norm, not the parameter count, measures complexity.">Ridge removes the peak: **norm**, not parameter count</Step>
+
+<div slot="visual"><DoubleDescent client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, cross-validation and a bias–variance simulation from scratch, and model selection with scikit-learn.">
+
+<Step say="After running the code, replay six-fold cross-validation fold by fold, and the fit as the degree climbs from one to ten.">✎ 4 derivations · ⌨ k-fold CV + bias–variance from scratch · ⚙ `cross_val_score` / `validation_curve`</Step>
+
+<Step effect="pop" say="Use the button to start practising.">
+<a class="btn btn-primary btn-xl" href="../../chapters/generalization/#s-practice">Start practising →</a>
+</Step>
+
+</Slide>

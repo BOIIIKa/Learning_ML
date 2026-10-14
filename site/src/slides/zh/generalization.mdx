@@ -1,0 +1,202 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import OverfitScenario from "../../components/chapters/ch02/OverfitScenario";
+import CvFolds from "../../components/chapters/ch02/CvFolds";
+import BiasVarianceSim from "../../components/chapters/ch02/BiasVarianceSim";
+import DoubleDescent from "../../components/chapters/ch02/DoubleDescent";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 02 章 · 动画课程" title="泛化" say="这一章要回答：模型怎样才能在没见过的数据上也表现好？不偷看未来，怎样衡量这一点？以及，为什么如今的超大模型似乎打破了经典规律？">
+
+偏差–方差、交叉验证与双下降
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="哪条曲线能预测明年？" say="第一章的那位老师发现，成绩随学习时长先慢后快、最后趋于饱和。她手上有 12 位学生，于是把各个阶数的多项式都试了一遍。">
+
+<Step say="实心点是去年的 12 位学生，用来拟合；空心点是明年的学生，她看不到。">实心 = 去年（12 人）· 空心 = 明年（看不到）</Step>
+
+<Step say="拖动阶数。训练误差只降不升，到 11 阶曲线穿过了每一个点。">训练误差只降不升，11 阶时为 0</Step>
+
+<Step say="再看下面的图：测试误差先降，然后急剧上升，在 3 到 4 阶附近最小。">测试误差呈 U 形：$d = 3$–$4$ 附近最好 →</Step>
+
+<div slot="visual"><OverfitScenario client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" say="所以训练误差选不了模型。这一章回答三个问题。">
+
+<Step say="第一，测试误差为什么是 U 形？答案是偏差–方差分解。">① **为什么**是 U 形？→ 偏差–方差</Step>
+
+<Step say="第二，没有明年的数据，怎样估计测试误差？靠验证集、交叉验证和自助法。">② **怎样**估计测试误差？→ 交叉验证、自助法</Step>
+
+<Step say="第三，参数远多于数据的现代模型，为什么还能用？这就是双下降。">③ 超大模型为什么还能用？→ 双下降</Step>
+
+<Step effect="focus" say="贯穿整章的主题：训练误差是乐观的，我们需要对新数据上的误差做一个诚实的估计。">
+<p class="big-q sm">训练误差是乐观的，我们需要诚实的估计</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="训练误差与测试误差" say="先把概念说清楚。">
+
+<Step say="训练误差是在训练数据本身上的平均损失。">训练误差 $\hat R_n(\hat f)$：在拟合用的数据上的损失</Step>
+
+<Step say="测试误差，也叫泛化误差，是在同一分布的新样本上的平均损失。">测试误差 $R(\hat f)$：在**新**样本上的损失</Step>
+
+<Step say="两者之差叫泛化差距，通常为正，并随复杂度增大。">差距 $R(\hat f) - \hat R_n(\hat f)$ 随复杂度增大</Step>
+
+<Step say="用三要素来说：模型是一族复杂度递增的嵌套模型，策略是让估计的测试误差最小，算法是交叉验证或自助法。">模型：嵌套模型族 · 策略：估计的测试误差最小 · 算法：CV / 自助法</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="k 折交叉验证" say="只留一个验证集既浪费数据，又取决于某一次划分的运气。交叉验证让每一份数据轮流当验证集。">
+
+<Step say="把学生随机打乱，切成 k 折。">随机打乱，切成 $k$ 折</Step>
+
+<Step say="每一轮留出一折，也就是闪烁的橙色点，在其余各折上拟合，再在留出的这折上算误差。">留出一折，用其余各折拟合，再给它打分 →</Step>
+
+<Step say="k 折误差的平均就是 CV 估计。选 CV 最小的阶数，再用全部数据重新拟合。">$\mathrm{CV}_k$ = 各折误差的平均；取最小者，在全部数据上重拟合</Step>
+
+<Step say="最下面把这个过程在 150 批数据上重复：k 小时估计偏悲观、波动大；留一法紧贴真实测试误差。">$k$ 小：偏悲观、波动大 · 留一法：几乎无偏</Step>
+
+<div slot="visual"><CvFolds client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="自助法，以及两条规矩" say="再补充一个工具和两条规矩。">
+
+<Step say="自助法有放回地抽 n 次。某个样本一次都没被抽到的概率是一减 n 分之一的 n 次方，趋于 e 的负一次方，约 37%。">自助法：$P(\text{没被抽到}) = (1 - \frac1n)^n \to e^{-1} \approx 0.368$</Step>
+
+<Step say="这些袋外样本就是现成的验证集，第八章的随机森林就用它们。">袋外样本 = 现成的验证集（第 08 章）</Step>
+
+<Step say="规矩一：测试集只碰一次。按测试误差挑模型，它就变成了又一个乐观的训练误差。">规矩 1：测试集只用**一次**</Step>
+
+<Step say="规矩二：标准化之类的预处理要在每个训练折内部拟合，否则验证信息会漏进训练。">规矩 2：预处理放进每一折**内部**</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="偏差–方差分解" say="固定一个输入 x0。训练集是随机的，所以预测也是随机的。">
+
+<Step say="把误差拆成三段：噪声、偏差，以及预测围绕其均值的波动。">
+
+$$
+Y_0 - \hat f = \varepsilon + (f - \bar f) + (\bar f - \hat f)
+$$
+
+</Step>
+
+<Step say="平方后取期望。噪声和波动的均值都是零且相互独立，所以交叉项全部消失。">交叉项消失（均值为零、相互独立）</Step>
+
+<Step say="剩下的就是噪声加偏差的平方加方差。">
+
+$$
+\mathbb E\big[(Y_0 - \hat f)^2\big] = \sigma^2 + (f - \bar f)^2 + \mathrm{Var}(\hat f)
+$$
+
+</Step>
+
+<Step effect="focus" say="复杂度让偏差下降、方差上升，两者之和就是 U 形。">
+<p class="big-q sm">复杂度：偏差 ↓、方差 ↑ ⇒ U 形</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="偏差–方差模拟器" say="现在把“对训练集取期望”具体做出来。">
+
+<Step say="学习时长固定为同样的 12 个值，抽 200 批带新噪声的学生。细线是其中 20 次的拟合。">细线 = 200 个训练集中 20 个的拟合</Step>
+
+<Step say="粗橙线是它们的平均，它到虚线真实规律的距离就是偏差；细线散开的程度就是方差。">平均 vs 真实 = 偏差 · 散开程度 = 方差</Step>
+
+<Step say="拖动阶数，看偏差平方下降、方差上升。对最小二乘，平均方差恰好是 σ 平方乘以 p 除以 n。">最小二乘：平均方差 $= \sigma^2 p / n$ →</Step>
+
+<div slot="visual"><BiasVarianceSim client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="有限假设空间的泛化界" say="第一章问过：ERM 能乐观到什么程度？对有限的假设空间，可以给出精确的回答。">
+
+<Step say="对一个固定的函数，Hoeffding 不等式控制了经验风险与真实风险相差超过 epsilon 的概率。">Hoeffding：$P(|R - \hat R_n| > \varepsilon) \le 2e^{-2n\varepsilon^2}$</Step>
+
+<Step say="ERM 可能选中任何一个函数，所以要同时管住所有函数。联合界把概率乘上假设空间的大小。">联合界：$\times\,|\mathcal F|$</Step>
+
+<Step say="令总概率等于 delta，解出 epsilon。">
+
+$$
+R(f) \le \hat R_n(f) + \sqrt{\frac{\ln|\mathcal F| + \ln(2/\delta)}{2n}}
+$$
+
+</Step>
+
+<Step say="假设空间越大，近似误差越小，但这一项越大。这又是偏差–方差权衡，而且代价只是对数级的。">$\mathcal F$ 变大：近似误差 ↓、估计误差 ↑（仅 $\ln|\mathcal F|$）</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="CV 估计量也有偏差和方差" say="交叉验证本身也是一个估计量。">
+
+<Step say="每折的模型只用 n 乘以一减 k 分之一个样本训练，比 n 少，所以估计偏悲观，k 越小越明显。">偏差：只用 $n(1 - \frac1k)$ 个样本训练 ⇒ $k$ 小时偏悲观</Step>
+
+<Step say="它的方差约为 v 除以 k 再加上一个协方差项。k 越大平均的折越多，但训练集重叠越多，各折误差也越相关。">
+
+$$
+\mathrm{Var}(\mathrm{CV}_k) \approx \frac{v}{k} + \Big(1 - \frac1k\Big)c
+$$
+
+</Step>
+
+<Step effect="focus" say="权衡偏差、方差和训练 k 次的开销，常用 5 折或 10 折。">
+<p class="big-q sm">实践中：$k = 5$ 或 $10$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：留一法" say="四位学生的成绩是 52、60、64、70，用均值来预测。">
+
+<Step say="均值是 61.5，训练均方误差是 42.75。">训练均方误差：$42.75$</Step>
+
+<Step say="依次留出每个学生，平方误差约为 160、4、11 和 128，平均是 76。">留一：$(160.44 + 4 + 11.11 + 128.44)/4 = 76$</Step>
+
+<Step say="一般地，均值模型的留一误差等于 n 比 n 减一的平方乘以训练误差。这里是九分之十六乘以 42.75，等于 76。">$\big(\frac{n}{n-1}\big)^2 \times 42.75 = \frac{16}{9}\times 42.75 = 76$</Step>
+
+<Step effect="focus" say="训练误差把测试误差低估了将近一半。">
+<p class="big-q sm">训练误差：低估了将近一半</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：收缩估计" say="从标准差为 3 的总体中抽 9 个样本，用 a 乘以样本均值来估计均值 2。">
+
+<Step say="a 等于 1 时估计无偏，方差是 1，误差也是 1。">$a = 1$：偏差² $0$ + 方差 $1$ = $1$</Step>
+
+<Step say="a 等于 0.8 时，偏差平方是 0.16，方差是 0.64，合计 0.8，比无偏的还小。">$a = 0.8$：$0.16 + 0.64 = 0.8$ ✓</Step>
+
+<Step say="最优的 a 等于 mu 平方除以 mu 平方加 sigma 平方除以 n，这里是五分之四。">$a^* = \frac{\mu^2}{\mu^2 + \sigma^2/n} = 0.8$</Step>
+
+<Step effect="focus" say="无偏的估计不一定最准。第三章的岭回归用的正是这个思路。">
+<p class="big-q sm">无偏 ≠ 最准 → 岭回归（第 03 章）</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="拓展：双下降" say="经典的 U 形曲线止步于模型刚好能拟合数据的地方，现代模型走得远得多。">
+
+<Step say="用 p 个随机余弦特征拟合 20 位学生。p 超过 n 后，取所有插值解中范数最小的那个。">$p$ 个随机特征；$p > n$ 时取最小范数插值解</Step>
+
+<Step say="p 接近 n 时，模型只是勉强能穿过每个点，系数爆炸，测试误差达到峰值。">$p \approx n$：系数巨大，测试误差达到峰值</Step>
+
+<Step say="继续增大 p，最小范数解越来越平滑，测试误差第二次下降。">$p \gg n$：拟合更平滑，第二次下降 →</Step>
+
+<Step say="打开一点岭正则，峰就消失了。衡量复杂度的是范数，而不是参数个数。">岭正则消除峰值：看**范数**，不看参数个数</Step>
+
+<div slot="visual"><DoubleDescent client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="动手练习" say="练习在讲义页面上：四道推导题，从零实现交叉验证与偏差–方差模拟，以及用 scikit-learn 选模型。">
+
+<Step say="运行代码后，可以逐折回放 6 折交叉验证，也可以看阶数从 1 增加到 10 时拟合曲线的变化。">✎ 4 道推导 · ⌨ 从零实现 k 折 CV 与偏差–方差 · ⚙ `cross_val_score` / `validation_curve`</Step>
+
+<Step effect="pop" say="点按钮开始练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/generalization/#s-practice">开始练习 →</a>
+</Step>
+
+</Slide>

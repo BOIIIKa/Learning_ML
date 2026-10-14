@@ -1,0 +1,7 @@
+- **Generalization**: training error only falls as the model grows; test error is U-shaped. The generalization gap $R(\hat f) - \hat R_n(\hat f)$ measures how optimistic training error is, so it cannot be used to choose a model.
+- **Bias–variance**: under squared loss, expected error = noise $\sigma^2$ + bias² + variance. Complexity lowers bias and raises variance; for least squares the average variance is exactly $\sigma^2 p/n$.
+- **Finite-class bound**: Hoeffding + union bound give, with probability $1-\delta$, $R(f) \le \hat R_n(f) + \sqrt{(\ln|\mathcal F| + \ln(2/\delta))/(2n)}$ for every $f$. The cost of a bigger class is only logarithmic.
+- **Estimating test error**: hold-out (pessimistic, noisy) → k-fold CV ($k = 5$ or $10$) → LOO ($k = n$). Choose by CV, then refit on all the data; touch the test set once; keep preprocessing inside the folds.
+- **The CV estimator**: small $k$ trains on less data, so it is pessimistic and noisier; large $k$ is nearly unbiased but costs $k$ fits and its fold errors are highly correlated.
+- **Bootstrap**: sample $n$ with replacement; each sample is out-of-bag with probability $(1-1/n)^n \to e^{-1} \approx 0.368$.
+- **Double descent**: with minimum-norm interpolation, test error peaks at the threshold $p \approx n$ and falls again for $p \gg n$; ridge removes the peak. Parameter count is not the right measure of complexity.
