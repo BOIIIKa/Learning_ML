@@ -1,0 +1,7 @@
+- **PCA**：最大化 $w^\top\Sigma w$，$\|w\| = 1$ ⇒ $\Sigma w = \lambda w$；第 $j$ 主成分方差 $= \lambda_j$，解释方差比 $\lambda_j/\sum\lambda$。
+- **两种定义等价**：$\|x\|^2 = (w^\top x)^2 + \|x - ww^\top x\|^2$ ⇒ 总方差 = 投影方差 + 重构误差，最大化前者 ⇔ 最小化后者。
+- **SVD 与 PCA**：$X_c = U\Sigma V^\top$，主方向 = 右奇异向量，$\lambda_j = \sigma_j^2/n$；用 SVD 比显式求协方差更稳。
+- **Eckart–Young**：截断 SVD $A_k$ 是秩 $\le k$ 中最优近似，$\|A - A_k\|_F = \sqrt{\sum_{j > k}\sigma_j^2}$（谱范数下为 $\sigma_{k+1}$）。
+- **例题**：$\Sigma = [[2,1],[1,2]]$，$\lambda = 3, 1$，方向 $(1,\pm1)/\sqrt2$，第一主成分解释 75%；LSA 例题保留 2 个奇异值占能量 91.9%，$D_1$、$D_2$ 相似度 $0.80 \to 0.994$。
+- **LSA 与 NMF**：词–文档矩阵的截断 SVD 发现潜在话题；NMF $A \approx WH$（非负），乘法更新 $H \leftarrow H \odot W^\top A/(W^\top WH)$ 单调不增、可解释性更好。
+- **实践**：单位不同先标准化；碎石图 / 累计解释方差选 $k$；t-SNE、UMAP 适合可视化但不保距离。

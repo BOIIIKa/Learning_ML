@@ -1,0 +1,7 @@
+- **PCA**: maximize $w^\top\Sigma w$ with $\|w\| = 1$ ⇒ $\Sigma w = \lambda w$; component $j$ has variance $\lambda_j$ and explained variance ratio $\lambda_j/\sum\lambda$.
+- **Two equivalent definitions**: $\|x\|^2 = (w^\top x)^2 + \|x - ww^\top x\|^2$ ⇒ total variance = projected variance + reconstruction error; maximizing one ⇔ minimizing the other.
+- **SVD and PCA**: $X_c = U\Sigma V^\top$; principal directions = right singular vectors, $\lambda_j = \sigma_j^2/n$; the SVD is more stable than forming the covariance.
+- **Eckart–Young**: the truncated SVD $A_k$ is the best approximation of rank $\le k$, with $\|A - A_k\|_F = \sqrt{\sum_{j > k}\sigma_j^2}$ ($\sigma_{k+1}$ in the spectral norm).
+- **Worked examples**: $\Sigma = [[2,1],[1,2]]$ has $\lambda = 3, 1$ along $(1,\pm1)/\sqrt2$, and the first component explains 75%; in the LSA example two singular values keep 91.9% of the energy and the $D_1$–$D_2$ similarity goes $0.80 \to 0.994$.
+- **LSA and NMF**: a truncated SVD of the term–document matrix uncovers latent topics; NMF $A \approx WH$ (non-negative) with multiplicative updates $H \leftarrow H \odot W^\top A/(W^\top WH)$ never increases the error and is easier to interpret.
+- **Practice**: standardize features with different units; choose $k$ from the scree plot or cumulative explained variance; t-SNE and UMAP are for visualization and do not preserve distances.

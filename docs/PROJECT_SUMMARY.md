@@ -32,10 +32,11 @@
 | 09 结构化预测：HMM 与 CRF | ✓ | ✓ | ✓ | 3 | 4 + 2 | 序列标注 |
 | 10 聚类 | ✓ | ✓ | ✓ | 3 | 4 + 2 | 聚类 |
 | 11 EM 算法与混合模型 | ✓ | ✓ | ✓ | 3 | 4 + 2 | 高斯混合 |
+| 12 矩阵分解与降维 | ✓ | ✓ | ✓ | 3 | 4 + 2 | 降维 |
 | 07 支持向量机与核方法 | ✓ | ✓ | ✓ | 5 | 4 + 2 | SVM |
 | 08 决策树与集成学习 | ✓ | ✓ | ✓ | 5 | 4 + 2 | LightGBM |
 
-合计：30 章中完成 12 章（00–11），共有 47 个交互组件、484 拍动画（每种语言）、48 道推导题、24 道代码题。测试有 145 项前端单元测试，以及 72 项练习测试（参考答案全部通过，骨架全部不通过）。
+合计：30 章中完成 13 章（00–12），共有 50 个交互组件、514 拍动画（每种语言）、52 道推导题、26 道代码题。测试有 156 项前端单元测试，以及 78 项练习测试（参考答案全部通过，骨架全部不通过）。
 
 ## 3. 架构一览
 
@@ -103,8 +104,8 @@ review) and a 3Blue1Brown-style **animated course** that plays itself: manim-lik
 TransformMatchingTex animations, narration subtitles (optionally spoken), and drive scripts that
 operate the interactive figures.
 
-Twelve of 30 chapters are done: 00–11. They contain 47 widgets, 484 animated beats per language,
-48 derivation drills and 24 in-browser Python exercises, tested by 145 unit tests and 72 exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
+Thirteen of 30 chapters are done: 00–12. They contain 50 widgets, 514 animated beats per language,
+52 derivation drills and 26 in-browser Python exercises, tested by 156 unit tests and 78 exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
 `.claude/skills/*` and `templates/chapter/`, and scaffolded by `scripts/new_chapter.py`.
 
 Next steps:

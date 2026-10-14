@@ -1,0 +1,36 @@
+---
+title: "Dimension reduction in practice: PCA, truncated SVD and NMF"
+summary: "Standardization, choosing the number of components, sparse matrices, avoiding leakage, and reading visualizations correctly."
+chapters: ["12"]
+---
+
+### Go-to code
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA, TruncatedSVD, NMF
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+pca = make_pipeline(StandardScaler(), PCA(n_components=0.9))  # keep 90% of the variance
+Z = pca.fit_transform(X_train)
+lsa = make_pipeline(TfidfVectorizer(stop_words="english"), TruncatedSVD(100))   # sparse, no centring
+topics = NMF(10, init="nndsvda").fit(TfidfVectorizer().fit_transform(docs))
+```
+
+### Traps
+
+- **Standardize first**: with mixed units the first component is just "the feature with the largest units".
+- **Put it in the pipeline**: PCA is learned from data too; fit it on the training set only, or cross-validation leaks information.
+- **`n_components` can be a fraction**: `PCA(0.95)` picks enough components for 95% of the variance; `svd_solver="randomized"` is much faster on large matrices.
+- **Use TruncatedSVD for sparse data**: PCA centres the data and turns a sparse matrix dense; LSA on text uses `TruncatedSVD`.
+- **High variance is not the same as useful**: PCA ignores the labels, and the direction of greatest variance may be irrelevant to the target; with labels, consider PLS or plain regularized regression.
+- **t-SNE / UMAP are for looking only**: cluster sizes and distances between clusters cannot be interpreted, and results depend on `perplexity` and the random seed.
+
+### Frontier reading
+
+- Eckart and Young (1936): optimal low-rank approximation.
+- Deerwester et al. (1990): latent semantic analysis.
+- Lee and Seung (2001): the multiplicative updates of NMF and their convergence.
+- Halko, Martinsson and Tropp (2011): randomized SVD, the standard tool for large-scale factorizations.
+- McInnes, Healy and Melville (2018): UMAP.

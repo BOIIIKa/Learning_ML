@@ -1,0 +1,68 @@
+# 第 12 章 矩阵分解与降维 —— 课后练习 / Chapter 12 exercises
+
+derivation:
+  - id: top-eig
+    title: {zh: "最大方差方向的方差", en: "Variance along the best direction"}
+    prompt:
+      zh: "两项指标方差都是 $a$、协方差为 $b \\gt 0$。第一主成分方向上的方差是多少？可用变量：`a, b`。"
+      en: "Two markers both have variance $a$ and covariance $b \\gt 0$. What is the variance along the first principal direction? Variables: `a, b`."
+    answer: "a + b"
+    vars: {a: [1, 3], b: [0.1, 0.9]}
+    solution:
+      zh: "拉格朗日条件 $\\Sigma w = \\lambda w$，投影方差就是特征值。$\\Sigma = \\begin{pmatrix} a & b \\\\ b & a \\end{pmatrix}$ 的特征值为 $a \\pm b$，方向 $(1, \\pm 1)/\\sqrt2$，最大的是 $a + b$。例题中 $a = 2, b = 1$，得 3，解释 $3/4 = 75\\%$ 的方差。"
+      en: "The Lagrange condition is $\\Sigma w = \\lambda w$, and the projected variance is the eigenvalue. $\\Sigma = \\begin{pmatrix} a & b \\\\ b & a \\end{pmatrix}$ has eigenvalues $a \\pm b$ with directions $(1, \\pm 1)/\\sqrt2$; the largest is $a + b$. In the worked example $a = 2, b = 1$ gives 3, explaining $3/4 = 75\\%$ of the variance."
+
+  - id: eckart-young
+    title: {zh: "秩 1 近似的误差", en: "Error of the rank-1 approximation"}
+    prompt:
+      zh: "矩阵的奇异值为 $s_1 \\ge s_2 \\ge s_3$。最好的秩 1 近似的 Frobenius 误差是多少？可用变量：`s1, s2, s3`。"
+      en: "A matrix has singular values $s_1 \\ge s_2 \\ge s_3$. What is the Frobenius error of its best rank-1 approximation? Variables: `s1, s2, s3`."
+    answer: "sqrt(s2^2 + s3^2)"
+    vars: {s1: [3, 5], s2: [1, 2.9], s3: [0, 0.9]}
+    solution:
+      zh: "由 Eckart–Young，最好的秩 1 近似是 $\\sigma_1u_1v_1^\\top$，误差 $A - A_1 = \\sigma_2u_2v_2^\\top + \\sigma_3u_3v_3^\\top$。各项正交，$\\|A - A_1\\|_F^2 = \\sigma_2^2 + \\sigma_3^2$。注意误差与 $s_1$ 无关：保留下来的部分不贡献误差。"
+      en: "By Eckart–Young the best rank-1 approximation is $\\sigma_1u_1v_1^\\top$, leaving $A - A_1 = \\sigma_2u_2v_2^\\top + \\sigma_3u_3v_3^\\top$. The terms are orthogonal, so $\\|A - A_1\\|_F^2 = \\sigma_2^2 + \\sigma_3^2$. The error does not involve $s_1$: what is kept contributes nothing to it."
+
+  - id: projected-variance
+    title: {zh: "任意方向上的投影方差", en: "Projected variance along any direction"}
+    prompt:
+      zh: "中心化数据的协方差为 $\\begin{pmatrix} a & c \\\\ c & b \\end{pmatrix}$。投影到单位向量 $(\\cos t, \\sin t)$ 上的方差是多少？可用变量：`a, b, c, t`。"
+      en: "Centred data have covariance $\\begin{pmatrix} a & c \\\\ c & b \\end{pmatrix}$. What is the variance of the projection onto the unit vector $(\\cos t, \\sin t)$? Variables: `a, b, c, t`."
+    answer: "a*cos(t)^2 + 2*c*sin(t)*cos(t) + b*sin(t)^2"
+    vars: {a: [0.5, 3], b: [0.5, 3], c: [-1, 1], t: [-3, 3]}
+    solution:
+      zh: "$\\mathrm{Var}(w^\\top x) = w^\\top\\Sigma w = a\\cos^2t + 2c\\sin t\\cos t + b\\sin^2t$。总方差是 $a + b$，所以重构误差是 $a + b$ 减去它——旋转组件里两条色带之和不变。对 $t$ 求导令其为零得 $\\tan 2t = 2c/(a - b)$，正是协方差矩阵的特征方向。"
+      en: "$\\mathrm{Var}(w^\\top x) = w^\\top\\Sigma w = a\\cos^2t + 2c\\sin t\\cos t + b\\sin^2t$. The total variance is $a + b$, so the reconstruction error is $a + b$ minus this, which is why the two coloured bars in the rotating widget always add up to the same length. Setting the derivative in $t$ to zero gives $\\tan 2t = 2c/(a - b)$, the eigen-directions of the covariance."
+
+  - id: explained
+    title: {zh: "解释方差比", en: "Explained variance ratio"}
+    prompt:
+      zh: "协方差矩阵的特征值为 $l_1 \\ge l_2 \\ge l_3 \\ge l_4$。保留前两个主成分，解释了多大比例的方差？可用变量：`l1, l2, l3, l4`。"
+      en: "A covariance matrix has eigenvalues $l_1 \\ge l_2 \\ge l_3 \\ge l_4$. What share of the variance do the first two components explain? Variables: `l1, l2, l3, l4`."
+    answer: "(l1 + l2)/(l1 + l2 + l3 + l4)"
+    vars: {l1: [3, 5], l2: [2, 2.9], l3: [0.5, 1.9], l4: [0, 0.4]}
+    solution:
+      zh: "第 $j$ 个主成分的方差是 $\\lambda_j$，总方差是 $\\mathrm{tr}\\,\\Sigma = \\sum_j\\lambda_j$。所以比例是 $(l_1 + l_2)/\\sum_j l_j$。数据矩阵用 SVD 时 $\\lambda_j = \\sigma_j^2/n$，比例也等于 $(\\sigma_1^2 + \\sigma_2^2)/\\sum\\sigma_j^2$——LSA 例题中的“能量占比 91.9%”就是这样算的。"
+      en: "Component $j$ has variance $\\lambda_j$ and the total is $\\mathrm{tr}\\,\\Sigma = \\sum_j\\lambda_j$, so the share is $(l_1 + l_2)/\\sum_j l_j$. With the SVD of the data matrix, $\\lambda_j = \\sigma_j^2/n$ and the share is also $(\\sigma_1^2 + \\sigma_2^2)/\\sum\\sigma_j^2$, which is how the LSA example's \"91.9% of the energy\" is computed."
+
+code:
+  - id: pca-power
+    kind: implement
+    file: pca_power.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现幂迭代、PCA 与低秩重构", en: "Power iteration, PCA and low-rank reconstruction from scratch"}
+    intro:
+      zh: "补全幂迭代、基于 SVD 的 PCA 和秩 k 重构。检查会在例题矩阵上找到特征值 3，与 scikit-learn 的 PCA 对拍，并在手写数字上验证 Eckart–Young：重构误差恰好等于被丢掉的奇异值平方和的平方根。运行后可以回放幂迭代中方向一步步转向主方向。"
+      en: "Fill in power iteration, PCA via the SVD and the rank-k reconstruction. The checks find the eigenvalue 3 of the worked example's matrix, match scikit-learn's PCA, and verify Eckart–Young on handwritten digits: the reconstruction error is exactly the root of the sum of the discarded squared singular values. Afterwards, replay power iteration turning the direction towards the principal axis."
+    metrics:
+      - {key: variance, label: {zh: "投影方差", en: "Projected variance"}}
+  - id: mf-library
+    kind: library
+    file: mf_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 scikit-learn 做 PCA、LSA 与 NMF", en: "PCA, LSA and NMF in scikit-learn"}
+    intro:
+      zh: "先在 8×8 手写数字上算出保留 90% 方差需要几个主成分；再在一个小语料上用 TF-IDF + 截断 SVD 做潜在语义分析，用 NMF 找出两个话题。运行后可以看到手写的 3 和 8 在前两个主成分上的分布——PCA 没用任何标签。"
+      en: "First find how many principal components keep 90% of the variance of 8×8 handwritten digits; then do latent semantic analysis on a tiny corpus with TF-IDF + truncated SVD, and find two topics with NMF. Afterwards, see how handwritten 3s and 8s spread over the first two components, with no labels used by PCA."
+    metrics:
+      - {key: var, label: {zh: "第一主成分方差", en: "First-component variance"}}

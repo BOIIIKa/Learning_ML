@@ -1,0 +1,114 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import PcaRotate from "../../components/chapters/ch12/PcaRotate";
+import LowRankImage from "../../components/chapters/ch12/LowRankImage";
+import ScreePlot from "../../components/chapters/ch12/ScreePlot";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 12 · Animated course" title="Matrix Factorization and Dimensionality Reduction: SVD, PCA and LSA" say="Dozens of markers, many saying the same thing. How do we summarize them with a few numbers and lose the least?">
+
+Principal directions · Low-rank approximation · Topics behind words
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Can one number replace two?" say="Two markers are strongly correlated. Project every point onto a line.">
+
+<Step drive="s1=-40/0.6; s1=80/5" say="Rotate the line: the variance of the projections and the error of the projections trade off.">Projected variance ↔ reconstruction error</Step>
+
+<Step say="Their sum is always the total variance: that is Pythagoras.">Their sum = total variance (Pythagoras)</Step>
+
+<Step drive="click:btn1; wait:3" say="So the direction of greatest variance is the direction of smallest reconstruction error: the eigenvector of the covariance's largest eigenvalue.">Max variance = min error = first principal component</Step>
+
+<div slot="visual"><PcaRotate client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions for this chapter" say="Three questions.">
+
+<Step effect="focus" say="What is the best low-dimensional representation?">
+<p class="big-q sm">What is the best low-dimensional representation?</p>
+</Step>
+
+<Step say="What is the best low-rank approximation of a matrix?">The best low-rank approximation?</Step>
+
+<Step say="How do we find the topics behind the words of a text?">The topics behind the words?</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="PCA by Lagrange multipliers" say="Maximize the projected variance subject to unit length.">
+
+<Morph>
+
+<Step effect="morph" say="Objective: the projected variance. Constraint: unit length.">
+
+$$
+\max_w\ w^\top\Sigma w \quad \text{s.t.}\ w^\top w = 1
+$$
+
+</Step>
+
+<Step effect="morph" say="Write the Lagrangian.">
+
+$$
+L = w^\top\Sigma w - \lambda(w^\top w - 1)
+$$
+
+</Step>
+
+<Step effect="morph" say="Set the derivative in w to zero: the eigen-equation.">
+
+$$
+\Sigma w = \lambda w
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="The projected variance is then lambda, so take the largest eigenvalue. Example: covariance two one, one two has eigenvalues three and one, and the first component explains seventy-five percent.">$\Sigma = [[2,1],[1,2]]$: $\lambda = 3, 1$, explains $75\%$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="The scree plot: how many components" say="Eight markers, actually driven by two latent factors.">
+
+<Step drive="s1=1/0.6; s1=3/2" say="After the first two components the explained variance drops off a cliff; the rest is mostly noise.">A cliff after the first two</Step>
+
+<Step drive="s1=2/1" say="Projected on the first two components, the three subtypes are plain to see. PCA used no labels.">2-D projection: the subtypes show</Step>
+
+<Step say="Markers in different units must be standardized first.">Standardize first</Step>
+
+<div slot="visual"><ScreePlot client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Low-rank approximation" say="Treat an image as a matrix and take its singular value decomposition.">
+
+<Step drive="s1=1/0.6" say="Each term is a rank-one image. With only the first term, all that is left is the rough shading.">$A = \sum_j \sigma_j u_j v_j^\top$</Step>
+
+<Step drive="s1=10/4" say="The singular values fall fast; with about ten terms the picture is already clear.">The spectrum falls fast → small $k$ suffices</Step>
+
+<Step say="The Eckart–Young theorem: the truncated SVD is the best among all matrices of rank at most k, and its error is exactly the root of the sum of the discarded squared singular values.">Eckart–Young: $\|A - A_k\|_F = \sqrt{\sum_{j>k}\sigma_j^2}$</Step>
+
+<div slot="visual"><LowRankImage client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Topics behind the words" say="A term–document matrix: patient, doctor, stock, market, and four documents.">
+
+<Step say="The singular values are about 3.15, 2.58, 1.16 and 0.32; the first two hold 92 percent of the energy.">$\sigma \approx 3.15,\ 2.58,\ 1.16,\ 0.32$; first two: $91.9\%$</Step>
+
+<Step say="In the two-dimensional latent space, the similarity of the two medical documents rises from 0.8 to 0.994.">$\cos(D_1, D_2)$: $0.80 \to 0.994$</Step>
+
+<Step say="Non-negative matrix factorization keeps the factors non-negative: each topic is a sum of words, easier to interpret.">NMF: $A \approx WH$, $W, H \ge 0$</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, power iteration, PCA and low-rank reconstruction from scratch, then PCA, LSA and NMF with scikit-learn.">
+
+<Step say="After running your code you can replay power iteration turning towards the principal direction.">✎ 4 derivations · ⌨ power iteration + PCA + low rank · ⚙ PCA, LSA, NMF</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/matrix-factorization/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

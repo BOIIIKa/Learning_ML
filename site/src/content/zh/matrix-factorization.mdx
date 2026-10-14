@@ -1,0 +1,145 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import PcaRotate from "../../components/chapters/ch12/PcaRotate";
+import LowRankImage from "../../components/chapters/ch12/LowRankImage";
+import ScreePlot from "../../components/chapters/ch12/ScreePlot";
+
+<Section lang="zh" k="scenario">
+
+医院的化验单越来越长：几十项指标，很多其实在说同一件事——肝功能的几项一起升高，血脂的几项一起升高。医生想要一张“缩略图”：用两三个综合指标概括几十项，丢掉的信息越少越好。
+
+先看最简单的情形：两项高度相关的指标，能不能用一个数代替两个？
+
+<PcaRotate client:visible lang="zh" />
+
+这一章回答：
+
+1. 怎样找到“最好”的低维表示？“保留最多的方差”和“重构最准确”为什么是同一回事？（PCA）
+2. 一个矩阵最好的低秩近似是什么？（SVD 与 Eckart–Young 定理）
+3. 这些工具怎样用到文本上，发现“词背后的主题”？（潜在语义分析）
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 主成分分析
+
+<Box kind="definition" title="主成分分析（PCA）">
+
+**模型**：数据近似落在一个 $k$ 维线性子空间里：$x_i \approx \bar x + W z_i$，$W \in \mathbb R^{p \times k}$ 的列正交归一，$z_i = W^\top(x_i - \bar x)$ 是低维坐标（主成分得分）。
+
+**策略**（两种等价的说法）：
+
+- 最大化投影后的方差 $\mathrm{tr}(W^\top \Sigma W)$；
+- 最小化重构误差 $\frac1n\sum_i \|x_i - \bar x - WW^\top(x_i - \bar x)\|^2$。
+
+**算法**：$W$ 取样本协方差矩阵 $\Sigma$ 前 $k$ 个特征向量；或对中心化数据矩阵做 SVD，取前 $k$ 个右奇异向量。
+
+</Box>
+
+第 $j$ 个特征值 $\lambda_j$ 就是第 $j$ 个主成分方向上的方差，$\lambda_j/\sum_l \lambda_l$ 称为**解释方差比**。碎石图把它们从大到小排开，帮助选 $k$：
+
+<ScreePlot client:visible lang="zh" />
+
+**先标准化吗？** PCA 对尺度敏感：单位最大的特征会主导第一主成分。特征单位不同时，通常先标准化（等价于对相关系数矩阵做 PCA）。
+
+### 奇异值分解与低秩近似
+
+任何 $m \times n$ 矩阵都可以分解为 $A = U\Sigma V^\top = \sum_j \sigma_j u_j v_j^\top$，$\sigma_1 \ge \sigma_2 \ge \dots \ge 0$（第 00 章）。只保留前 $k$ 项得到**截断 SVD** $A_k$——它就是 $A$ 在所有秩不超过 $k$ 的矩阵中最好的近似：
+
+<LowRankImage client:visible lang="zh" />
+
+PCA 和 SVD 的关系：中心化数据矩阵 $X_c = U\Sigma V^\top$，则协方差 $\frac1n X_c^\top X_c = V\frac{\Sigma^2}{n}V^\top$——右奇异向量就是主方向，$\lambda_j = \sigma_j^2/n$。实践中用 SVD 而不是显式构造协方差，数值上更稳定。
+
+### 潜在语义分析与非负矩阵分解
+
+把文档集写成**词–文档矩阵** $A$（第 $i$ 行第 $j$ 列是词 $i$ 在文档 $j$ 中的次数或 TF-IDF 权重）。同义词、相关词在不同文档中一起出现，矩阵近似低秩。**潜在语义分析（LSA）**对 $A$ 做截断 SVD：每个奇异向量是一个“潜在语义方向”（话题），文档在这 $k$ 维里比较相似度，即使两篇文档没有共同的词，也可能因为共享话题而相似。
+
+SVD 的因子可正可负，不好解释。**非负矩阵分解（NMF）**要求 $A \approx WH$，$W, H \ge 0$：每篇文档是若干话题的非负组合，每个话题是若干词的非负组合，更像“部分的叠加”。常用乘法更新
+
+$$
+H \leftarrow H \odot \frac{W^\top A}{W^\top W H}, \qquad W \leftarrow W \odot \frac{A H^\top}{W H H^\top}
+$$
+
+（逐元素乘除），它保持非负，并且使 $\|A - WH\|_F^2$ 单调不增。
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### PCA：拉格朗日乘子得到特征方程
+
+先找一维：最大化 $w^\top \Sigma w$，约束 $\|w\| = 1$。拉格朗日函数 $L = w^\top \Sigma w - \lambda(w^\top w - 1)$，求导令其为零：
+
+$$
+\Sigma w = \lambda w.
+$$
+
+$w$ 必是 $\Sigma$ 的特征向量，此时投影方差 $w^\top \Sigma w = \lambda$，所以取**最大**特征值对应的特征向量（推导题 1）。第二个方向在与 $w_1$ 正交的约束下重复这一过程，得到第二大特征值的特征向量，以此类推。
+
+### 最大方差 = 最小重构误差
+
+对单位向量 $w$ 和中心化的 $x$，勾股定理给出
+
+$$
+\|x\|^2 = (w^\top x)^2 + \|x - ww^\top x\|^2.
+$$
+
+对所有样本求平均：总方差 $=$ 投影方差 $+$ 重构误差（推导题 3）。总方差与 $w$ 无关，所以最大化前者等价于最小化后者。对 $k$ 维子空间同理：$\mathrm{tr}\,\Sigma = \mathrm{tr}(W^\top\Sigma W) + $ 重构误差。
+
+<Box kind="theorem" title="Eckart–Young 定理">
+
+设 $A = \sum_j \sigma_j u_j v_j^\top$，$A_k = \sum_{j \le k}\sigma_j u_j v_j^\top$。对任意秩不超过 $k$ 的矩阵 $B$，
+
+$$
+\|A - B\|_F \ \ge\ \|A - A_k\|_F = \sqrt{\sigma_{k+1}^2 + \dots + \sigma_r^2}.
+$$
+
+（谱范数下同样成立，误差为 $\sigma_{k+1}$。）
+
+</Box>
+
+**证明思路（谱范数）**：$B$ 的秩不超过 $k$，所以零空间维数至少 $n - k$；它与 $A$ 的前 $k+1$ 个右奇异向量张成的 $(k+1)$ 维子空间必有非零交集。取其中的单位向量 $x$，则 $\|(A - B)x\| = \|Ax\| \ge \sigma_{k+1}$。Frobenius 范数的版本可以用 Weyl 不等式 $\sigma_{i+j-1}(A) \le \sigma_i(A - B) + \sigma_j(B)$ 逐项得到（推导题 2 计算这个误差）。
+
+### NMF 的乘法更新
+
+对 $H$ 的梯度是 $\nabla_H = W^\top W H - W^\top A$，把它拆成正、负两部分 $\nabla^+ = W^\top WH$、$\nabla^- = W^\top A$。乘法更新 $H \leftarrow H \odot \nabla^-/\nabla^+$ 相当于一步逐元素步长为 $H/(W^\top WH)$ 的梯度下降：步长自适应、永远非负。Lee 与 Seung（2001）构造辅助函数证明它使目标单调不增——与 EM 的“下界贴合再上推”是同一种思路。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题一：两项指标的 PCA
+
+<Box kind="example" title="协方差 [[2, 1], [1, 2]]">
+
+两项指标方差都是 2、协方差为 1。特征方程 $\det(\Sigma - \lambda I) = (2 - \lambda)^2 - 1 = 0$，得 $\lambda_1 = 3$、$\lambda_2 = 1$；对应方向 $(1, 1)/\sqrt2$ 与 $(1, -1)/\sqrt2$。
+
+- 第一主成分是两项指标的平均（乘以 $\sqrt2$），解释 $3/(3+1) = 75\%$ 的方差。
+- 只用它重构，平均误差是 $\lambda_2 = 1$；任何其他方向的误差都更大。
+
+</Box>
+
+### 例题二：四篇文档的 LSA
+
+<Box kind="example" title="词–文档矩阵">
+
+词（行）：病人、医生、股票、市场；文档（列）$D_1$–$D_4$：
+
+$$
+A = \begin{pmatrix} 2 & 1 & 0 & 0 \\ 1 & 2 & 0 & 1 \\ 0 & 0 & 2 & 1 \\ 0 & 0 & 1 & 1 \end{pmatrix}.
+$$
+
+奇异值 $\approx 3.146,\ 2.578,\ 1.164,\ 0.318$；保留前两个，能量占比 $(\sigma_1^2 + \sigma_2^2)/\sum\sigma_j^2 \approx 91.9\%$。在二维潜在空间里，$D_1$ 与 $D_2$（都在谈医疗）的余弦相似度从原始词频的 $0.80$ 升到 $0.994$：两个话题被分开，同一话题内部的措辞差异被抹平。
+
+</Box>
+
+### 拓展
+
+- **概率 PCA 与因子分析**：给 PCA 加上高斯噪声模型，就能用 EM 拟合、处理缺失值，并算似然（第 11 章）。
+- **核 PCA**：把内积换成核函数，在高维特征空间里做 PCA（第 07 章）。
+- **非线性降维**：t-SNE、UMAP 保留局部邻域结构，适合可视化，但距离和簇的大小不能直接解读；自编码器是 PCA 的非线性推广（第四部分）。
+- **推荐系统与矩阵补全**：用户–物品评分矩阵大部分缺失，用低秩分解补全；核范数正则是秩的凸松弛。
+- **词向量**：LSA 是词嵌入的前身；word2vec 被证明近似在分解一个移位的点互信息矩阵（Levy 与 Goldberg，2014）。
+
+</Section>

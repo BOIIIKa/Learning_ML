@@ -1,0 +1,36 @@
+---
+title: "降维实战：PCA、截断 SVD 与 NMF"
+summary: "标准化、选主成分个数、稀疏矩阵、避免数据泄漏，以及可视化工具的正确读法。"
+chapters: ["12"]
+---
+
+### 常用代码
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA, TruncatedSVD, NMF
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+pca = make_pipeline(StandardScaler(), PCA(n_components=0.9))  # 保留 90% 方差
+Z = pca.fit_transform(X_train)
+lsa = make_pipeline(TfidfVectorizer(stop_words="english"), TruncatedSVD(100))   # 稀疏矩阵，不中心化
+topics = NMF(10, init="nndsvda").fit(TfidfVectorizer().fit_transform(docs))
+```
+
+### 容易踩的坑
+
+- **先标准化**：单位不同时第一主成分只是“单位最大的那个特征”。
+- **放进管道**：PCA 也是从数据中学到的，必须只在训练集上拟合，否则交叉验证会泄漏信息。
+- **`n_components` 可以是比例**：`PCA(0.95)` 自动选够 95% 方差的个数；`svd_solver="randomized"` 在大矩阵上快得多。
+- **稀疏数据用 TruncatedSVD**：PCA 要中心化，会把稀疏矩阵变稠密；文本的 LSA 用 `TruncatedSVD`。
+- **方差大不等于有用**：PCA 不看标签，最大方差方向可能与预测目标无关；有监督时考虑 PLS 或直接正则化回归。
+- **t-SNE / UMAP 只用来看**：簇的大小、簇间距离都不可解读，结果依赖 `perplexity` 和随机种子。
+
+### 前沿阅读
+
+- Eckart 与 Young（1936）：最优低秩近似。
+- Deerwester 等（1990）：潜在语义分析。
+- Lee 与 Seung（2001）：NMF 的乘法更新算法及其收敛性。
+- Halko、Martinsson、Tropp（2011）：随机化 SVD，大规模矩阵分解的标准工具。
+- McInnes、Healy、Melville（2018）：UMAP。

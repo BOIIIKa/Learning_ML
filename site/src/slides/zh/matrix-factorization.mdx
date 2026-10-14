@@ -1,0 +1,114 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import PcaRotate from "../../components/chapters/ch12/PcaRotate";
+import LowRankImage from "../../components/chapters/ch12/LowRankImage";
+import ScreePlot from "../../components/chapters/ch12/ScreePlot";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 12 章 · 动画课程" title="矩阵分解与降维：SVD、PCA 与潜在语义分析" say="几十项指标，很多在说同一件事。怎样用几个数概括它们，又丢掉最少的信息？">
+
+主方向 · 低秩近似 · 词背后的话题
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="一个数能代替两个吗？" say="两项指标高度相关。把每个点投影到一条直线上。">
+
+<Step drive="s1=-40/0.6; s1=80/5" say="转动直线：投影的方差和投影的误差此消彼长。">投影方差 ↔ 重构误差，此消彼长</Step>
+
+<Step say="两者之和永远等于总方差，这就是勾股定理。">两者之和 = 总方差（勾股定理）</Step>
+
+<Step drive="click:btn1; wait:3" say="所以方差最大的方向，就是重构误差最小的方向：协方差矩阵最大特征值的特征向量。">最大方差 = 最小误差 = 第一主成分</Step>
+
+<div slot="visual"><PcaRotate client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="最好的低维表示是什么？">
+<p class="big-q sm">最好的低维表示是什么？</p>
+</Step>
+
+<Step say="一个矩阵最好的低秩近似是什么？">最好的低秩近似？</Step>
+
+<Step say="怎样从文本里找出词背后的话题？">词背后的话题？</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="PCA：拉格朗日乘子" say="在单位长度的约束下，最大化投影方差。">
+
+<Morph>
+
+<Step effect="morph" say="目标：投影方差，约束：单位长度。">
+
+$$
+\max_w\ w^\top\Sigma w \quad \text{s.t.}\ w^\top w = 1
+$$
+
+</Step>
+
+<Step effect="morph" say="写出拉格朗日函数。">
+
+$$
+L = w^\top\Sigma w - \lambda(w^\top w - 1)
+$$
+
+</Step>
+
+<Step effect="morph" say="对 w 求导令其为零，得到特征方程。">
+
+$$
+\Sigma w = \lambda w
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="此时投影方差就是 lambda，所以取最大的特征值。例题：协方差二一一二，特征值三和一，第一主成分解释百分之七十五。">$\Sigma = [[2,1],[1,2]]$：$\lambda = 3, 1$，解释 $75\%$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="碎石图：留几个主成分" say="八项指标，其实由两个潜在因素驱动。">
+
+<Step drive="s1=1/0.6; s1=3/2" say="前两个主成分之后，解释方差断崖式下跌，后面几乎全是噪声。">前两个之后断崖式下跌</Step>
+
+<Step drive="s1=2/1" say="投影到前两个主成分上，三个亚型一目了然。PCA 没有用任何标签。">二维投影：亚型清晰可见</Step>
+
+<Step say="单位不同的指标，要先标准化。">先标准化</Step>
+
+<div slot="visual"><ScreePlot client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="低秩近似" say="把一张图看成矩阵，做奇异值分解。">
+
+<Step drive="s1=1/0.6" say="每一项是一张秩一的图像。只保留第一项，只剩大致的明暗。">$A = \sum_j \sigma_j u_j v_j^\top$</Step>
+
+<Step drive="s1=10/4" say="奇异值下降得很快，保留十项左右，图已经很清楚了。">奇异值谱下降快 → 小 $k$ 就够</Step>
+
+<Step say="Eckart–Young 定理：截断 SVD 是所有秩不超过 k 的矩阵里最好的，误差恰好是丢掉的奇异值的平方和开根号。">Eckart–Young：$\|A - A_k\|_F = \sqrt{\sum_{j>k}\sigma_j^2}$</Step>
+
+<div slot="visual"><LowRankImage client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="词背后的话题" say="词–文档矩阵：病人、医生、股票、市场，四篇文档。">
+
+<Step say="奇异值约为三点一五、二点五八、一点一六、零点三二，保留前两个占能量的百分之九十二。">$\sigma \approx 3.15,\ 2.58,\ 1.16,\ 0.32$；前两个占 $91.9\%$</Step>
+
+<Step say="在二维潜在空间里，两篇医疗文档的相似度从零点八升到零点九九四。">$\cos(D_1, D_2)$：$0.80 \to 0.994$</Step>
+
+<Step say="非负矩阵分解要求因子非负，每个话题是若干词的叠加，更好解释。">NMF：$A \approx WH$，$W, H \ge 0$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现幂迭代、PCA 和低秩重构，再用 scikit-learn 做 PCA、LSA 和 NMF。">
+
+<Step say="代码运行后，可以回放幂迭代中方向一步步转到主方向。">✎ 4 道推导 · ⌨ 幂迭代 + PCA + 低秩重构 · ⚙ PCA、LSA、NMF</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/matrix-factorization/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>
