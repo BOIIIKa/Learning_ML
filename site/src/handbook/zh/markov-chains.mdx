@@ -1,0 +1,48 @@
+---
+title: "MCMC 与主题模型实战：采样诊断、PageRank 与 LDA"
+summary: "什么时候用 MCMC、怎样判断链收敛、PageRank 的稀疏实现，以及 scikit-learn 里 LDA 的调参要点。"
+chapters: ["13"]
+---
+
+### 常用代码
+
+```python
+import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+
+# 随机游走 Metropolis：只需要未归一化的对数密度
+def metropolis(logp, x0, step, n, seed=0):
+    rng = np.random.default_rng(seed)
+    x, lp, out, acc = np.asarray(x0, float), logp(x0), [], 0
+    for _ in range(n):
+        y = x + step * rng.normal(size=x.shape)
+        ly = logp(y)
+        if np.log(rng.uniform()) < ly - lp:
+            x, lp, acc = y, ly, acc + 1
+        out.append(x)
+    return np.array(out), acc / n
+
+vec = CountVectorizer(stop_words="english", min_df=2)    # LDA 要词频，不要 TF-IDF
+lda = LatentDirichletAllocation(n_components=10, learning_method="online", random_state=0)
+theta = lda.fit_transform(vec.fit_transform(docs))       # 每篇文档的话题比例
+```
+
+### 容易踩的坑
+
+- **在对数尺度上算**：密度之比极易下溢，比较 $\log u \lt \log\tilde\pi(x') - \log\tilde\pi(x)$。
+- **拒绝时也要记录**：被拒绝的那一步要重复记下当前点，否则分布会偏。
+- **看诊断，不看感觉**：跑 4 条初值分散的链，要求 $\hat R \lt 1.01$，并报告有效样本量；轨迹图和自相关图一起看。
+- **能用 HMC 就别手写随机游走**：连续参数的贝叶斯模型直接用 Stan / PyMC / NumPyro 的 NUTS。
+- **PageRank 用稀疏矩阵**：网页图有上亿结点，用 `scipy.sparse` 做幂迭代，悬挂结点单独加一项，不要显式构造稠密的 $G$。
+- **LDA 的输入是词频**：用 `CountVectorizer`，去掉停用词和极高 / 极低频词；话题数用困惑度或话题一致性（coherence）挑，最终要人读一读每个话题的高频词。
+- **话题编号不稳定**：不同随机种子会给出顺序不同、甚至内容不同的话题，比较结果前先对齐。
+
+### 前沿阅读
+
+- Metropolis 等（1953）与 Hastings（1970）：M–H 算法的起源。
+- Geman 与 Geman（1984）：吉布斯采样。
+- Brin 与 Page（1998）：PageRank 与 Google 搜索引擎。
+- Blei、Ng、Jordan（2003）：LDA；Griffiths 与 Steyvers（2004）：塌缩吉布斯采样。
+- Hoffman 与 Gelman（2014）：NUTS 采样器。
+- Vehtari 等（2021）：改进的 $\hat R$ 与收敛诊断。
