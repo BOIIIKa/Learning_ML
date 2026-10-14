@@ -54,7 +54,9 @@ def soft_threshold(z, g):
   show_margin=…, title={zh, en})` and calls `trace.record(w=[w1, w2], b=…, field=…, highlight=[…],
   support=[…], weights=[…], metrics={…}, note="…")` per step. 1-D regression fits use
   `field = f(grid_x) − grid_y` so the zero contour is the fitted curve (see ch02/ch03).
-  `metrics` keys must match the `metrics:` list in the YAML.
+  `metrics` keys must match the `metrics:` list in the YAML. Traces of one exercise may record
+  different metrics (e.g. `updates` for a perceptron trace, `nll` for a Newton trace): the player
+  takes each metric from the first trace that records it.
 - Keep runtimes small: the whole check, including the trace, should run in a few seconds in Pyodide.
 
 ## Test

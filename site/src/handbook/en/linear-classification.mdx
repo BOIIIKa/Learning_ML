@@ -1,0 +1,45 @@
+---
+title: "Logistic regression in practice: regularization, thresholds, probabilities"
+summary: "scikit-learn regularizes by default, the threshold need not be 0.5, reading coefficients as odds ratios, and SGD for big data."
+chapters: ["04"]
+---
+
+### Go-to code
+
+```python
+import numpy as np
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegressionCV, SGDClassifier
+
+clf = make_pipeline(StandardScaler(),
+                    LogisticRegressionCV(Cs=np.logspace(-3, 3, 13), cv=5, max_iter=2000))
+clf.fit(X_train, y_train)
+proba = clf.predict_proba(X_test)[:, 1]          # P(y = 1 | x)
+flag = proba > threshold                          # pick the threshold from costs, not always 0.5
+
+# Large or streaming data: averaged SGD, supports partial_fit
+sgd = make_pipeline(StandardScaler(), SGDClassifier(loss="log_loss", alpha=1e-4, average=True))
+```
+
+### Traps
+
+- **It is regularized by default.** `LogisticRegression` uses `C=1.0`, an L2 penalty $\frac{1}{2C}\|w\|^2$, not the textbook maximum likelihood. For statistical inference (standard errors, p-values) use statsmodels' `Logit`; for an essentially unregularized fit, make `C` very large.
+- **Scale first.** Both the penalty and lbfgs's convergence depend on the scale. On a `ConvergenceWarning`, check for a `StandardScaler` before raising `max_iter`.
+- **Perfect separation blows up the coefficients.** When a feature (or combination) separates the classes perfectly, the unregularized MLE does not exist: huge coefficients, infinite standard errors. It is often a sign of data leakage, so look at the data first.
+- **Multiclass**: lbfgs and the other default solvers fit a softmax (multinomial) model, one weight vector per class; `coef_` has shape (classes, features).
+- **The threshold is a decision, not part of the model.** In screening, missing a sick patient costs far more than an extra follow-up, so pick the threshold from the costs (recall Bayes decisions in Chapter 01); with imbalanced classes, `class_weight="balanced"` is another option. Choose the threshold on validation data, never on the test set.
+
+### Reading coefficients and probabilities
+
+- $e^{w_j}$ is an **odds ratio**: with the other features fixed, one more unit of $x_j$ multiplies the odds by $e^{w_j}$. After standardization, one unit is one standard deviation.
+- Regularization shrinks probabilities towards 0.5. When the probabilities matter (say, risks shown to a doctor), check calibration with `CalibrationDisplay` and fix it with `CalibratedClassifierCV` if needed.
+- In `SGDClassifier` only `loss="log_loss"` and `"modified_huber"` offer `predict_proba`; the hinge loss (SVM) gives scores, not probabilities.
+
+### Frontier reading
+
+- Soudry, Hoffer, Nacson, Gunasekar, Srebro (2018): the implicit bias of gradient descent on separable data; the direction converges to the max-margin one.
+- Ng and Jordan (2001): discriminative versus generative classifiers, logistic regression versus naive Bayes.
+- Berger, Della Pietra and Della Pietra (1996): the maximum-entropy approach to natural language processing, the classic reference for maxent models.
+- Freund and Schapire (1999): large-margin classification with the perceptron (voted and averaged perceptrons).
+- Guo et al. (2017): calibration of modern neural networks; temperature scaling is a one-parameter logistic regression on the logits.

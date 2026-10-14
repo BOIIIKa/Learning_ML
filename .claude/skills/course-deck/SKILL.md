@@ -107,4 +107,6 @@ node site/scripts/verify/course.mjs walk zh <slug>     # every beat runs, consol
 node site/scripts/verify/course.mjs film <slug> zh "#5" "2,6,10,16"   # screenshots over time
 ```
 Watch for: visual overflow (widgets auto-shrink, but very tall widgets get tiny), drives that
-target the wrong control, morph chains where nothing matches (looks like a crossfade).
+target the wrong control, morph chains where nothing matches (looks like a crossfade). Film a
+Morph slide at times *during* a transformation (e.g. 0.3 s into a beat): a broken morph still
+looks fine once it has finished.

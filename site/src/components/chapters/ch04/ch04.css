@@ -1,0 +1,44 @@
+/* Chapter 04 widgets. Colours only from the theme variables. */
+
+/* PerceptronSteps */
+.pc-row { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr); gap: 0.9rem; align-items: center; margin: 0.4rem 0 0.2rem; }
+.pc-inset { width: 100%; height: auto; display: block; border: 1px dashed var(--border); }
+.pc-side { display: grid; gap: 0.5rem; justify-items: start; min-width: 0; }
+.pc-side .w-stats { width: 100%; }
+.pc-cap { fill: var(--text-muted); font: 10px var(--mono); }
+.pc-axis { stroke: var(--border); stroke-width: 1; }
+.pc-head { fill: var(--ink); }
+.pc-old { stroke: var(--text-muted); stroke-width: 1.6; stroke-dasharray: 4 3; }
+.pc-new { stroke: var(--accent); stroke-width: 2.4; }
+.pc-step { stroke-width: 2; }
+.pc-step.pos { stroke: var(--class-pos); }
+.pc-step.neg { stroke: var(--class-neg); }
+.pc-bar.pos { fill: var(--class-pos); }
+.pc-bar.neg { fill: var(--class-neg); }
+.pc-bar.hl { stroke: var(--accent); stroke-width: 1.5; }
+.pc-alpha text { fill: var(--accent); font: 700 11px var(--mono); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+
+/* LogisticSurface */
+.lg-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; align-items: start; margin: 0.4rem 0; }
+.lg-side-title { font: 11px var(--mono); color: var(--text-muted); margin: 0 0 0.2rem 0.3rem; }
+.lg-foot { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; margin-top: 0.4rem; }
+.lg-foot .w-stats { flex: 1; min-width: 0; }
+@media (max-width: 640px) { .lg-panels { grid-template-columns: minmax(0, 1fr); } }
+
+/* MaxEntDice */
+.me-svg { margin-top: 0.4rem; }
+.me-bar { fill: color-mix(in srgb, var(--accent) 70%, transparent); stroke: var(--accent); stroke-width: 1.2; transition: y 0.25s ease, height 0.25s ease; }
+.me-bar.alt { fill: color-mix(in srgb, var(--danger) 55%, transparent); stroke: var(--danger); }
+.me-val { fill: var(--ink); font: 11px var(--mono); }
+.me-uniform { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 5 4; }
+.me-mean { stroke: var(--accent-2); stroke-width: 1.6; stroke-dasharray: 3 3; }
+
+/* LossZoo */
+.lz-legend { display: inline-flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; margin-left: auto; font-size: 0.78rem; color: var(--text-muted); align-items: center; }
+.lz-legend span { display: inline-flex; align-items: center; gap: 0.35em; }
+.lz-legend i { width: 14px; height: 3px; display: inline-block; }
+.lz-stats .w-stat:nth-child(1) { border-color: var(--text-muted); }
+.lz-stats .w-stat:nth-child(2) { border-color: var(--success); }
+.lz-stats .w-stat:nth-child(3) { border-color: var(--accent); }
+.lz-stats .w-stat:nth-child(4) { border-color: var(--accent-2); }
+.lz-stats .w-stat:nth-child(5) { border-color: var(--danger); }

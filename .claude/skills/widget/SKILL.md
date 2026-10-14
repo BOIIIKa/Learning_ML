@@ -36,7 +36,7 @@ Used from MDX as `<MyWidget client:visible lang="zh" />` (notes and decks alike)
 |---|---|
 | `Widget`, `Slider`, `Stat` (`ui/Widget.tsx`) | frame, sliders (automatically drivable by the course), stat tiles |
 | `CurvePlot` | 1-D functions: points, curves (`dashed`, `opacity`), residual sticks, draggable handles, vlines, extra hollow points |
-| `Plot2D` | 2-D classification: points by class, a separating line `step.w/b` (+margins), a decision `field` on a `grid` (contours), extra lines/points, draggable points |
+| `Plot2D` | 2-D classification: points by class, a separating line `step.w/b` (+margins), a decision `field` on a `grid` (contours; fixed `levels`, e.g. logits of 0.5/0.75/0.9), extra lines/points, draggable points, `overlay={(sx, sy) => <g>…</g>}` for custom SVG in data coordinates |
 | `MetricChart` | small line chart over steps with a cursor (`zero={false}` for log scales) |
 | `TracePlayer` | replays a `Trace` (from Python exercises or TS engines) with play/scrub/speed |
 | chips | `<div className="chips"><button className={`chip${on ? " on" : ""}`}>…` |

@@ -1,0 +1,219 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import PerceptronSteps from "../../components/chapters/ch04/PerceptronSteps";
+import LogisticSurface from "../../components/chapters/ch04/LogisticSurface";
+import MaxEntDice from "../../components/chapters/ch04/MaxEntDice";
+import LossZoo from "../../components/chapters/ch04/LossZoo";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 04 · Animated course" title="Linear Classification: Perceptron, Logistic Regression and Maximum Entropy" say="How does a line learn from its mistakes to separate two classes? And how can it give us a probability?">
+
+Fix the mistakes · Turn distance into probability · Maximum entropy
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Fix it when it's wrong" say="A hospital screens patients with two blood markers: red need a follow-up, blue do not.">
+
+<Step drive="s1=0/0.8; s1=1/1.5" say="Start from w equals zero, find a misclassified patient, and add it into w.">Start at $w = 0$; find a misclassified patient</Step>
+
+<Step drive="s1=100%/6" say="Each addition turns the line a little. The small panel shows the same step as vector addition. After a dozen or so, nobody is wrong.">$w \leftarrow w + y_i x_i$: the line turns, step by step →</Step>
+
+<Step drive="click:btn1; s1=100%/5" say="Visit the patients in another order, and it stops at a different, equally error-free line. The answer is not unique.">Another order → another line</Step>
+
+<div slot="visual"><PerceptronSteps client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions for this chapter" say="Having played with it, three questions.">
+
+<Step effect="focus" say="First: is fixing mistakes guaranteed to stop? How many fixes can it take?">
+<p class="big-q sm">Does "fix it when it's wrong" always stop?</p>
+</Step>
+
+<Step say="Second: the doctors really want a probability, not just yes or no.">Doctors want a **probability**, not just yes / no</Step>
+
+<Step say="Third: why the sigmoid and the softmax? Is there a reason deeper than convenience?">Why the sigmoid and the softmax?</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="The perceptron" say="First, the perceptron as model, strategy and algorithm.">
+
+<Step say="Model: the sign of w dot x plus b. The boundary is a hyperplane.">**Model**: $f(x) = \mathrm{sign}(w^\top x + b)$</Step>
+
+<Step say="Strategy: the total distance of the misclassified points to the hyperplane, without the common factor one over the norm of w.">**Strategy**: $L = -\sum_{i \in M} y_i(w^\top x_i + b)$</Step>
+
+<Step say="Algorithm: stochastic gradient descent. Pick a misclassified point and add it into w and b.">**Algorithm**: $w \leftarrow w + \eta\, y_i x_i$, $b \leftarrow b + \eta\, y_i$</Step>
+
+<Step say="Starting from zero, the learning rate only rescales w and b together; the final line does not change.">From $0$: $\eta$ only rescales, the line stays</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="The dual form: just keep a tally" say="Starting from zero, w is always a sum of the points used so far.">
+
+<Step drive="click:chip2; s1=0/0.8; s1=100%/5" say="Switch to the dual form. Point size is alpha: how many updates this patient triggered.">$\alpha_i$ = number of updates on point $i$</Step>
+
+<Step say="The final w is just a weighted sum of these patients, and so is b.">$w = \sum_i \alpha_i y_i x_i$, $b = \sum_i \alpha_i y_i$</Step>
+
+<Step say="Checking for mistakes only needs inner products. Swap the inner product for a kernel and you get the kernel methods of Chapter 7.">Only inner products $x_i^\top x_j$ → kernel methods</Step>
+
+<div slot="visual"><PerceptronSteps client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Novikoff's theorem: it always stops" say="Fold the bias into the weights. Let gamma be the margin of the best hyperplane and R the radius of the data.">
+
+<Morph>
+
+<Step effect="morph" say="Each update raises the projection of w on the best direction by at least eta times gamma.">
+
+$$
+k\eta\gamma \le \hat w_k^\top \hat w_{\text{opt}}
+$$
+
+</Step>
+
+<Step effect="morph" say="A projection is at most the length.">
+
+$$
+k\eta\gamma \le \hat w_k^\top \hat w_{\text{opt}} \le \|\hat w_k\|
+$$
+
+</Step>
+
+<Step effect="morph" say="At a mistake the cross term is at most zero, so the squared length grows by at most eta squared R squared per update.">
+
+$$
+k\eta\gamma \le \hat w_k^\top \hat w_{\text{opt}} \le \|\hat w_k\| \le \sqrt{k}\,\eta R
+$$
+
+</Step>
+
+<Step effect="morph" say="Drop the middle.">
+
+$$
+k\eta\gamma \le \sqrt{k}\,\eta R
+$$
+
+</Step>
+
+<Step effect="morph" say="Eta cancels; square both sides. The number of updates is at most R over gamma, squared.">
+
+$$
+k \le \left(\frac{R}{\gamma}\right)^2
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="The bound ignores the learning rate, the dimension and the sample size. The bigger the margin, the easier it is to learn.">
+<p class="big-q sm">Bigger margin, easier learning</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Logistic regression: distance becomes probability" say="The doctors want a probability. Read w dot x plus b as a log-odds.">
+
+<Step drive="s1=46/3; s3=0.6/2" say="The sigmoid squashes it into zero to one. The bands on the left are the probability contours at 0.5, 0.75 and 0.9.">$P(Y=1\mid x) = \sigma(w^\top x + b)$</Step>
+
+<Step drive="s2=5/3; s2=1/2" say="The right panel looks along w. The larger the norm of w, the steeper the curve, the more confident the model.">$\|w\|$ = confidence</Step>
+
+<Step drive="click:btn1; wait:3" say="Each stick is the probability given to the wrong answer. Cross-entropy averages their negative logs. Now fit with Newton.">Cross-entropy $= -\frac{1}{n}\sum_i \log p(\text{true label})$</Step>
+
+<Step drive="click:chip2; click:btn1; wait:5.5" say="On separable data the cross-entropy creeps towards zero while the norm of w keeps growing: no maximum-likelihood estimate exists.">Separable ⇒ $\|w\| \to \infty$, no MLE</Step>
+
+<div slot="visual"><LogisticSurface client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Gradient, Hessian and Newton's method" say="Labels are zero or one, and p i is the predicted probability.">
+
+<Morph>
+
+<Step effect="morph" say="The log-likelihood.">
+
+$$
+\ell = \sum_i \big[y_i\log p_i + (1 - y_i)\log(1 - p_i)\big]
+$$
+
+</Step>
+
+<Step effect="morph" say="Since the sigmoid's derivative is sigma times one minus sigma, the gradient is label minus prediction, times the input.">
+
+$$
+\nabla\ell = \sum_i (y_i - p_i)\,\hat x_i
+$$
+
+</Step>
+
+<Step effect="morph" say="Differentiate once more: the Hessian is minus a sum of outer products weighted by p times one minus p.">
+
+$$
+\nabla^2\ell = -\sum_i p_i(1 - p_i)\,\hat x_i\hat x_i^\top
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="The Hessian is negative semidefinite, so the log-likelihood is concave: no local optima to get stuck in.">Negative semidefinite ⇒ concave, no local optima</Step>
+
+<Step say="A Newton step is exactly a weighted least-squares fit, hence iteratively reweighted least squares. It converges in a few steps.">Newton = IRLS: a few steps</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Maximum entropy: the least presumptuous guess" say="Why the sigmoid? Ask a different question: how should we guess when we know very little?">
+
+<Step drive="s1=3.5/2" say="A die whose mean is all we know. At a mean of 3.5 the highest-entropy distribution is the uniform one.">Know only the mean $\mu$: pick the highest entropy</Step>
+
+<Step drive="s1=5/3" say="Raise the mean and the max-entropy distribution becomes e to the lambda k: a softmax of the face values.">$p_k \propto e^{\lambda k}$</Step>
+
+<Step drive="click:chip2; wait:1.5; click:chip1" say="Another distribution with the same mean has much lower entropy: it assumes things the data never said.">Same mean, lower entropy = extra assumptions</Step>
+
+<Step say="For classification, the constraints become feature expectations and the answer is the softmax; with two classes, the sigmoid.">$P(y = c\mid x) = \mathrm{softmax}(w_1^\top x, \dots, w_C^\top x)_c$</Step>
+
+<div slot="visual"><MaxEntDice client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="The dual is maximum likelihood" say="Substitute the exponential form back into the Lagrangian.">
+
+<Step say="The dual function is exactly the log-likelihood of this exponential model on the data. Maximum entropy and maximum likelihood are two faces of one problem.">$\Psi(w) = \sum_{x,y}\tilde P(x,y)\,w^\top f(x,y) - \sum_x \tilde P(x)\log Z_w(x)$</Step>
+
+<Step say="The derivative of the softmax cross-entropy with respect to each logit is, again, prediction minus truth.">$\dfrac{\partial \ell}{\partial z_c} = p_c - \mathbb 1[c = y]$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked example: the perceptron by hand" say="Three patients. One-three and four-one need a follow-up; one-zero does not. Learning rate one, start from zero, check them in order, over and over.">
+
+<Step say="Step one: x1 lies exactly on the boundary, which counts as a mistake, so w becomes one-three and b becomes one.">$x_1 = (1, 3)$: $w = (1, 3)$, $b = 1$</Step>
+
+<Step say="Then x3 is wrong twice, x2 once, and x3 twice more.">Updates: $x_1,\ x_3,\ x_3,\ x_2,\ x_3,\ x_3$</Step>
+
+<Step say="After six updates, w is one-four and b is minus two. The dual coefficients one, one, four rebuild exactly that w.">$w = (1, 4)$, $b = -2$, $\alpha = (1, 1, 4)$</Step>
+
+<Step say="R squared is 18 and gamma squared is 81 over 221, so the bound is about 49; only six updates happened. The bound is a worst case.">$(R/\gamma)^2 = 442/9 \approx 49.1 \ge 6$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="A zoo of losses" say="The perceptron, logistic regression, SVMs and AdaBoost differ only in how they penalize the margin.">
+
+<Step drive="s1=-2/1.5; s1=2.5/4" say="The horizontal axis is the margin m, y times f. The 0-1 loss is a staircase with zero gradient: it cannot be optimized.">Everything depends on the margin $m = y f(x)$</Step>
+
+<Step say="The perceptron, cross-entropy, hinge and exponential losses are its convex stand-ins, from this chapter, Chapter 7 and Chapter 8.">Convex stand-ins: perceptron · cross-entropy · hinge · exponential</Step>
+
+<Step drive="click:chip2; s1=-2/1.5; s1=2.5/4" say="Switch to the pull: the hinge lets go of points with margin above one, cross-entropy keeps pulling gently, and the exponential loss yanks hard on mistakes.">The pull $-\ell'(m)$: who drives the gradient</Step>
+
+<div slot="visual"><LossZoo client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, the perceptron and Newton's logistic regression from scratch, then logistic regression and four SGD losses in scikit-learn.">
+
+<Step say="After running your code you can replay every perceptron update, and watch Newton sharpen the probability field in a few steps.">✎ 4 derivations · ⌨ perceptron + Newton · ⚙ LogisticRegressionCV + SGD</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/linear-classification/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

@@ -1,0 +1,256 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import PerceptronSteps from "../../components/chapters/ch04/PerceptronSteps";
+import LogisticSurface from "../../components/chapters/ch04/LogisticSurface";
+import MaxEntDice from "../../components/chapters/ch04/MaxEntDice";
+import LossZoo from "../../components/chapters/ch04/LossZoo";
+
+<Section lang="en" k="scenario">
+
+A hospital screens patients with two blood markers; anyone with abnormal values is called back for a follow-up. The doctors have a batch of patients whose diagnosis is already known, and they want a simple rule: a straight line in the plane of the two markers, follow-up on one side, no follow-up on the other.
+
+Nobody tells us which line is "best". All we have is a naive recipe: **draw any line, and whenever a patient is on the wrong side, nudge the line**. Here it is, fixing one mistake per step:
+
+<PerceptronSteps client:visible lang="en" />
+
+After a dozen or so nudges the line stops, with nobody misclassified. This chapter answers three questions:
+
+1. Is "fix it when it's wrong" guaranteed to stop? How many fixes can it take?
+2. What the doctors really want is a probability: "this patient needs a follow-up with probability 83 %". How does a linear model output a probability, and how do we train it?
+3. Why these particular functions, the sigmoid and the softmax? Is there a deeper reason than convenience?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### The perceptron
+
+<Box kind="definition" title="Perceptron">
+
+**Model**: $f(x) = \mathrm{sign}(w^\top x + b)$; the decision boundary is the hyperplane $w^\top x + b = 0$.
+
+**Strategy**: with $M$ the set of misclassified points, minimize
+
+$$
+L(w, b) = -\sum_{i\in M} y_i\,(w^\top x_i + b).
+$$
+
+**Algorithm**: stochastic gradient descent. Take any point with $y_i(w^\top x_i + b) \le 0$ and update
+
+$$
+w \leftarrow w + \eta\, y_i x_i, \qquad b \leftarrow b + \eta\, y_i,
+$$
+
+until no point is misclassified.
+
+</Box>
+
+Where does the loss come from? The distance from $x_i$ to the hyperplane is $|w^\top x_i + b|/\|w\|$, and for a misclassified point $-y_i(w^\top x_i + b)$ is exactly $|w^\top x_i + b|$. So $L$ is the total distance of the misclassified points to the hyperplane, without the common factor $1/\|w\|$. Classification only looks at signs, and $L = 0$ exactly when nothing is misclassified, so dropping the factor changes neither. The gradient for a single point is $-y_i x_i$ and $-y_i$; one step down it is the update above.
+
+Each update moves the offending point towards the correct side:
+
+$$
+y_i(w_{\text{new}}^\top x_i + b_{\text{new}}) = y_i(w^\top x_i + b) + \eta\,(\|x_i\|^2 + 1).
+$$
+
+But an update can break other points, so we need a theorem to know it ever stops (see the maths section).
+
+**The dual form.** Starting from $w = 0$, $b = 0$, $w$ is always a sum of the points used so far. Write $\alpha_i = \eta\, n_i$, where $n_i$ is the number of updates triggered by point $i$. Then
+
+$$
+w = \sum_{i=1}^n \alpha_i y_i x_i, \qquad b = \sum_{i=1}^n \alpha_i y_i, \qquad f(x) = \mathrm{sign}\Big(\sum_{i} \alpha_i y_i\, x_i^\top x + b\Big).
+$$
+
+The dual form just keeps a tally: when point $j$ is misclassified, $\alpha_j \leftarrow \alpha_j + \eta$, and checking whether it is misclassified needs only the inner products $x_i^\top x_j$. Precompute them as the **Gram matrix** $G_{ij} = x_i^\top x_j$, replace the inner product by a kernel, and you have the kernel methods of Chapter 07. Switch the widget to "Dual" and point size shows $\alpha_i$.
+
+<Box kind="insight" title="Where the perceptron stops is a matter of luck">
+
+On separable data there are infinitely many error-free lines. Which one the perceptron stops at depends on the starting point and the order in which it visits the points (press "Visit in another order" in the widget). The learning rate, on the other hand, does not matter: starting from zero, $\eta$ only rescales $(w, b)$, so the sequence of mistakes and the final line are unchanged. Which line should we trust on new patients? Chapter 07's answer: the one with the **largest margin**.
+
+</Box>
+
+### Logistic regression
+
+The doctors want a probability. The linear score $w^\top x + b$ ranges over the whole real line; the most natural way to squash it into $(0, 1)$ is to read it as a **log-odds**:
+
+<Box kind="definition" title="Logistic regression">
+
+**Model**:
+
+$$
+P(Y = 1 \mid x) = \sigma(w^\top x + b), \qquad \sigma(z) = \frac{1}{1 + e^{-z}},
+$$
+
+or equivalently $\log\dfrac{P(Y=1\mid x)}{P(Y=0\mid x)} = w^\top x + b$: the log-odds are linear in $x$.
+
+**Strategy**: maximum likelihood, which is the same as minimizing cross-entropy.
+
+**Algorithm**: gradient descent, or Newton's method (also called iteratively reweighted least squares, IRLS).
+
+</Box>
+
+The decision boundary $P = 0.5$ is still the hyperplane $w^\top x + b = 0$. What is new is that the probability tends to 0 or 1 as you move away from it. $\|w\|$ sets how fast it goes from 0.1 to 0.9: it is the model's confidence.
+
+<LogisticSurface client:visible lang="en" />
+
+With labels $y \in \{-1, +1\}$ the two class probabilities combine into $P(y \mid x) = \sigma\big(y\,(w^\top x + b)\big)$, because $1 - \sigma(z) = \sigma(-z)$. The negative log-likelihood of one point is then
+
+$$
+-\log P(y \mid x) = \log\big(1 + e^{-y f(x)}\big), \qquad f(x) = w^\top x + b,
+$$
+
+which depends only on the **margin** $m = y f(x)$. So do the perceptron, hinge and exponential losses; the extensions at the end compare them side by side.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Novikoff's theorem: the perceptron stops
+
+Fold the bias into the weights: $\hat x = (x, 1)$, $\hat w = (w, b)$, so that $w^\top x + b = \hat w^\top \hat x$.
+
+<Box kind="theorem" title="Novikoff's theorem">
+
+Suppose some hyperplane with $\|\hat w_{\text{opt}}\| = 1$ satisfies $y_i\,\hat w_{\text{opt}}^\top \hat x_i \ge \gamma \gt 0$ for every $i$, and let $R = \max_i \|\hat x_i\|$. Starting from $\hat w_0 = 0$, the number $k$ of mistakes (updates) made by the perceptron satisfies
+
+$$
+k \le \left(\frac{R}{\gamma}\right)^2.
+$$
+
+</Box>
+
+**Proof.** Let the $k$-th update use point $i$: $\hat w_k = \hat w_{k-1} + \eta\, y_i \hat x_i$ with $y_i \hat w_{k-1}^\top \hat x_i \le 0$.
+
+1. **The projection on the good direction grows steadily.** $\hat w_k^\top \hat w_{\text{opt}} = \hat w_{k-1}^\top \hat w_{\text{opt}} + \eta\, y_i \hat w_{\text{opt}}^\top \hat x_i \ge \hat w_{k-1}^\top \hat w_{\text{opt}} + \eta\gamma$, so by induction $\hat w_k^\top \hat w_{\text{opt}} \ge k\eta\gamma$.
+2. **The length grows slowly.** $\|\hat w_k\|^2 = \|\hat w_{k-1}\|^2 + 2\eta\, y_i \hat w_{k-1}^\top \hat x_i + \eta^2\|\hat x_i\|^2 \le \|\hat w_{k-1}\|^2 + \eta^2 R^2$, because the middle term is $\le 0$ (that is what "misclassified" means). By induction $\|\hat w_k\|^2 \le k\eta^2R^2$.
+3. **Combine.** By Cauchy–Schwarz,
+
+$$
+k\eta\gamma \le \hat w_k^\top \hat w_{\text{opt}} \le \|\hat w_k\|\,\|\hat w_{\text{opt}}\| \le \sqrt{k}\,\eta R,
+$$
+
+and squaring and dividing by $k\eta^2\gamma^2$ gives $k \le (R/\gamma)^2$. $\blacksquare$
+
+A few remarks:
+
+- $\eta$ cancels in the last step, consistent with "the learning rate does not matter".
+- The bound does not depend on the dimension $p$ or the sample size $n$, only on the ratio of the data's radius to its margin. The bigger the margin, the easier the problem: the first reason Chapter 07 maximizes it.
+- On data that is not linearly separable the perceptron never stops, and the weights keep oscillating. Practical fixes are the **pocket algorithm** (keep the best weights seen so far) and the **averaged perceptron** (output the average of all intermediate weights).
+
+### Gradient and Hessian of the logistic log-likelihood
+
+In this section $y_i \in \{0, 1\}$, $p_i = \sigma(\hat w^\top \hat x_i)$, and the design matrix $\hat X$ has rows $\hat x_i^\top$. The log-likelihood is
+
+$$
+\ell(\hat w) = \sum_{i=1}^n \big[y_i\log p_i + (1 - y_i)\log(1 - p_i)\big] = \sum_{i=1}^n \big[y_i\,\hat w^\top \hat x_i - \log\big(1 + e^{\hat w^\top \hat x_i}\big)\big].
+$$
+
+Using $\sigma'(z) = \sigma(z)\,(1 - \sigma(z))$ (derivation exercise 1) and differentiating term by term,
+
+$$
+\nabla \ell = \sum_{i=1}^n (y_i - p_i)\,\hat x_i = \hat X^\top(y - p), \qquad \nabla^2 \ell = -\sum_{i=1}^n p_i(1 - p_i)\,\hat x_i\hat x_i^\top = -\hat X^\top S\hat X,
+$$
+
+with $S = \mathrm{diag}\big(p_i(1 - p_i)\big)$. The gradient is "label minus predicted probability" times the input (derivation exercise 3), the same shape as $X^\top(y - X\beta)$ for linear regression in Chapter 03.
+
+<Box kind="theorem" title="The log-likelihood is concave">
+
+For any $v$, $v^\top \hat X^\top S\hat X v = \sum_i p_i(1 - p_i)\,(v^\top \hat x_i)^2 \ge 0$, so the Hessian is negative semidefinite and $\ell$ is concave: every stationary point is a global maximum, and there are no local optima to get stuck in. If $\hat X$ has full column rank, $\ell$ is strictly concave and its maximizer, when it exists, is unique.
+
+</Box>
+
+**Newton's method is weighted least squares.** The Newton step $\hat w \leftarrow \hat w + (\hat X^\top S\hat X)^{-1}\hat X^\top(y - p)$ can be rewritten as
+
+$$
+\hat w_{\text{new}} = (\hat X^\top S\hat X)^{-1}\hat X^\top S z, \qquad z = \hat X\hat w + S^{-1}(y - p).
+$$
+
+That is a weighted least-squares fit with weights $S$ to a "working response" $z$. The weights are recomputed at every step, hence "iteratively reweighted least squares". It converges quadratically near the optimum and typically reaches machine precision in 5–8 steps, where gradient descent needs hundreds (press "Fit with Newton" in the widget).
+
+**Separable data has no maximum-likelihood estimate.** If some $\hat w$ separates the data perfectly, then along $c\hat w$ with $c \to \infty$ every $p_i$ tends to the correct 0 or 1 and $\ell \to 0$ (cross-entropy $\to 0$), but never gets there: the supremum is not attained and $\|\hat w\| \to \infty$. The practical fix is an L2 penalty, minimizing $-\ell(\hat w) + \frac{\lambda}{2}\|w\|^2$. scikit-learn's `LogisticRegression` does this by default (`C = 1/λ`).
+
+### Cross-entropy is the negative log-likelihood
+
+For two distributions $p$ and $q$, the cross-entropy $H(p, q) = -\sum_y p(y)\log q(y)$ measures how many nats it costs to encode data from $p$ with a code built for $q$. Take $p$ to be the empirical distribution of sample $i$ (a one-hot vector at the true class) and $q$ the model's prediction: $H = -\log q(y_i)$. Averaged over the samples, that is $-\ell/n$. "Maximum likelihood" and "minimum cross-entropy" are two names for one thing, and it is also the classification loss of deep learning.
+
+### Maximum entropy leads to the softmax
+
+Why $\sigma$ of all functions? The maximum-entropy principle gives a reason that has nothing to do with convenience: **among all models that satisfy what we know, pick the one with the largest entropy**, assuming nothing beyond what the data tells us.
+
+Start with the simplest case: a die whose mean $\mu$ is all we know. Maximize $H(p) = -\sum_k p_k\log p_k$ subject to $\sum_k p_k = 1$ and $\sum_k k\,p_k = \mu$. Setting the derivative of the Lagrangian with respect to $p_k$ to zero gives $-\log p_k - 1 + \lambda_0 + \lambda k = 0$, so $p_k \propto e^{\lambda k}$: a softmax of the face values.
+
+<MaxEntDice client:visible lang="en" />
+
+**The conditional version.** For classification we want a conditional distribution $P(y \mid x)$. Given feature functions $f_k(x, y)$, the constraints say that each feature's expectation under the model equals its empirical expectation on the training data:
+
+$$
+\sum_{x, y}\tilde P(x)\,P(y \mid x)\,f_k(x, y) = \sum_{x, y}\tilde P(x, y)\,f_k(x, y), \qquad k = 1, \dots, K.
+$$
+
+Under these constraints and $\sum_y P(y \mid x) = 1$, maximize the conditional entropy $H(P) = -\sum_x \tilde P(x)\sum_y P(y \mid x)\log P(y \mid x)$. With multipliers $w_k$ and a normalization multiplier for each $x$, setting the derivative with respect to $P(y \mid x)$ to zero gives
+
+$$
+P_w(y \mid x) = \frac{1}{Z_w(x)}\exp\Big(\sum_{k} w_k f_k(x, y)\Big), \qquad Z_w(x) = \sum_{y}\exp\Big(\sum_{k} w_k f_k(x, y)\Big).
+$$
+
+<Box kind="theorem" title="The dual of maximum entropy is maximum likelihood">
+
+Substituting $P_w$ back into the Lagrangian, the dual function is exactly the log-likelihood of this exponential model on the training data:
+
+$$
+\Psi(w) = \sum_{x, y}\tilde P(x, y)\sum_k w_k f_k(x, y) - \sum_x \tilde P(x)\log Z_w(x).
+$$
+
+So "the maximum-entropy model under expectation constraints" and "maximum likelihood in the exponential family" are the primal and dual of one problem.
+
+</Box>
+
+**Special case: softmax regression.** With classes $1, \dots, C$, features $f_{j,c}(x, y) = x_j\,\mathbb 1[y = c]$ ($x$ including a constant 1) and their weights collected into $w_c$,
+
+$$
+P(y = c \mid x) = \frac{e^{w_c^\top x}}{\sum_{c'=1}^C e^{w_{c'}^\top x}} = \mathrm{softmax}(w_1^\top x, \dots, w_C^\top x)_c.
+$$
+
+With two classes, dividing through by $e^{w_0^\top x}$ gives $\sigma\big((w_1 - w_0)^\top x\big)$: logistic regression. The derivative of the softmax cross-entropy with respect to logit $c$ is $p_c - \mathbb 1[c = y]$ (derivation exercise 4): prediction minus truth, once again.
+
+The classic solvers for maximum-entropy models are generalized iterative scaling (GIS) and improved iterative scaling (IIS), which solve one-dimensional problems at each step. Today one usually optimizes the dual, the log-likelihood, directly with L-BFGS or Newton's method.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: the perceptron by hand
+
+<Box kind="example" title="Three patients, six updates">
+
+Two patients who need a follow-up, $x_1 = (1, 3)$ and $x_2 = (4, 1)$ ($y = +1$), and one who does not, $x_3 = (1, 0)$ ($y = -1$). Take $\eta = 1$, $w_0 = (0, 0)$, $b_0 = 0$, check the points in the order $x_1, x_2, x_3$ over and over, and update whenever $y_i(w^\top x_i + b) \le 0$.
+
+| $k$ | Misclassified point | $y_i(w^\top x_i + b)$ before | $w$ | $b$ |
+|---|---|---|---|---|
+| 1 | $x_1$ | $0$ | $(1, 3)$ | $1$ |
+| 2 | $x_3$ | $-2$ | $(0, 3)$ | $0$ |
+| 3 | $x_3$ | $0$ | $(-1, 3)$ | $-1$ |
+| 4 | $x_2$ | $-2$ | $(3, 4)$ | $0$ |
+| 5 | $x_3$ | $-3$ | $(2, 4)$ | $-1$ |
+| 6 | $x_3$ | $-1$ | $(1, 4)$ | $-2$ |
+
+The final line is $x^{(1)} + 4x^{(2)} - 2 = 0$, and the three values $y_i(w^\top x_i + b)$ are $11$, $6$ and $1$, all positive. Look at step 3: $x_3$ lies exactly on the boundary (value 0), which also counts as a mistake. That is why the condition is $\le 0$ and not $\lt 0$.
+
+- **Dual check**: $x_1, x_2, x_3$ triggered $1, 1, 4$ updates, so $\alpha = (1, 1, 4)$, $w = (1, 3) + (4, 1) - 4\,(1, 0) = (1, 4)$ and $b = 1 + 1 - 4 = -2$.
+- **Novikoff's bound**: $R^2 = \max\|\hat x_i\|^2 = \|(4, 1, 1)\|^2 = 18$. The maximum-margin hyperplane (in the augmented space) points along $\hat w = (4, 6, -13)/9$, giving $\gamma^2 = 81/221$ and a bound of $18 \times 221/81 = 442/9 \approx 49.1$. Only 6 updates happened: the bound is a worst case and usually loose.
+
+</Box>
+
+### Extensions: one view of all classification losses
+
+The perceptron, logistic regression, the SVM of Chapter 07 and AdaBoost in Chapter 08 are all linear (or additive) models. They differ only in **how they penalize the margin** $m = y f(x)$:
+
+<LossZoo client:visible lang="en" />
+
+- **The 0-1 loss** is what we care about, but it is a step function and cannot be optimized; the others are convex surrogates for it. The hinge, cross-entropy (base 2) and exponential losses all upper-bound the 0-1 loss; the perceptron loss does not, since it barely penalizes points with a slightly negative $m$.
+- **Calibration**: logistic regression models probabilities directly, and they are calibrated when the model is correctly specified. SVM scores are not probabilities; Platt scaling fixes that by fitting a one-dimensional logistic regression on top of them.
+- **Discriminative versus generative**: LDA in Chapter 05 starts from "each class is Gaussian" and also ends with log-odds that are linear in $x$. Same form, different estimator. Ng and Jordan (2001) found that the generative model approaches its limit with fewer samples, while the discriminative one has the lower limiting error.
+- **Implicit bias**: train unregularized logistic regression by gradient descent on separable data and $\|w\| \to \infty$, yet the direction $w/\|w\|$ converges to the **maximum-margin** (hard-margin SVM) direction (Soudry et al., 2018). With no explicit regularizer, the optimizer itself picks a solution. This is one of the starting points for understanding why deep networks generalize.
+- **The perceptron is the first neural network**: replace $\mathrm{sign}$ by a smooth activation and stack layers, and you are at Chapter 14.
+
+</Section>

@@ -1,0 +1,256 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import PerceptronSteps from "../../components/chapters/ch04/PerceptronSteps";
+import LogisticSurface from "../../components/chapters/ch04/LogisticSurface";
+import MaxEntDice from "../../components/chapters/ch04/MaxEntDice";
+import LossZoo from "../../components/chapters/ch04/LossZoo";
+
+<Section lang="zh" k="scenario">
+
+一家医院用两项血液指标做初筛：指标异常的人要回来复查。医生手里有一批已经确诊过的病人，想要一条简单的规则——在两项指标的平面上画一条直线，一边复查，一边不用。
+
+没有人告诉我们哪条线“最好”。我们只有一个朴素的办法：**先随便画一条，看到分错的病人就把线挪一挪**。下面就是这样做的，每一步只改一个错误：
+
+<PerceptronSteps client:visible lang="zh" />
+
+十几次修改之后，线停了下来，一个人也没分错。这一章回答三个问题：
+
+1. “错了就改”一定会停下来吗？最多要改多少次？
+2. 医生其实更想要一个概率：“这个人需要复查的可能性是 83%”。线性模型怎样输出概率，又该怎样训练？
+3. 为什么偏偏是 sigmoid 和 softmax 这两个函数？有没有比“好用”更深的理由？
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 感知机
+
+<Box kind="definition" title="感知机">
+
+**模型**：$f(x) = \mathrm{sign}(w^\top x + b)$，决策边界是超平面 $w^\top x + b = 0$。
+
+**策略**：设 $M$ 是误分类点的集合，最小化
+
+$$
+L(w, b) = -\sum_{i\in M} y_i\,(w^\top x_i + b).
+$$
+
+**算法**：随机梯度下降。任取一个满足 $y_i(w^\top x_i + b) \le 0$ 的点，更新
+
+$$
+w \leftarrow w + \eta\, y_i x_i, \qquad b \leftarrow b + \eta\, y_i,
+$$
+
+直到没有误分类点。
+
+</Box>
+
+损失从哪里来？点 $x_i$ 到超平面的距离是 $|w^\top x_i + b|/\|w\|$；对误分类点，$-y_i(w^\top x_i + b)$ 恰好等于 $|w^\top x_i + b|$。所以 $L$ 是误分类点到超平面距离之和，只是省去了公共的 $1/\|w\|$——分类只看符号，而 $L = 0$ 当且仅当没有误分类点，省掉它不改变这件事。对单个点 $i$ 求梯度得 $-y_i x_i$ 和 $-y_i$，沿负梯度走一步就是上面的更新。
+
+每次更新让分错的那个点往正确的一侧挪：
+
+$$
+y_i(w_{\text{new}}^\top x_i + b_{\text{new}}) = y_i(w^\top x_i + b) + \eta\,(\|x_i\|^2 + 1).
+$$
+
+但一次更新可能把别的点改错，所以需要一个定理来保证它最终会停下（见“数学”部分）。
+
+**对偶形式。** 从 $w = 0$、$b = 0$ 出发，$w$ 永远是被用过的点的累加。记 $\alpha_i = \eta\, n_i$，其中 $n_i$ 是点 $i$ 触发更新的次数，则
+
+$$
+w = \sum_{i=1}^n \alpha_i y_i x_i, \qquad b = \sum_{i=1}^n \alpha_i y_i, \qquad f(x) = \mathrm{sign}\Big(\sum_{i} \alpha_i y_i\, x_i^\top x + b\Big).
+$$
+
+对偶形式只记账：点 $j$ 被分错时 $\alpha_j \leftarrow \alpha_j + \eta$，判断它是否分错只需要内积 $x_i^\top x_j$。把这些内积预先算成 **Gram 矩阵** $G_{ij} = x_i^\top x_j$，再把内积换成核函数，就得到了第 07 章的核方法。在组件里切到“对偶形式”，点的大小就是 $\alpha_i$。
+
+<Box kind="insight" title="感知机停在哪里，取决于运气">
+
+线性可分时，零误差的直线有无穷多条。感知机停在哪一条，取决于初值和访问点的顺序（在组件里点“换一种访问顺序”）。学习率反而无关紧要：从零出发时，$\eta$ 只把 $(w, b)$ 整体放大，错误序列和最终的直线都不变。哪条线对新病人最可靠？第 07 章的回答是：**间隔最大**的那条。
+
+</Box>
+
+### 逻辑回归
+
+医生要的是概率。线性函数 $w^\top x + b$ 的取值是整个实轴，把它压到 $(0, 1)$ 最自然的办法，是把它当作**对数几率**：
+
+<Box kind="definition" title="逻辑回归">
+
+**模型**：
+
+$$
+P(Y = 1 \mid x) = \sigma(w^\top x + b), \qquad \sigma(z) = \frac{1}{1 + e^{-z}},
+$$
+
+等价地，$\log\dfrac{P(Y=1\mid x)}{P(Y=0\mid x)} = w^\top x + b$：对数几率是 $x$ 的线性函数。
+
+**策略**：极大似然，等价于最小化交叉熵。
+
+**算法**：梯度下降，或牛顿法（又叫迭代重加权最小二乘，IRLS）。
+
+</Box>
+
+决策边界 $P = 0.5$ 仍然是超平面 $w^\top x + b = 0$；不同的是，离边界越远，概率越接近 0 或 1。$\|w\|$ 控制概率从 0.1 走到 0.9 有多快——它是模型的“自信程度”。
+
+<LogisticSurface client:visible lang="zh" />
+
+用 $y \in \{-1, +1\}$ 记标签时，两类的概率可以合写成 $P(y \mid x) = \sigma\big(y\,(w^\top x + b)\big)$，因为 $1 - \sigma(z) = \sigma(-z)$。于是一个点的负对数似然是
+
+$$
+-\log P(y \mid x) = \log\big(1 + e^{-y f(x)}\big), \qquad f(x) = w^\top x + b,
+$$
+
+它只依赖于**间隔** $m = y f(x)$。感知机损失、合页损失、指数损失也都只依赖于 $m$，“拓展”部分把它们放在一起比较。
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### Novikoff 定理：感知机一定会停
+
+把偏置并进权重：$\hat x = (x, 1)$，$\hat w = (w, b)$，于是 $w^\top x + b = \hat w^\top \hat x$。
+
+<Box kind="theorem" title="Novikoff 定理">
+
+设存在 $\|\hat w_{\text{opt}}\| = 1$ 的超平面，对所有 $i$ 满足 $y_i\,\hat w_{\text{opt}}^\top \hat x_i \ge \gamma \gt 0$，并记 $R = \max_i \|\hat x_i\|$。则从 $\hat w_0 = 0$ 出发，感知机的误分类（更新）次数 $k$ 满足
+
+$$
+k \le \left(\frac{R}{\gamma}\right)^2.
+$$
+
+</Box>
+
+**证明。** 设第 $k$ 次更新用的是点 $i$，即 $\hat w_k = \hat w_{k-1} + \eta\, y_i \hat x_i$，且 $y_i \hat w_{k-1}^\top \hat x_i \le 0$。
+
+1. **与最优方向的内积稳步增长。** $\hat w_k^\top \hat w_{\text{opt}} = \hat w_{k-1}^\top \hat w_{\text{opt}} + \eta\, y_i \hat w_{\text{opt}}^\top \hat x_i \ge \hat w_{k-1}^\top \hat w_{\text{opt}} + \eta\gamma$，递推得 $\hat w_k^\top \hat w_{\text{opt}} \ge k\eta\gamma$。
+2. **长度增长得慢。** $\|\hat w_k\|^2 = \|\hat w_{k-1}\|^2 + 2\eta\, y_i \hat w_{k-1}^\top \hat x_i + \eta^2\|\hat x_i\|^2 \le \|\hat w_{k-1}\|^2 + \eta^2 R^2$，因为中间项 $\le 0$（这正是“分错了”的含义）。递推得 $\|\hat w_k\|^2 \le k\eta^2R^2$。
+3. **合起来。** 由柯西–施瓦茨不等式，
+
+$$
+k\eta\gamma \le \hat w_k^\top \hat w_{\text{opt}} \le \|\hat w_k\|\,\|\hat w_{\text{opt}}\| \le \sqrt{k}\,\eta R,
+$$
+
+两边平方后除以 $k\eta^2\gamma^2$ 即得 $k \le (R/\gamma)^2$。$\blacksquare$
+
+几点观察：
+
+- $\eta$ 在最后一步约掉了，与“学习率无关紧要”一致。
+- 界与维数 $p$、样本数 $n$ 都无关，只取决于数据的“半径”与“间隔”之比。间隔越大，越容易学——这是第 07 章最大化间隔的第一个理由。
+- 数据线性不可分时，感知机永远不会停，权重会来回震荡。实用的补救是**口袋算法**（记住迄今最好的权重）或**平均感知机**（输出所有中间权重的平均）。
+
+### 逻辑回归的梯度与 Hessian
+
+这一节用 $y_i \in \{0, 1\}$，记 $p_i = \sigma(\hat w^\top \hat x_i)$，设计矩阵 $\hat X$ 的第 $i$ 行是 $\hat x_i^\top$。对数似然是
+
+$$
+\ell(\hat w) = \sum_{i=1}^n \big[y_i\log p_i + (1 - y_i)\log(1 - p_i)\big] = \sum_{i=1}^n \big[y_i\,\hat w^\top \hat x_i - \log\big(1 + e^{\hat w^\top \hat x_i}\big)\big].
+$$
+
+由 $\sigma'(z) = \sigma(z)\,(1 - \sigma(z))$（推导题 1），逐项求导：
+
+$$
+\nabla \ell = \sum_{i=1}^n (y_i - p_i)\,\hat x_i = \hat X^\top(y - p), \qquad \nabla^2 \ell = -\sum_{i=1}^n p_i(1 - p_i)\,\hat x_i\hat x_i^\top = -\hat X^\top S\hat X,
+$$
+
+其中 $S = \mathrm{diag}\big(p_i(1 - p_i)\big)$。梯度是“真实标签减预测概率”乘以输入（推导题 3），和第 03 章线性回归的 $X^\top(y - X\beta)$ 形式一样。
+
+<Box kind="theorem" title="对数似然是凹函数">
+
+对任意 $v$，$v^\top \hat X^\top S\hat X v = \sum_i p_i(1 - p_i)\,(v^\top \hat x_i)^2 \ge 0$，所以 Hessian 半负定，$\ell$ 是凹函数：任何驻点都是全局最大值点，不存在会困住优化的局部极值。若 $\hat X$ 列满秩，$\ell$ 严格凹，最大值点（若存在）唯一。
+
+</Box>
+
+**牛顿法就是加权最小二乘。** 牛顿步 $\hat w \leftarrow \hat w + (\hat X^\top S\hat X)^{-1}\hat X^\top(y - p)$ 可以改写成
+
+$$
+\hat w_{\text{new}} = (\hat X^\top S\hat X)^{-1}\hat X^\top S z, \qquad z = \hat X\hat w + S^{-1}(y - p).
+$$
+
+这正是以 $S$ 为权重、以“工作响应” $z$ 为目标的加权最小二乘。每一步重新计算权重，所以叫迭代重加权最小二乘。它在最优点附近二次收敛，通常 5–8 步就收敛到机器精度；梯度下降则需要几百步（在组件里点“牛顿法拟合”）。
+
+**可分数据没有极大似然估计。** 若某个 $\hat w$ 把数据完全分开，则沿 $c\hat w$ 方向令 $c \to \infty$，每个 $p_i$ 都趋于正确的 0 或 1，$\ell \to 0$（即交叉熵 $\to 0$），但永远达不到：上确界不被取到，$\|\hat w\| \to \infty$。实践中的解决办法是加 L2 正则，最小化 $-\ell(\hat w) + \frac{\lambda}{2}\|w\|^2$——scikit-learn 的 `LogisticRegression` 默认就这样做（`C = 1/λ`）。
+
+### 交叉熵就是负对数似然
+
+对两个分布 $p$、$q$，交叉熵 $H(p, q) = -\sum_y p(y)\log q(y)$ 是用按 $q$ 设计的编码去编码来自 $p$ 的数据时，平均每个样本的编码长度（用自然对数时单位是奈特）。取 $p$ 为第 $i$ 个样本的经验分布（真实类别处为 1 的独热向量），$q$ 为模型的预测，$H = -\log q(y_i)$。对所有样本求平均，就是 $-\ell/n$。所以“极大似然”和“最小化交叉熵”是同一件事的两种说法；深度学习里的分类损失也正是它。
+
+### 最大熵原理推出 softmax
+
+为什么偏偏是 $\sigma$？最大熵原理给出了一个不依赖“好用”的理由：**在满足已知约束的所有模型中，选熵最大的那个**——除了数据告诉我们的，不额外假设任何东西。
+
+先看最简单的情形：一颗骰子，只知道平均点数 $\mu$。在约束 $\sum_k p_k = 1$、$\sum_k k\,p_k = \mu$ 下最大化 $H(p) = -\sum_k p_k\log p_k$。拉格朗日函数对 $p_k$ 求导并令其为零：$-\log p_k - 1 + \lambda_0 + \lambda k = 0$，所以 $p_k \propto e^{\lambda k}$——点数的 softmax。
+
+<MaxEntDice client:visible lang="zh" />
+
+**条件形式。** 分类时，我们要的是条件分布 $P(y \mid x)$。给定特征函数 $f_k(x, y)$，约束是：每个特征在模型下的期望等于它在训练数据上的经验期望，
+
+$$
+\sum_{x, y}\tilde P(x)\,P(y \mid x)\,f_k(x, y) = \sum_{x, y}\tilde P(x, y)\,f_k(x, y), \qquad k = 1, \dots, K.
+$$
+
+在这些约束和 $\sum_y P(y \mid x) = 1$ 之下，最大化条件熵 $H(P) = -\sum_x \tilde P(x)\sum_y P(y \mid x)\log P(y \mid x)$。引入乘子 $w_k$ 和每个 $x$ 的归一化乘子，对 $P(y \mid x)$ 求导并令其为零，得到
+
+$$
+P_w(y \mid x) = \frac{1}{Z_w(x)}\exp\Big(\sum_{k} w_k f_k(x, y)\Big), \qquad Z_w(x) = \sum_{y}\exp\Big(\sum_{k} w_k f_k(x, y)\Big).
+$$
+
+<Box kind="theorem" title="最大熵的对偶 = 极大似然">
+
+把 $P_w$ 代回拉格朗日函数，对偶函数恰好是这个指数模型在训练数据上的对数似然：
+
+$$
+\Psi(w) = \sum_{x, y}\tilde P(x, y)\sum_k w_k f_k(x, y) - \sum_x \tilde P(x)\log Z_w(x).
+$$
+
+所以“满足期望约束的最大熵模型”与“指数族模型的极大似然估计”是同一个问题的原问题与对偶问题。
+
+</Box>
+
+**特例：softmax 回归。** 设类别为 $1, \dots, C$，特征取 $f_{j,c}(x, y) = x_j\,\mathbb 1[y = c]$（$x$ 含常数 1），权重记为 $w_c$，则
+
+$$
+P(y = c \mid x) = \frac{e^{w_c^\top x}}{\sum_{c'=1}^C e^{w_{c'}^\top x}} = \mathrm{softmax}(w_1^\top x, \dots, w_C^\top x)_c.
+$$
+
+两类时分子分母同除以 $e^{w_0^\top x}$，得到 $\sigma\big((w_1 - w_0)^\top x\big)$——正是逻辑回归。softmax 交叉熵对第 $c$ 个 logit 的导数是 $p_c - \mathbb 1[c = y]$（推导题 4），又是“预测减真实”。
+
+求解最大熵模型的经典算法是通用迭代尺度法（GIS）和改进的迭代尺度法（IIS），它们每步只解一维问题；今天通常直接用 L-BFGS 或牛顿法优化对偶，也就是对数似然。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题：手算感知机
+
+<Box kind="example" title="三位病人，六次更新">
+
+两位需要复查的病人 $x_1 = (1, 3)$、$x_2 = (4, 1)$（$y = +1$），一位不需要的 $x_3 = (1, 0)$（$y = -1$）。取 $\eta = 1$，$w_0 = (0, 0)$，$b_0 = 0$，按 $x_1, x_2, x_3$ 的顺序反复检查，遇到 $y_i(w^\top x_i + b) \le 0$ 就更新。
+
+| $k$ | 误分类点 | 更新前的 $y_i(w^\top x_i + b)$ | $w$ | $b$ |
+|---|---|---|---|---|
+| 1 | $x_1$ | $0$ | $(1, 3)$ | $1$ |
+| 2 | $x_3$ | $-2$ | $(0, 3)$ | $0$ |
+| 3 | $x_3$ | $0$ | $(-1, 3)$ | $-1$ |
+| 4 | $x_2$ | $-2$ | $(3, 4)$ | $0$ |
+| 5 | $x_3$ | $-3$ | $(2, 4)$ | $-1$ |
+| 6 | $x_3$ | $-1$ | $(1, 4)$ | $-2$ |
+
+最终直线 $x^{(1)} + 4x^{(2)} - 2 = 0$，三个点的 $y_i(w^\top x_i + b)$ 分别是 $11$、$6$、$1$，全部为正。注意第 3 步：$x_3$ 恰好落在边界上（值为 0），也算分错——所以条件是 $\le 0$ 而不是 $\lt 0$。
+
+- **对偶验证**：$x_1, x_2, x_3$ 分别触发了 $1, 1, 4$ 次更新，$\alpha = (1, 1, 4)$，$w = (1, 3) + (4, 1) - 4\,(1, 0) = (1, 4)$，$b = 1 + 1 - 4 = -2$。
+- **Novikoff 界**：$R^2 = \max\|\hat x_i\|^2 = \|(4, 1, 1)\|^2 = 18$。最大间隔超平面（增广空间中）是 $\hat w = (4, 6, -13)/9$ 方向，$\gamma^2 = 81/221$，界为 $18 \times 221/81 = 442/9 \approx 49.1$。实际只更新了 6 次：界是最坏情况，往往很松。
+
+</Box>
+
+### 拓展：分类损失的统一视角
+
+感知机、逻辑回归、第 07 章的 SVM 和第 08 章的 AdaBoost 都是线性（或加性）模型，区别只在**怎样惩罚间隔** $m = y f(x)$：
+
+<LossZoo client:visible lang="zh" />
+
+- **0-1 损失**是我们真正关心的，但它是阶梯函数，不可优化；其余几条都是它的凸替身（convex surrogate）。合页、交叉熵（以 2 为底）、指数损失都是 0-1 损失的上界；感知机损失不是，它对 $m$ 刚好为负的点几乎不罚。
+- **校准**：逻辑回归直接建模概率，模型设定正确时概率是校准的；SVM 的输出不是概率，常用 Platt 缩放——在 SVM 分数上再拟合一个一维逻辑回归。
+- **判别与生成**：第 05 章的 LDA 从“每类服从高斯分布”出发，得到的对数几率也是 $x$ 的线性函数。两者形式相同、估计方法不同；Ng 与 Jordan（2001）发现，样本少时生成模型更快接近它的极限，样本多时判别模型的极限误差更低。
+- **隐式偏置**：在可分数据上用梯度下降训练不加正则的逻辑回归，$\|w\| \to \infty$，但方向 $w/\|w\|$ 收敛到**最大间隔**（硬间隔 SVM）的方向（Soudry 等，2018）。没有显式正则，优化算法本身就挑了一个解——这是理解深度网络为什么能泛化的起点之一。
+- **感知机是第一个神经网络**：把 $\mathrm{sign}$ 换成光滑的激活函数、把一层叠成多层，就到了第 14 章。
+
+</Section>

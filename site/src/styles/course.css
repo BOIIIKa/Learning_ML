@@ -78,6 +78,9 @@ html.manim {
 .slide .step:not(.shown) { visibility: hidden; }
 .slide span.step { display: inline-block; }
 .course .mj-g { display: inline-block; white-space: pre; }
+/* KaTeX draws radicals and wide accents as absolutely positioned SVGs: keep them blocks, or their
+   static position shifts onto the radicand. */
+.course svg.mj-g { display: block; white-space: normal; }
 .slide .big-q { font-family: var(--serif); font-size: 46px; font-weight: 400; line-height: 1.3; color: var(--accent); }
 .slide .big-q.sm { font-size: 36px; }
 .slide .btn-xl { font-size: 24px; padding: 0.5em 1.4em; }

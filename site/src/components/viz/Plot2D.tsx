@@ -31,6 +31,10 @@ export interface Plot2DProps {
   domain?: { x: [number, number]; y: [number, number] };
   height?: number;
   tweenMs?: number;
+  /** Fixed positive contour levels for `field` (mirrored for negative values); default: thirds of max |field|. */
+  levels?: number[];
+  /** Extra SVG drawn above the points, given the data → pixel scales. */
+  overlay?: (sx: (v: number) => number, sy: (v: number) => number) => React.ReactNode;
 }
 
 const W = 460;
@@ -65,6 +69,7 @@ function clipLine(w: [number, number], c: number, [x0, x1]: [number, number], [y
 
 export default function Plot2D({
   X, y, step, grid, showMargin = true, extraLines = [], extraPoints, onDragPoint, highlightSide, domain, height = 380, tweenMs = 450,
+  levels: fixedLevels, overlay,
 }: Plot2DProps) {
   const uid = useId().replace(/:/g, "");
   const svgRef = useRef<SVGSVGElement>(null);
@@ -105,14 +110,14 @@ export default function Plot2D({
         .join("");
     const m = Math.max(1e-9, ...field.map(Math.abs));
     const gen = contours().size([nx, ny]);
-    const levels = [1e-9, m / 3, (2 * m) / 3];
+    const levels = fixedLevels ?? [1e-9, m / 3, (2 * m) / 3];
     const neg = field.map((v) => -v);
     return {
       pos: levels.map((l) => toPath(gen.thresholds([l])(field)[0].coordinates as number[][][][])),
       neg: levels.map((l) => toPath(gen.thresholds([l])(neg)[0].coordinates as number[][][][])),
       zero: toPath(gen.thresholds([0])(field)[0].coordinates as number[][][][]),
     };
-  }, [field, grid, sx, sy]);
+  }, [field, grid, sx, sy, fixedLevels]);
 
   const toData = (e: React.PointerEvent): [number, number] => {
     const svg = svgRef.current!;
@@ -217,6 +222,7 @@ export default function Plot2D({
           </g>
         );
       })}
+      {overlay?.(sx, sy)}
       <Crosshair p={hover} W={W} H={H} label={hover ? `(${sx.invert(hover[0]).toFixed(2)}, ${sy.invert(hover[1]).toFixed(2)})` : ""} />
     </svg>
   );

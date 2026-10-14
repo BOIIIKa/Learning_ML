@@ -1,0 +1,219 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import PerceptronSteps from "../../components/chapters/ch04/PerceptronSteps";
+import LogisticSurface from "../../components/chapters/ch04/LogisticSurface";
+import MaxEntDice from "../../components/chapters/ch04/MaxEntDice";
+import LossZoo from "../../components/chapters/ch04/LossZoo";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 04 章 · 动画课程" title="线性分类：感知机、逻辑回归与最大熵" say="一条直线怎样从错误中学会分开两类？它又怎样告诉我们一个概率？">
+
+错了就改 · 把距离变成概率 · 最大熵
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="错了就改" say="医院用两项血液指标做初筛：红色需要复查，蓝色不需要。">
+
+<Step drive="s1=0/0.8; s1=1/1.5" say="从 w 等于零出发，找到一个分错的病人，把它加进 w。">从 $w = 0$ 出发，找一个分错的病人</Step>
+
+<Step drive="s1=100%/6" say="每加一次，直线就转一下。右下角是同一步的向量加法。十几次之后，一个人也没分错。">$w \leftarrow w + y_i x_i$：直线一次次转动 →</Step>
+
+<Step drive="click:btn1; s1=100%/5" say="换一种访问顺序，它停在另一条同样零错误的直线上。解不唯一。">换个顺序 → 另一条直线</Step>
+
+<div slot="visual"><PerceptronSteps client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="动手之后，有三个问题。">
+
+<Step effect="focus" say="第一，“错了就改”一定会停下来吗？最多要改多少次？">
+<p class="big-q sm">“错了就改”一定会停吗？</p>
+</Step>
+
+<Step say="第二，医生要的其实是概率，而不只是复查或不复查。">医生要的是**概率**，不只是“是 / 否”</Step>
+
+<Step say="第三，为什么偏偏是 sigmoid 和 softmax？有没有比好用更深的理由？">为什么偏偏是 sigmoid 与 softmax？</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="感知机" say="先把感知机写成三要素。">
+
+<Step say="模型：w 点 x 加 b 的符号，边界是一个超平面。">**模型**：$f(x) = \mathrm{sign}(w^\top x + b)$</Step>
+
+<Step say="策略：误分类点到超平面的距离之和，省去公共的一除以 w 的范数。">**策略**：$L = -\sum_{i \in M} y_i(w^\top x_i + b)$</Step>
+
+<Step say="算法：随机梯度下降。每次挑一个分错的点，把它加进 w 和 b。">**算法**：$w \leftarrow w + \eta\, y_i x_i$，$b \leftarrow b + \eta\, y_i$</Step>
+
+<Step say="从零出发时，学习率只把 w 和 b 一起放大，最终的直线不变。">从 $0$ 出发：$\eta$ 只缩放，不改变直线</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="对偶形式：只记账" say="从零出发，w 永远是用过的点的累加。">
+
+<Step drive="click:chip2; s1=0/0.8; s1=100%/5" say="切到对偶形式。点的大小是 alpha：这个病人触发了几次更新。">$\alpha_i$ = 点 $i$ 触发的更新次数</Step>
+
+<Step say="最终的 w 只是这些病人的加权和，b 也一样。">$w = \sum_i \alpha_i y_i x_i$，$b = \sum_i \alpha_i y_i$</Step>
+
+<Step say="判断对错只用到内积。把内积换成核函数，就是第七章的核方法。">只用内积 $x_i^\top x_j$ → 核方法</Step>
+
+<div slot="visual"><PerceptronSteps client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="Novikoff 定理：它一定会停" say="把偏置并进权重。设最优超平面的间隔是 gamma，数据半径是 R。">
+
+<Morph>
+
+<Step effect="morph" say="每次更新，w 在最优方向上的投影至少增加 eta 乘 gamma。">
+
+$$
+k\eta\gamma \le \hat w_k^\top \hat w_{\text{opt}}
+$$
+
+</Step>
+
+<Step effect="morph" say="投影不超过长度。">
+
+$$
+k\eta\gamma \le \hat w_k^\top \hat w_{\text{opt}} \le \|\hat w_k\|
+$$
+
+</Step>
+
+<Step effect="morph" say="而分错时交叉项小于等于零，长度的平方每次最多增加 eta 方 R 方。">
+
+$$
+k\eta\gamma \le \hat w_k^\top \hat w_{\text{opt}} \le \|\hat w_k\| \le \sqrt{k}\,\eta R
+$$
+
+</Step>
+
+<Step effect="morph" say="去掉中间。">
+
+$$
+k\eta\gamma \le \sqrt{k}\,\eta R
+$$
+
+</Step>
+
+<Step effect="morph" say="eta 约掉，两边平方：更新次数不超过 R 除以 gamma 的平方。">
+
+$$
+k \le \left(\frac{R}{\gamma}\right)^2
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="界与学习率、维数、样本数都无关。间隔越大，越容易学。">
+<p class="big-q sm">间隔越大，越好学</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="逻辑回归：把距离变成概率" say="医生要概率。把 w 点 x 加 b 当作对数几率。">
+
+<Step drive="s1=46/3; s3=0.6/2" say="sigmoid 把它压到零到一之间。左图的色带是概率零点五、零点七五和零点九的等高线。">$P(Y=1\mid x) = \sigma(w^\top x + b)$</Step>
+
+<Step drive="s2=5/3; s2=1/2" say="右图沿 w 方向看。w 的范数越大，曲线越陡，模型越自信。">$\|w\|$ = 自信程度</Step>
+
+<Step drive="click:btn1; wait:3" say="竖线是每个人没被说中的概率。交叉熵把它们取负对数再平均。按下牛顿法拟合。">交叉熵 $= -\frac{1}{n}\sum_i \log p(\text{真实标签})$</Step>
+
+<Step drive="click:chip2; click:btn1; wait:5.5" say="换成可分数据：交叉熵无限接近零，w 的范数一路增大，极大似然估计不存在。">可分 ⇒ $\|w\| \to \infty$，MLE 不存在</Step>
+
+<div slot="visual"><LogisticSurface client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="梯度、Hessian 与牛顿法" say="标签取零或一，p i 是预测概率。">
+
+<Morph>
+
+<Step effect="morph" say="对数似然。">
+
+$$
+\ell = \sum_i \big[y_i\log p_i + (1 - y_i)\log(1 - p_i)\big]
+$$
+
+</Step>
+
+<Step effect="morph" say="利用 sigmoid 的导数等于 sigma 乘一减 sigma，梯度是真实减预测，再乘以输入。">
+
+$$
+\nabla\ell = \sum_i (y_i - p_i)\,\hat x_i
+$$
+
+</Step>
+
+<Step effect="morph" say="再求一次导：Hessian 是负的 p 乘一减 p 加权的外积之和。">
+
+$$
+\nabla^2\ell = -\sum_i p_i(1 - p_i)\,\hat x_i\hat x_i^\top
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="Hessian 半负定，所以对数似然是凹的：没有会困住优化的局部极值。">半负定 ⇒ 凹函数，没有局部极值</Step>
+
+<Step say="牛顿步恰好是一次加权最小二乘，所以叫迭代重加权最小二乘，几步就收敛。">牛顿法 = IRLS：几步收敛</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="最大熵：最不武断的猜测" say="为什么偏偏是 sigmoid？换个问题：只知道一点信息时，该怎样猜？">
+
+<Step drive="s1=3.5/2" say="一颗骰子，只知道平均点数。均值是三点五时，熵最大的分布就是均匀分布。">只知道均值 $\mu$：选熵最大的分布</Step>
+
+<Step drive="s1=5/3" say="均值变大，最大熵分布变成 e 的 lambda k 次方：点数的 softmax。">$p_k \propto e^{\lambda k}$</Step>
+
+<Step drive="click:chip2; wait:1.5; click:chip1" say="另一个同均值的分布，熵低得多：它多做了数据没有支持的假设。">同均值，熵更低 = 多了假设</Step>
+
+<Step say="分类时把约束换成特征的期望，解就是 softmax；两类时退化为 sigmoid。">$P(y = c\mid x) = \mathrm{softmax}(w_1^\top x, \dots, w_C^\top x)_c$</Step>
+
+<div slot="visual"><MaxEntDice client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="对偶就是极大似然" say="把指数形式代回拉格朗日函数。">
+
+<Step say="对偶函数恰好是这个指数模型在数据上的对数似然。最大熵和极大似然，是同一个问题的两面。">$\Psi(w) = \sum_{x,y}\tilde P(x,y)\,w^\top f(x,y) - \sum_x \tilde P(x)\log Z_w(x)$</Step>
+
+<Step say="softmax 交叉熵对每个 logit 的导数，又是预测减真实。">$\dfrac{\partial \ell}{\partial z_c} = p_c - \mathbb 1[c = y]$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：手算感知机" say="三位病人。一三和四一需要复查，一零不需要。学习率取一，从零出发，按顺序反复检查。">
+
+<Step say="第一步，x1 恰好在边界上，也算分错，更新为 w 等于一三，b 等于一。">$x_1 = (1, 3)$：$w = (1, 3)$，$b = 1$</Step>
+
+<Step say="之后 x3 错两次，x2 错一次，x3 再错两次。">更新序列：$x_1,\ x_3,\ x_3,\ x_2,\ x_3,\ x_3$</Step>
+
+<Step say="六次之后：w 等于一四，b 等于负二。对偶系数是一、一、四，加起来正好还原 w。">$w = (1, 4)$，$b = -2$，$\alpha = (1, 1, 4)$</Step>
+
+<Step say="R 方是十八，gamma 方是二百二十一分之八十一，界约为四十九；实际只用了六次。界是最坏情况。">$(R/\gamma)^2 = 442/9 \approx 49.1 \ge 6$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="损失动物园" say="感知机、逻辑回归、支持向量机、AdaBoost，只差在怎样惩罚间隔。">
+
+<Step drive="s1=-2/1.5; s1=2.5/4" say="横轴是间隔 m 等于 y 乘 f。0-1 损失是阶梯，梯度处处为零，没法优化。">都只看间隔 $m = y f(x)$</Step>
+
+<Step say="感知机、交叉熵、合页、指数，都是它的凸替身，分别出现在本章、第七章和第八章。">凸替身：感知机 · 交叉熵 · 合页 · 指数</Step>
+
+<Step drive="click:chip2; s1=-2/1.5; s1=2.5/4" say="切到拉力：合页对间隔大于一的点完全放手，交叉熵一直轻轻拉着，指数损失对错误拉得极狠。">拉力 $-\ell'(m)$：谁在推动梯度</Step>
+
+<div slot="visual"><LossZoo client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现感知机和牛顿法逻辑回归，再用 scikit-learn 组装逻辑回归和四种损失的 SGD。">
+
+<Step say="代码运行后，可以回放感知机的每一次更新，和牛顿法几步拉陡概率场的过程。">✎ 4 道推导 · ⌨ 感知机 + 牛顿法 · ⚙ LogisticRegressionCV + SGD</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/linear-classification/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

@@ -47,6 +47,6 @@ python3 scripts/new_chapter.py <id>          # scaffold the next chapter
 
 ## Status
 
-Done: chapters 00, 01, 02, 03, 07, 08 (notes, course, recap, widgets, exercises, handbook).
-Next in order: 04 linear classification, 05 generative classifiers, 06 nonparametric, then Part III onward.
-See `docs/PROJECT_SUMMARY.md` for the full picture and roadmap.
+Done: chapters 00, 01, 02, 03, 04, 07, 08 (notes, course, recap, widgets, exercises, handbook).
+Next in order: 05 generative classifiers, 06 nonparametric, then Part III onward.
+See `docs/PROJECT_SUMMARY.md` for the full picture and roadmap, and `docs/HANDOFF.md` for the user's preferences, environment notes and the concrete plan for the next chapter.

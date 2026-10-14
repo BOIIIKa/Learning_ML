@@ -149,8 +149,11 @@ export function initCourse(root: HTMLElement, { lang, labels }: Options) {
     if (reduced) return;
     const fx = el.dataset.fx ?? "write";
     if (fx === "morph") {
+      // The beat this one transforms from: the last shown beat before it in the group. (applyState
+      // may already have moved morph-top to `el`, so don't rely on the classes.)
       const group = el.closest(".morph-group");
-      const prev = group ? [...group.querySelectorAll<HTMLElement>(":scope > .step.morph-top")].find((p) => p !== el) : undefined;
+      const siblings = group ? [...group.querySelectorAll<HTMLElement>(":scope > .step")] : [];
+      const prev = siblings.slice(0, siblings.indexOf(el)).reverse().find((p) => p.classList.contains("shown"));
       if (prev) await morph(clock, prev, el, { signal });
       else { el.classList.add("morph-top"); await write(clock, el, { signal }); }
       return;
