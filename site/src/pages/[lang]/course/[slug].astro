@@ -16,18 +16,25 @@ const lang = Astro.params.lang as Lang;
 const slug = Astro.params.slug!;
 const chapter = allChapters.find((c) => c.slug === slug)!;
 const { default: Deck } = deck(lang, slug);
+const ordered = allChapters.filter((c) => courseSlugs.includes(c.slug));
+const nextCourse = ordered[ordered.findIndex((c) => c.slug === slug) + 1];
 const L = {
   notes: { zh: "讲义", en: "Notes" },
   recap: { zh: "本章一页纸", en: "The chapter on one page" },
-  hint: { zh: "空格 暂停 / 继续 · ← → 上一拍 / 下一拍 · F 全屏 · 点进度条跳到某一部分", en: "Space pause / resume · ← → previous / next beat · F fullscreen · click the bar to jump to a part" },
+  hint: { zh: "点击画面或按空格：播放这一页，播完自动暂停 · ← → 上一拍 / 下一拍 · A 连续播放 · F 全屏", en: "Click or press Space to play a card; it pauses at the end · ← → previous / next beat · A plays straight through · F fullscreen" },
   start: { zh: "播放", en: "Play" },
   startVoice: { zh: "播放并朗读", en: "Play with narration" },
-  minutes: { zh: "自动播放 · 约 {m} 分钟 · 可随时暂停、拖动和操作图形", en: "Plays by itself · about {m} min · pause, skip or play with the figures any time" },
+  minutes: { zh: "逐页播放 · 每页播完暂停，留出思考时间 · 共约 {m} 分钟 · 图形随时可以拖动和操作", en: "Card by card · each card pauses at the end so you can think · about {m} min in all · the figures are yours to drag any time" },
   end: { zh: "本章动画课程结束", en: "End of the animated course" },
   replay: { zh: "↺ 重新播放", en: "↺ Replay" },
   practice: { zh: "去讲义做练习 →", en: "Practise in the notes →" },
+  nextCourse: { zh: "下一章动画课", en: "Next chapter's course" },
+  contents: { zh: "课程目录", en: "Contents" },
+  auto: { zh: "连播", en: "Auto" },
+  autoTitle: { zh: "连续播放，不在每页结束时暂停（A）", en: "Play straight through without pausing after each card (A)" },
+  cont: { zh: "点击继续", en: "Click to continue" },
   speed: { zh: "播放速度", en: "Playback speed" },
-  play: { zh: "自动播放（P）", en: "Autoplay (P)" },
+  play: { zh: "播放（空格）", en: "Play (Space)" },
   pause: { zh: "暂停", en: "Pause" },
   voiceOn: { zh: "开启朗读", en: "Read aloud" },
   voiceOff: { zh: "关闭朗读", en: "Stop reading aloud" },
@@ -45,7 +52,8 @@ const L = {
   <body class="course-body">
     <div class="course" id="course" data-lang={lang}>
       <header class="course-bar">
-        <a class="brand" href={href(`${lang}/`)}><span class="brand-mark">∇</span></a>
+        <a class="brand" href={href(`${lang}/`)} title={t(lang, "siteName")}><span class="brand-mark">∇</span></a>
+        <a class="btn course-link" href={href(`${lang}/#contents`)}>☰ {L.contents[lang]}</a>
         <span class="course-title">{chapter.id} · {pick(chapter.title, lang)}</span>
         <span class="stage-counter"></span>
         <a class="btn course-link" href={href(`${lang}/chapters/${slug}/`)}>📄 {L.notes[lang]}</a>
@@ -62,6 +70,7 @@ const L = {
       </div>
 
       <div class="subtitle" aria-live="polite"><span class="subtitle-text"></span></div>
+      <button class="continue-cue" data-act="continue" type="button">{L.cont[lang]} <span aria-hidden="true">▶</span></button>
 
       <div class="start-overlay">
         <p class="start-kicker">{chapter.id} · {t(lang, "siteName")}</p>
@@ -72,12 +81,15 @@ const L = {
         </div>
         <p class="start-meta">{L.minutes[lang].replace("{m}", "__MIN__")}</p>
         <p class="start-hint">{L.hint[lang]}</p>
+        <p class="rotate-hint">{lang === "zh" ? "📱 横屏观看效果更好" : "📱 Turn your phone sideways for a bigger picture"}</p>
       </div>
       <div class="end-overlay" hidden>
         <p class="start-title">{L.end[lang]}</p>
         <div class="start-actions">
           <button class="btn" data-act="replay">{L.replay[lang]}</button>
           <a class="btn btn-primary" href={href(`${lang}/chapters/${slug}/#s-practice`)}>{L.practice[lang]}</a>
+          {nextCourse && <a class="btn" href={href(`${lang}/course/${nextCourse.slug}/`)}>{L.nextCourse[lang]}：{nextCourse.id} {pick(nextCourse.title, lang)} →</a>}
+          <a class="btn" href={href(`${lang}/#contents`)}>☰ {L.contents[lang]}</a>
         </div>
       </div>
 
@@ -86,6 +98,7 @@ const L = {
         <button class="btn ctl ctl-play" data-act="play" title={L.play[lang]}>▶</button>
         <button class="btn ctl" data-act="next" aria-label="next">→</button>
         <div class="segments" id="segments"></div>
+        <button class="btn ctl ctl-auto" data-act="auto" aria-pressed="false" title={L.autoTitle[lang]}>{L.auto[lang]}</button>
         <button class="btn ctl ctl-speed" data-act="speed" title={L.speed[lang]}>1×</button>
         <button class="btn ctl" data-act="voice" title={L.voiceOn[lang]}>🔊</button>
         <button class="btn ctl" data-act="full" title="F">⛶</button>
@@ -118,8 +131,8 @@ const L = {
       const root = document.getElementById("course")!;
       const lang = root.dataset.lang as "zh" | "en";
       const labels = {
-        zh: { play: "自动播放（P）", pause: "暂停", voiceOn: "开启朗读", voiceOff: "关闭朗读" },
-        en: { play: "Autoplay (P)", pause: "Pause", voiceOn: "Read aloud", voiceOff: "Stop reading aloud" },
+        zh: { play: "播放（空格）", pause: "暂停（空格）", voiceOn: "开启朗读", voiceOff: "关闭朗读", next: "播放下一页（空格）" },
+        en: { play: "Play (Space)", pause: "Pause (Space)", voiceOn: "Read aloud", voiceOff: "Stop reading aloud", next: "Play the next card (Space)" },
       }[lang];
       // Rough running time from the narration length, shown on the start screen.
       const says = [...root.querySelectorAll<HTMLElement>("[data-say]")].map((e) => e.dataset.say ?? "");

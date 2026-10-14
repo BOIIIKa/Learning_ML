@@ -37,9 +37,11 @@ function resolveTarget(scope: Element, t: string): HTMLElement | null {
   return [...scope.querySelectorAll<HTMLElement>(sel)][+m[2] - 1] ?? null;
 }
 
-export async function runDrive(clock: Clock, scope: HTMLElement, layer: HTMLElement, cmds: DriveCommand[], signal?: AbortSignal) {
+/** Run a drive script. `signal` aborts the whole beat (sliders jump to their targets); `takeover`
+ * stops the script where it is: the student has grabbed a control, so leave their values alone. */
+export async function runDrive(clock: Clock, scope: HTMLElement, layer: HTMLElement, cmds: DriveCommand[], signal?: AbortSignal, takeover?: AbortSignal) {
   for (const c of cmds) {
-    if (signal?.aborted) return;
+    if (signal?.aborted || takeover?.aborted) return;
     if (c.kind === "wait") await clock.wait(c.secs * 1000, signal);
     else if (c.kind === "slider") {
       const input = [...scope.querySelectorAll<HTMLInputElement>(".w-slider input[type=range]")][c.index! - 1];
@@ -48,16 +50,21 @@ export async function runDrive(clock: Clock, scope: HTMLElement, layer: HTMLElem
       const to = c.pct ? +input.min + ((+input.max - +input.min) * c.to!) / 100 : c.to!;
       const row = input.closest(".w-slider") as HTMLElement | null;
       row?.classList.add("mj-driven");
+      const stop = new AbortController();
+      const end = () => stop.abort();
+      signal?.addEventListener("abort", end, { once: true });
+      takeover?.addEventListener("abort", end, { once: true });
       await clock.tween(c.secs * 1000, (a) => {
+        if (takeover?.aborted) return;
         input.dispatchEvent(new CustomEvent(DRIVE_EVENT, { detail: from + (to - from) * a }));
-      }, smooth, signal);
+      }, smooth, stop.signal);
       row?.classList.remove("mj-driven");
     } else {
       const el = resolveTarget(scope, c.target!);
       if (!el) { console.warn("drive: no target", c.target); continue; }
       const ring = circumscribe(clock, el, layer, { runTime: c.secs, signal });
       await clock.wait(c.secs * 400, signal);
-      if (!signal?.aborted) el.click();
+      if (!signal?.aborted && !takeover?.aborted) el.click();
       await ring;
     }
   }

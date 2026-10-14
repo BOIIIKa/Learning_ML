@@ -35,7 +35,7 @@ const L = {
     <div class="ch-hero-inner container">
       <div class="ch-num" aria-hidden="true">{chapter.id}</div>
       <div class="ch-hero-text">
-        <p class="ch-part">{pick(part.title, lang)}</p>
+        <p class="ch-part"><a class="ch-crumb" href={href(`${lang}/#contents`)}>{t(lang, "contents")}</a> › {pick(part.title, lang)}</p>
         <h1 class="ch-title"><span class="gradient-text">{pick(chapter.title, lang)}</span></h1>
         {hasCourse && <a class="btn btn-primary ch-course-btn" href={href(`${lang}/course/${slug}/`)}>{L.course[lang]}</a>}
         <div class="ch-meta">
@@ -86,7 +86,7 @@ const L = {
       <Content lang={lang} />
 
       <Section lang={lang} k="practice">
-        <Practice client:visible lang={lang} derivation={practice.derivation} code={practice.code} runtime={exercises.runtime} />
+        <Practice client:idle lang={lang} derivation={practice.derivation} code={practice.code} runtime={exercises.runtime} />
       </Section>
 
       <Section lang={lang} k="handbook">
@@ -109,7 +109,8 @@ const L = {
 
       <nav class="ch-pager">
         {prev ? <a class="btn" href={href(`${lang}/chapters/${prev.slug}/`)}>← {prev.id} {pick(prev.title, lang)}</a> : <span />}
-        {next && <a class="btn" href={href(`${lang}/chapters/${next.slug}/`)}>{next.id} {pick(next.title, lang)} →</a>}
+        <a class="btn" href={href(`${lang}/#contents`)}>☰ {t(lang, "contents")}</a>
+        {next ? <a class="btn" href={href(`${lang}/chapters/${next.slug}/`)}>{next.id} {pick(next.title, lang)} →</a> : <span />}
       </nav>
     </article>
   </div>

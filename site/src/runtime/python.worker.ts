@@ -3,6 +3,7 @@
 
 interface Job {
   id: number;
+  warm?: boolean;
   indexURL: string;
   packages: string[];
   files: Record<string, string>;
@@ -10,18 +11,26 @@ interface Job {
   check: string;
 }
 
-let pyodide: any = null;
+let booting: Promise<any> | null = null;
 
-async function boot(indexURL: string) {
-  if (pyodide) return pyodide;
-  const { loadPyodide } = await import(/* @vite-ignore */ `${indexURL}pyodide.mjs`);
-  pyodide = await loadPyodide({ indexURL });
-  return pyodide;
+/** One interpreter per worker; a warm-up and a run arriving together share the same boot. */
+function boot(indexURL: string): Promise<any> {
+  booting ??= (async () => {
+    const { loadPyodide } = await import(/* @vite-ignore */ `${indexURL}pyodide.mjs`);
+    return loadPyodide({ indexURL });
+  })();
+  booting.catch(() => (booting = null)); // let a later run retry after a failed download
+  return booting;
 }
 
 self.onmessage = async (event: MessageEvent<Job>) => {
   const job = event.data;
   const post = (msg: object) => (self as unknown as Worker).postMessage({ id: job.id, ...msg });
+  if (job.warm) {
+    // Background warm-up: errors are ignored here and resurface on a real run.
+    try { await (await boot(job.indexURL)).loadPackage(job.packages); } catch { /* ignore */ }
+    return;
+  }
   try {
     post({ status: "booting" });
     const py = await boot(job.indexURL);
