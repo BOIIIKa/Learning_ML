@@ -1,0 +1,193 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import RegPath from "../../components/chapters/ch03/RegPath";
+import NormBall from "../../components/chapters/ch03/NormBall";
+import ProjectionView from "../../components/chapters/ch03/ProjectionView";
+import SoftThreshold from "../../components/chapters/ch03/SoftThreshold";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 03 · Animated course" title="Linear Regression and Regularization" say="This chapter starts from least squares: first its geometric and probabilistic meaning, then two ways to put a brake on a model, ridge and the lasso, and why the lasso pushes coefficients to exactly zero.">
+
+Projection · maximum likelihood · ridge · lasso · priors
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Predicting fuel use from speed" say="An engineer makes 12 runs on a test track and records fuel use at different speeds. Fuel use first falls and then rises with speed.">
+
+<Step say="She picks a very flexible model: a degree-nine polynomial plus an intercept, ten parameters, just two fewer than there are points.">Degree 9: 10 parameters, 12 points</Step>
+
+<Step say="With λ at the far left we get plain least squares: training error near zero, a wildly swinging curve, and a cross-validation error in the teens.">λ → 0: training error ≈ 0, the curve swings →</Step>
+
+<Step say="λ is a brake that penalizes large coefficients. Drag it right: the curve smooths out, and cross-validation error first falls, then rises.">Drag λ right: better first, then worse</Step>
+
+<Step say="Now switch to the lasso: coefficients do not just shrink, they become exactly zero one after another.">Lasso: coefficients hit **exactly 0** one by one</Step>
+
+<div slot="visual"><RegPath client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" say="That raises the three questions of this chapter.">
+
+<Step say="First, why is least squares the right starting point? It has a geometric reading and a probabilistic one.">① Why least squares? → **projection** and **Gaussian MLE**</Step>
+
+<Step say="Second, how do we brake a model? Add a penalty on the size of the coefficients to the squared loss.">② How to brake? → **L2 penalty (ridge) / L1 penalty (lasso)**</Step>
+
+<Step say="Third, why do the two brakes differ? Why does only L1 produce coefficients that are exactly zero?">③ Why does only L1 give zeros? → **geometry and soft thresholding**</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="The triad and three objectives" say="First, lay the method out with the triad.">
+
+<Step say="The model is a linear function. Polynomial features bend the curve, but it is still linear in the parameters, and that is what linear means in linear regression.">Model: $f(x) = w^\top\phi(x) + b$, linear in $w$</Step>
+
+<Step say="The strategy is squared loss plus a penalty.">
+
+$$
+\underbrace{\|y - Xw\|^2}_{\text{OLS}} \;+\; \lambda\|w\|_2^2\ \ (\text{ridge}) \quad\text{or}\quad \tfrac12\|y-Xw\|^2 + \lambda\|w\|_1\ \ (\text{lasso})
+$$
+
+</Step>
+
+<Step say="The algorithm: least squares and ridge have closed forms; the lasso uses coordinate descent; with very large data, all of them can use gradient descent.">Algorithm: normal equations · coordinate descent (soft threshold) · gradient descent</Step>
+
+<Step say="Two practical rules: standardize the features first, and do not penalize the intercept.">Standardize features; leave the intercept unpenalized</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="A penalty is a budget" say="By Lagrangian duality, every λ corresponds to a budget t, and the penalty is equivalent to keeping the coefficients inside a ball.">
+
+<Step say="The constrained form can be drawn: the orange ellipses are contours of the squared loss, centred at the least-squares solution; the blue region is the constraint.">Contours + feasible region: $\|w\| \le t$</Step>
+
+<Step say="The constrained solution is where the ellipses, growing outward from the centre, first touch the region.">Solution = where the contours **first touch** the region</Step>
+
+<Step say="Drag the orange dot: the diamond's corners sit on the axes and stick out, so they are often touched first, and then one coefficient is exactly zero.">Diamond corners on the axes → one coefficient = 0</Step>
+
+<Step say="Press scatter to count how often each constraint lands on an axis: far more often for L1, almost never for L2.">Scatter: L1 often lands on an axis, L2 almost never →</Step>
+
+<div slot="visual"><NormBall client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Normal equations = orthogonal projection" say="Now the derivations. Start with the gradient of the squared loss.">
+
+<Step say="Setting the gradient to zero gives the normal equations.">
+
+$$
+\nabla_w\|y - Xw\|^2 = -2X^\top(y - Xw) = 0 \;\Rightarrow\; X^\top X\hat w = X^\top y
+$$
+
+</Step>
+
+<Step say="It says the residual is orthogonal to every column of X, so the fitted values are the orthogonal projection of y onto the column space.">Residual $e \perp$ every column ⇒ $\hat y$ = **projection** of $y$ onto the column space</Step>
+
+<Step say="The projection matrix is the hat matrix: symmetric, idempotent, with trace equal to the number of parameters.">$H = X(X^\top X)^{-1}X^\top$: $H^2 = H$, $\mathrm{tr}\,H = p$</Step>
+
+<Step say="On the right, drag the tip of y and rotate the view: the residual is always perpendicular to the plane. Try another slope and the distance is always longer, by Pythagoras.">Pythagoras: $\|y - Xw\|^2 = \|e\|^2 + \|X(\hat w - w)\|^2$ →</Step>
+
+<div slot="visual"><ProjectionView client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Least squares = Gaussian MLE" say="Now the probabilistic reading. Assume independent Gaussian noise.">
+
+<Step say="Write the log-likelihood: the first term does not involve w, and the second is minus the residual sum of squares over twice the variance.">
+
+$$
+\ell(w,\sigma^2) = -\frac n2\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|y - Xw\|^2
+$$
+
+</Step>
+
+<Step say="So maximizing the likelihood over w is minimizing the squared loss. The variance estimate is the residual sum of squares over n.">⇒ $\hat w_{\text{MLE}} = \hat w_{\text{OLS}}$, $\hat\sigma^2 = \mathrm{RSS}/n$</Step>
+
+<Step say="With Laplace noise instead, you get the more robust absolute loss of chapter one.">Laplace noise ⇒ absolute loss (Ch. 01)</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Ridge: shrinkage in the SVD basis" say="The ridge gradient has an extra term, two λ w.">
+
+<Step say="The solution just adds λ to the diagonal of XᵀX, so it is always invertible, even with more features than samples.">
+
+$$
+\hat w_{\text{ridge}} = (X^\top X + \lambda I)^{-1}X^\top y
+$$
+
+</Step>
+
+<Step say="With the singular value decomposition, the fit projects y onto each principal direction and multiplies by a shrinkage factor.">
+
+$$
+\hat y_{\text{ridge}} = \sum_j u_j\,\frac{d_j^2}{d_j^2+\lambda}\,u_j^\top y
+$$
+
+</Step>
+
+<Step say="Directions with small singular values, where the data barely spread out and the estimate has the most variance, are shrunk the hardest. The factors sum to the effective degrees of freedom.">Small $d_j$ ⇒ most shrinkage; $\mathrm{df}(\lambda) = \sum_j \frac{d_j^2}{d_j^2+\lambda}$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Lasso: soft thresholding and coordinate descent" say="The lasso's absolute value is not differentiable at zero, so we use subgradients.">
+
+<Step say="In one dimension, minimize one half of z minus w squared plus λ times the absolute value of w. Three cases give the soft threshold.">
+
+$$
+S_\lambda(z) = \mathrm{sign}(z)\max(|z| - \lambda, 0)
+$$
+
+</Step>
+
+<Step say="The left plot compares them: ridge rescales and never reaches zero; the soft threshold shifts and then clips, so coefficients in the yellow dead zone become exactly zero.">Ridge: $z/(1+\lambda)$, never 0; lasso: 0 inside the dead zone</Step>
+
+<Step say="In many dimensions, fixing all coordinates but one gives a 1-D problem again. That is coordinate descent, one soft threshold per step.">Coordinate descent: $w_j \leftarrow S_\lambda(x_j^\top r^{(j)})/\|x_j\|^2$</Step>
+
+<Step say="On the right, drag the number of updates: the path only moves parallel to the axes, and with λ large enough the second coefficient is pushed to zero in one step.">Right: the path moves only along the axes →</Step>
+
+<div slot="visual"><SoftThreshold client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Regularization = a prior" say="Finally, the penalty can be read as a negative log-prior, and the regularized solution as a MAP estimate.">
+
+<Step say="The negative log of a Gaussian prior is a square, which gives ridge, with λ equal to the noise variance over the prior variance.">Gaussian prior $\mathcal N(0,\tau^2)$ ⇒ ridge, $\lambda = \sigma^2/\tau^2$</Step>
+
+<Step say="The negative log of a Laplace prior is an absolute value, which gives the lasso.">Laplace prior $\propto e^{-|w|/b}$ ⇒ lasso, $\lambda = \sigma^2/b$</Step>
+
+<Step effect="focus" say="The Laplace density has a spike at zero that pulls the posterior mode onto zero. That is the probabilistic reading of sparsity.">
+<p class="big-q sm">A spike at 0 ⇒ coefficients that are exactly 0</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: three points, four estimates" say="Three points: x equals one, two, three and y equals one, three, two.">
+
+<Step say="Solving the normal equations gives intercept one and slope one half. The residuals are minus one half, one, minus one half, orthogonal to both columns, with a residual sum of squares of one point five.">OLS: $\hat w = (1, 0.5)$, $e = (-0.5, 1, -0.5)$, RSS $= 1.5$</Step>
+
+<Step say="The hat matrix diagonal is five sixths, one third, five sixths, summing to two. The end points have the most leverage.">Leverages $(5/6, 1/3, 5/6)$, $\mathrm{tr}\,H = 2$</Step>
+
+<Step say="After centring, the inner product of x and y is one and the sum of squares of x is two. Ridge with λ equal to one gives slope one third, a shrinkage factor of two thirds.">Ridge $\lambda = 1$: slope $1/(2+1) = 1/3$</Step>
+
+<Step say="Lasso with λ equal to one half: subtract one half, divide by two, slope one quarter. For λ at least one, the slope is exactly zero.">Lasso: $\lambda = 0.5 \to 0.25$; $\lambda \ge 1 \to 0$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Back to the scenario: choosing λ by CV" say="Back to the fuel data, choosing λ by four-fold cross-validation.">
+
+<Step say="Press the button to jump to the cross-validation optimum. The lasso is best at λ equal to zero point zero one and keeps only five coefficients; the rest are exactly zero.">Lasso: CV-best λ = 0.01, only 5 coefficients left →</Step>
+
+<Step say="Switch to ridge: the best λ is about zero point zero seven five, and all nine coefficients stay, only smaller.">Ridge: all 9 coefficients stay, just smaller</Step>
+
+<Step say="With λ too large, both collapse to a flat line, and training and cross-validation error rise together. That is underfitting.">λ too large ⇒ a flat line, underfitting (Ch. 02)</Step>
+
+<div slot="visual"><RegPath client:visible lang="en" start={24} initial="lasso" /></div>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The exercises are on the notes page: four derivations, ridge and lasso coordinate descent from scratch, and regularization paths with scikit-learn.">
+
+<Step say="After running the code exercises you can replay the fitted curve sweep by sweep during lasso coordinate descent, and watch the curve grow bends as alpha goes from large to small.">✎ 4 derivations · ⌨ ridge + lasso coordinate descent · ⚙ Ridge / Lasso / LassoCV</Step>
+
+<Step effect="pop" say="Click to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/linear-regression/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

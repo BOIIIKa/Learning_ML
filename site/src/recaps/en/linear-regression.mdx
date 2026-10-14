@@ -1,0 +1,7 @@
+- **Projection**: the normal equations $X^\top X\hat w = X^\top y$ say the residual is orthogonal to every column; $\hat y = Hy$ is the orthogonal projection of $y$ onto the column space, and $H = X(X^\top X)^{-1}X^\top$ is symmetric, idempotent and has trace $p$.
+- **Probability**: under Gaussian noise, least squares is maximum likelihood, with $\hat\sigma^2 = \mathrm{RSS}/n$.
+- **Ridge**: $\hat w = (X^\top X + \lambda I)^{-1}X^\top y$ is always invertible; in the SVD basis each direction is multiplied by $d_j^2/(d_j^2+\lambda)$, so high-variance directions shrink the most.
+- **Lasso**: the subgradient condition is $|x_j^\top(y - X\hat w)| \le \lambda$; the 1-D solution is the soft threshold $S_\lambda(z) = \mathrm{sign}(z)\max(|z|-\lambda, 0)$, applied once per coordinate-descent step.
+- **Geometry**: the constrained solution is where the loss contours first touch the feasible region; the L1 diamond has corners on the axes, so the lasso produces exact zeros while ridge only shrinks.
+- **Priors**: Gaussian prior ⇒ ridge ($\lambda = \sigma^2/\tau^2$); Laplace prior ⇒ lasso ($\lambda = \sigma^2/b$).
+- **Practice**: standardize the features, leave the intercept unpenalized, and choose λ from the cross-validation curve.

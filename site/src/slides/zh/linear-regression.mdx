@@ -1,0 +1,193 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import RegPath from "../../components/chapters/ch03/RegPath";
+import NormBall from "../../components/chapters/ch03/NormBall";
+import ProjectionView from "../../components/chapters/ch03/ProjectionView";
+import SoftThreshold from "../../components/chapters/ch03/SoftThreshold";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 03 章 · 动画课程" title="线性回归与正则化" say="这一章从最小二乘出发：先看它的几何意义和概率意义，再学两种给模型踩刹车的方法，岭回归和 Lasso，并弄清楚 Lasso 为什么会把系数压成恰好为零。">
+
+投影 · 极大似然 · 岭回归 · Lasso · 先验
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="用车速预测油耗" say="一位工程师在试车场做了 12 次测量，记下不同车速下的油耗。油耗随车速先降后升。">
+
+<Step say="她用了一个很灵活的模型：九次多项式加截距，一共十个参数，只比数据点少两个。">9 次多项式：10 个参数，12 个点</Step>
+
+<Step say="把 λ 拖到最左边，就是普通最小二乘：训练误差几乎为零，曲线却疯狂摆动，交叉验证误差高达十几。">λ → 0：训练误差 ≈ 0，曲线乱摆 →</Step>
+
+<Step say="λ 是一个刹车，它惩罚过大的系数。慢慢往右拖，曲线变平滑，交叉验证误差先降后升。">往右拖 λ：先变好，再变差</Step>
+
+<Step say="再切换到 Lasso：系数不只是变小，而是一个接一个地变成恰好为零。">Lasso：系数一个个变成**恰好 0**</Step>
+
+<div slot="visual"><RegPath client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" say="这引出本章的三个问题。">
+
+<Step say="第一，最小二乘为什么是对的出发点？它有几何解释，也有概率解释。">① 最小二乘凭什么？→ **投影** 与 **高斯 MLE**</Step>
+
+<Step say="第二，怎样给模型踩刹车？在平方损失后加一项系数大小的惩罚。">② 怎样踩刹车？→ **L2 惩罚（岭回归）/ L1 惩罚（Lasso）**</Step>
+
+<Step say="第三，两种刹车为什么表现不同？为什么只有 L1 会产生恰好为零的系数？">③ 为什么只有 L1 会给出 0？→ **几何与软阈值**</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="三要素与三个目标函数" say="先用三要素把方法摆清楚。">
+
+<Step say="模型是线性函数。多项式特征让曲线弯曲，但它对参数仍是线性的，这才是线性回归中线性的含义。">模型：$f(x) = w^\top\phi(x) + b$ ——对 $w$ 线性</Step>
+
+<Step say="策略是平方损失，再加上惩罚。">
+
+$$
+\underbrace{\|y - Xw\|^2}_{\text{OLS}} \;+\; \lambda\|w\|_2^2\ \ (\text{岭回归}) \quad\text{或}\quad \tfrac12\|y-Xw\|^2 + \lambda\|w\|_1\ \ (\text{Lasso})
+$$
+
+</Step>
+
+<Step say="算法：最小二乘与岭回归有闭式解；Lasso 用坐标下降；数据很大时都可以用梯度下降。">算法：正规方程 · 坐标下降（软阈值）· 梯度下降</Step>
+
+<Step say="注意两条实践要求：先标准化特征，截距不参与惩罚。">先标准化特征；截距不惩罚</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="惩罚就是预算" say="由拉格朗日对偶，每个 λ 对应一个预算 t，惩罚形式等价于把系数限制在一个球里。">
+
+<Step say="约束形式可以画出来：橙色椭圆是平方损失的等高线，中心是最小二乘解；蓝色区域是约束域。">等高线 + 约束域：$\|w\| \le t$</Step>
+
+<Step say="约束解就是椭圆从中心向外扩张，第一次碰到约束域的那一点。">解 = 等高线**第一次碰到**约束域的点</Step>
+
+<Step say="拖动橙点：L1 菱形的尖角在坐标轴上而且向外突出，常常最先被碰到，这时一个系数恰好为零。">菱形尖角在轴上 → 一个系数 = 0</Step>
+
+<Step say="点随机撒，统计两种约束下落在轴上的比例：L1 远远高于 L2，L2 几乎为零。">随机撒点：L1 常落在轴上，L2 几乎从不 →</Step>
+
+<div slot="visual"><NormBall client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="正规方程 = 正交投影" say="现在推导。先对平方损失求梯度。">
+
+<Step say="梯度为零，得到正规方程。">
+
+$$
+\nabla_w\|y - Xw\|^2 = -2X^\top(y - Xw) = 0 \;\Rightarrow\; X^\top X\hat w = X^\top y
+$$
+
+</Step>
+
+<Step say="这个式子说的是：残差与 X 的每一列都正交。所以拟合值是 y 在列空间上的正交投影。">残差 $e \perp$ 每一列 ⇒ $\hat y$ = $y$ 在列空间上的**投影**</Step>
+
+<Step say="投影矩阵叫帽子矩阵，它对称、幂等，迹等于参数个数。">$H = X(X^\top X)^{-1}X^\top$：$H^2 = H$，$\mathrm{tr}\,H = p$</Step>
+
+<Step say="右边拖动 y 的端点，旋转视角：残差总是垂直于平面。换一个斜率，距离一定更长，这是勾股定理。">勾股：$\|y - Xw\|^2 = \|e\|^2 + \|X(\hat w - w)\|^2$ →</Step>
+
+<div slot="visual"><ProjectionView client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="最小二乘 = 高斯 MLE" say="再看概率解释。假设噪声是独立的高斯分布。">
+
+<Step say="写出对数似然：第一项与 w 无关，第二项正好是负的残差平方和除以两倍方差。">
+
+$$
+\ell(w,\sigma^2) = -\frac n2\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|y - Xw\|^2
+$$
+
+</Step>
+
+<Step say="所以对 w 最大化似然，就是最小化平方损失。方差的估计是残差平方和除以 n。">⇒ $\hat w_{\text{MLE}} = \hat w_{\text{OLS}}$，$\hat\sigma^2 = \mathrm{RSS}/n$</Step>
+
+<Step say="如果噪声换成拉普拉斯分布，得到的是第一章里更稳健的绝对值损失。">拉普拉斯噪声 ⇒ 绝对值损失（第 01 章）</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="岭回归：在 SVD 基下收缩" say="岭回归的梯度多了一项二倍 λ w。">
+
+<Step say="解出来只是在 XᵀX 的对角线上加 λ，因此总是可逆的，哪怕特征比样本多。">
+
+$$
+\hat w_{\text{ridge}} = (X^\top X + \lambda I)^{-1}X^\top y
+$$
+
+</Step>
+
+<Step say="用奇异值分解，拟合值是 y 在每个主方向上的投影，再乘一个收缩因子。">
+
+$$
+\hat y_{\text{ridge}} = \sum_j u_j\,\frac{d_j^2}{d_j^2+\lambda}\,u_j^\top y
+$$
+
+</Step>
+
+<Step say="奇异值小的方向，数据几乎没有展开，估计的方差最大，被压得最狠。收缩因子之和是有效自由度。">$d_j$ 小 ⇒ 收缩最多；$\mathrm{df}(\lambda) = \sum_j \frac{d_j^2}{d_j^2+\lambda}$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="Lasso：软阈值与坐标下降" say="Lasso 的绝对值在零点不可导，要用次梯度。">
+
+<Step say="一维问题：最小化二分之一 z 减 w 的平方，加 λ 乘 w 的绝对值。分三种情况讨论，得到软阈值。">
+
+$$
+S_\lambda(z) = \mathrm{sign}(z)\max(|z| - \lambda, 0)
+$$
+
+</Step>
+
+<Step say="左图对比：岭回归按比例缩小，永远到不了零；软阈值先平移再截断，黄色死区里的系数直接归零。">岭回归：$z/(1+\lambda)$，不为 0；Lasso：死区内 = 0</Step>
+
+<Step say="多维时，固定其他坐标、只动一个，就又是一维问题。这就是坐标下降，每步一个软阈值。">坐标下降：$w_j \leftarrow S_\lambda(x_j^\top r^{(j)})/\|x_j\|^2$</Step>
+
+<Step say="右图拖动更新次数：路径只沿坐标轴方向走，λ 足够大时，第二个系数一步就被压到零。">右图：轨迹只沿坐标轴走 →</Step>
+
+<div slot="visual"><SoftThreshold client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="正则化 = 先验" say="最后，正则项可以理解为负对数先验，正则化后的解就是 MAP 估计。">
+
+<Step say="高斯先验的负对数是平方，所以得到岭回归，λ 等于噪声方差除以先验方差。">高斯先验 $\mathcal N(0,\tau^2)$ ⇒ 岭回归，$\lambda = \sigma^2/\tau^2$</Step>
+
+<Step say="拉普拉斯先验的负对数是绝对值，所以得到 Lasso。">拉普拉斯先验 $\propto e^{-|w|/b}$ ⇒ Lasso，$\lambda = \sigma^2/b$</Step>
+
+<Step effect="focus" say="拉普拉斯密度在零点有一个尖峰，把后验的众数吸到零上。这就是稀疏性的概率解释。">
+<p class="big-q sm">零点的尖峰 ⇒ 恰好为 0 的系数</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：三个点，四种估计" say="三个点：x 等于一、二、三，y 等于一、三、二。">
+
+<Step say="解正规方程，截距一，斜率零点五。残差是负零点五、一、负零点五，与两列都正交，残差平方和一点五。">OLS：$\hat w = (1, 0.5)$，$e = (-0.5, 1, -0.5)$，RSS $= 1.5$</Step>
+
+<Step say="帽子矩阵的对角元是六分之五、三分之一、六分之五，加起来是二。两端的点杠杆最大。">杠杆值 $(5/6, 1/3, 5/6)$，$\mathrm{tr}\,H = 2$</Step>
+
+<Step say="中心化后 x 与 y 的内积是一，x 的平方和是二。岭回归 λ 等于一，斜率是三分之一，收缩因子三分之二。">岭回归 $\lambda = 1$：斜率 $1/(2+1) = 1/3$</Step>
+
+<Step say="Lasso λ 等于零点五：先减零点五再除以二，斜率零点二五；λ 大于等于一，斜率直接变成零。">Lasso：$\lambda = 0.5 \to 0.25$；$\lambda \ge 1 \to 0$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="回到情景：交叉验证选 λ" say="回到油耗数据，用四折交叉验证选 λ。">
+
+<Step say="点按钮跳到交叉验证最优的 λ。Lasso 在 λ 等于零点零一时最好，只保留五个系数，其余恰好为零。">Lasso：CV 最优 λ = 0.01，只剩 5 个系数 →</Step>
+
+<Step say="切到岭回归：最优 λ 约为零点零七五，九个系数全部保留，只是都缩小了。">岭回归：9 个系数都在，只是变小</Step>
+
+<Step say="λ 太大，两者都退化成一条水平线，训练误差和交叉验证误差一起上升，这是欠拟合。">λ 太大 ⇒ 水平线，欠拟合（第 02 章）</Step>
+
+<div slot="visual"><RegPath client:visible lang="zh" start={24} initial="lasso" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现岭回归和 Lasso 坐标下降，再用 scikit-learn 画正则化路径。">
+
+<Step say="代码题运行后，可以逐轮回放 Lasso 坐标下降中拟合曲线的变化，以及 alpha 从大到小时曲线怎样长出弯曲。">✎ 4 道推导 · ⌨ 岭回归 + Lasso 坐标下降 · ⚙ Ridge / Lasso / LassoCV</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/linear-regression/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

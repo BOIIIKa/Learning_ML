@@ -1,0 +1,7 @@
+- **投影**：正规方程 $X^\top X\hat w = X^\top y$ 说的是残差与每一列正交；$\hat y = Hy$ 是 $y$ 在列空间上的正交投影，$H = X(X^\top X)^{-1}X^\top$ 对称、幂等、迹为 $p$。
+- **概率**：高斯噪声下，最小二乘就是极大似然，$\hat\sigma^2 = \mathrm{RSS}/n$。
+- **岭回归**：$\hat w = (X^\top X + \lambda I)^{-1}X^\top y$，总是可逆；在 SVD 基下每个方向乘以 $d_j^2/(d_j^2+\lambda)$，方差大的方向收缩最多。
+- **Lasso**：次梯度条件 $|x_j^\top(y - X\hat w)| \le \lambda$；一维解是软阈值 $S_\lambda(z) = \mathrm{sign}(z)\max(|z|-\lambda, 0)$，坐标下降每步做一次。
+- **几何**：约束解是等高线第一次碰到约束域的点；L1 菱形的尖角在坐标轴上，所以 Lasso 产生恰好为 0 的系数，岭回归只收缩。
+- **先验**：高斯先验 ⇒ 岭回归（$\lambda = \sigma^2/\tau^2$）；拉普拉斯先验 ⇒ Lasso（$\lambda = \sigma^2/b$）。
+- **实践**：先标准化特征、不惩罚截距，用交叉验证曲线选 λ。

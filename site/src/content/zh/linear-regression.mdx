@@ -1,0 +1,213 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import RegPath from "../../components/chapters/ch03/RegPath";
+import NormBall from "../../components/chapters/ch03/NormBall";
+import ProjectionView from "../../components/chapters/ch03/ProjectionView";
+import SoftThreshold from "../../components/chapters/ch03/SoftThreshold";
+
+<Section lang="zh" k="scenario">
+
+一位汽车工程师在试车场上做了 12 次测量：每次以固定车速跑一段，记下油耗（L/100km）。油耗随车速先降后升——太慢时发动机效率低，太快时风阻大。她想要一条光滑的曲线，用来估计任何车速下的油耗。
+
+直线显然不够弯。于是她用了一个“够灵活”的模型：9 次多项式，再加一个截距，一共 10 个参数，只比数据点少两个。用最小二乘一拟合，训练误差几乎为 0，曲线却在数据点之间剧烈摆动，有的地方甚至预测出负油耗。
+
+下面的组件里，λ 是一个“刹车”：它惩罚过大的系数。先把 λ 放在最左边，看看曲线有多疯狂；再慢慢往右拖：
+
+<RegPath client:visible lang="zh" />
+
+拖动之后，你大概会冒出三个问题：
+
+1. **最小二乘为什么是“对”的出发点？** 它有一个干净的几何解释（投影），也有一个概率解释（高斯噪声下的极大似然）。
+2. **怎样给模型踩刹车？** 在平方损失后面加上系数大小的惩罚：L2 范数得到**岭回归**，L1 范数得到 **Lasso**。
+3. **两种刹车为什么表现不同？** 岭回归让所有系数一起变小；Lasso 却让系数一个接一个地变成**恰好为 0**——它在自动挑选特征。
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 三要素
+
+- **模型**：$f(x) = w^\top \phi(x) + b$。这里 $\phi(x) = (u, u^2, \dots, u^9)$ 是多项式特征，$u$ 是缩放后的车速。曲线虽然是弯的，但它对参数 $w$ 是**线性**的——“线性回归”指的是这一点。
+- **策略**：平方损失，再加一项惩罚。
+- **算法**：最小二乘与岭回归有闭式解（正规方程）；Lasso 没有闭式解，用坐标下降（每步一个软阈值）；数据量很大时，三者都可以用梯度下降（第 00 章）。
+
+<Box kind="definition" title="三种目标函数">
+
+记 $X\in\mathbb R^{n\times p}$ 为设计矩阵（每行一个样本），$y\in\mathbb R^n$ 为观测值。
+
+- **最小二乘（OLS）**：$\displaystyle \min_w \|y - Xw\|^2$
+- **岭回归（ridge）**：$\displaystyle \min_w \|y - Xw\|^2 + \lambda\|w\|_2^2$
+- **Lasso**：$\displaystyle \min_w \tfrac12\|y - Xw\|^2 + \lambda\|w\|_1$，其中 $\|w\|_1 = \sum_j |w_j|$
+
+实践中先把每个特征**标准化**（否则惩罚对不同量纲的特征不公平），截距不参与惩罚。
+
+</Box>
+
+### 惩罚 = 预算
+
+由拉格朗日对偶（第 00 章的 KKT 条件），每个 $\lambda > 0$ 都对应一个预算 $t$，使得惩罚形式与下面的约束形式有相同的解：
+
+$$
+\min_w \|y - Xw\|^2 \quad \text{s.t.}\quad \|w\|_2 \le t \ (\text{岭回归}) \quad\text{或}\quad \|w\|_1 \le t \ (\text{Lasso}).
+$$
+
+约束形式可以画出来：在系数平面上，平方损失的等高线是以最小二乘解 $\hat w_{\text{OLS}}$ 为中心的椭圆；约束域是圆盘（L2）或菱形（L1）。约束解就是椭圆从中心向外扩张、**第一次碰到约束域**的那个点。
+
+<NormBall client:visible lang="zh" />
+
+<Box kind="insight" title="为什么 L1 会产生稀疏解">
+
+菱形的四个尖角恰好在坐标轴上，而且向外突出。等高线从外面靠近时，最先碰到的往往就是一个尖角——那里有一个坐标恰好为 0。圆盘处处光滑，切点要恰好落在轴上，需要椭圆中心本来就在轴上，概率为 0。维数越高，L1 球的“尖角”和“棱”占的比例越大，稀疏解越常见。
+
+</Box>
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 正规方程与投影
+
+把平方损失展开：$\|y - Xw\|^2 = y^\top y - 2w^\top X^\top y + w^\top X^\top X w$。对 $w$ 求梯度并令其为零：
+
+$$
+\nabla_w = -2X^\top(y - Xw) = 0 \quad\Longrightarrow\quad X^\top X\,\hat w = X^\top y .
+$$
+
+这就是**正规方程**。$X$ 列满秩时 $X^\top X$ 可逆，$\hat w = (X^\top X)^{-1}X^\top y$。Hessian $2X^\top X$ 半正定，所以这是全局最小。
+
+几何上看，$X^\top(y - X\hat w) = 0$ 说的是：残差 $e = y - \hat y$ 与 $X$ 的**每一列都正交**。$Xw$ 取遍所有 $w$，得到的是 $X$ 的列空间；$\hat y$ 就是 $y$ 在这个子空间上的**正交投影**，也是子空间中离 $y$ 最近的点。
+
+<Box kind="theorem" title="帽子矩阵">
+
+$$
+\hat y = Hy,\qquad H = X(X^\top X)^{-1}X^\top .
+$$
+
+$H$ 对称且幂等（$H^2 = H$：投影两次和投影一次一样），$\mathrm{tr}\,H = p$（列空间的维数），$I - H$ 把 $y$ 投到残差。对角元 $h_{ii}$ 叫**杠杆值**，衡量第 $i$ 个点对自己拟合值的影响。
+
+</Box>
+
+<ProjectionView client:visible lang="zh" />
+
+由勾股定理，对任意 $w$，$\|y - Xw\|^2 = \|e\|^2 + \|X(\hat w - w)\|^2 \ge \|e\|^2$，这给出最小性的第二个证明，而且不用求导。
+
+### 最小二乘 = 高斯噪声下的极大似然
+
+设 $y_i = x_i^\top w + \varepsilon_i$，$\varepsilon_i \overset{\text{iid}}{\sim} \mathcal N(0, \sigma^2)$。对数似然为
+
+$$
+\ell(w, \sigma^2) = -\frac n2\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|y - Xw\|^2 .
+$$
+
+对 $w$ 最大化，只需最小化 $\|y - Xw\|^2$：**最小二乘就是高斯噪声假设下的 MLE**。再对 $\sigma^2$ 求导，得 $\hat\sigma^2 = \|y - X\hat w\|^2/n$。若噪声换成拉普拉斯分布，MLE 就变成第 01 章里更稳健的绝对值损失。
+
+### 岭回归：闭式解与 SVD 下的收缩
+
+岭回归的梯度为 $-2X^\top(y - Xw) + 2\lambda w$，令其为零：
+
+$$
+\hat w_{\text{ridge}} = (X^\top X + \lambda I)^{-1}X^\top y .
+$$
+
+只要 $\lambda > 0$，$X^\top X + \lambda I$ 的特征值都不小于 $\lambda$，一定可逆——即使特征比样本还多、或者特征高度相关，解也存在且唯一。
+
+用奇异值分解 $X = UDV^\top$ 看得更清楚（第 00 章）。代入得 $\hat w_{\text{ridge}} = V\,\mathrm{diag}\!\big(\tfrac{d_j}{d_j^2+\lambda}\big)U^\top y$，于是
+
+$$
+\hat y_{\text{ridge}} = \sum_{j} u_j\,\frac{d_j^2}{d_j^2 + \lambda}\,u_j^\top y .
+$$
+
+最小二乘把 $y$ 投到每个主方向 $u_j$ 上原样保留；岭回归再乘以**收缩因子** $d_j^2/(d_j^2+\lambda) \in (0, 1)$。$d_j$ 小的方向（数据在那里几乎没有展开，估计的方差最大）被压得最狠。收缩因子之和 $\mathrm{df}(\lambda) = \sum_j d_j^2/(d_j^2+\lambda)$ 称为**有效自由度**：$\lambda = 0$ 时为 $p$，$\lambda\to\infty$ 时趋于 0。
+
+### Lasso：次梯度与软阈值
+
+$|w|$ 在 0 处不可导，要用**次梯度**：$\partial|w| = \{\mathrm{sign}(w)\}$（$w \ne 0$），$\partial|0| = [-1, 1]$。凸函数在 $\hat w$ 处取最小，当且仅当 $0$ 属于它在 $\hat w$ 处的次梯度集合。对 Lasso，这给出 KKT 条件：
+
+$$
+x_j^\top(y - X\hat w) = \lambda\,\mathrm{sign}(\hat w_j)\ \ (\hat w_j \ne 0),\qquad \big|x_j^\top(y - X\hat w)\big| \le \lambda\ \ (\hat w_j = 0).
+$$
+
+即：被选中的特征与残差的相关性恰好“顶格”为 $\pm\lambda$；没选中的特征与残差的相关性不超过 $\lambda$。
+
+先看一维（或列正交）的情形。最小化 $\tfrac12(z - w)^2 + \lambda|w|$：若 $w>0$，则 $w = z - \lambda$，要求 $z > \lambda$；若 $w<0$，则 $w = z + \lambda$，要求 $z < -\lambda$；否则 $w = 0$。合起来就是**软阈值算子**：
+
+$$
+S_\lambda(z) = \mathrm{sign}(z)\,\max(|z| - \lambda,\ 0).
+$$
+
+对比岭回归的 $z/(1+\lambda)$：岭回归按比例缩小，永远到不了 0；软阈值先平移再截断，$|z| \le \lambda$ 的系数直接归零。
+
+**坐标下降**把这个一维解用到一般情形：轮流固定其他坐标，只优化 $w_j$。记部分残差 $r^{(j)} = y - \sum_{k\ne j} x_k w_k$，子问题的解为
+
+$$
+w_j \leftarrow \frac{S_\lambda\big(x_j^\top r^{(j)}\big)}{\|x_j\|^2}.
+$$
+
+每一步都让目标不增，目标函数凸且非光滑部分可按坐标分离，所以坐标下降收敛到全局最优。
+
+<SoftThreshold client:visible lang="zh" />
+
+### 正则化 = 先验（MAP）
+
+在高斯似然上再给 $w$ 一个先验，求后验的众数（MAP）：
+
+$$
+\hat w_{\text{MAP}} = \arg\min_w\ \frac{1}{2\sigma^2}\|y - Xw\|^2 - \log p(w).
+$$
+
+- **高斯先验** $w_j \sim \mathcal N(0, \tau^2)$：$-\log p(w) = \frac{1}{2\tau^2}\|w\|^2 + \text{常数}$，乘以 $2\sigma^2$ 即岭回归，$\lambda = \sigma^2/\tau^2$。
+- **拉普拉斯先验** $p(w_j) \propto e^{-|w_j|/b}$：$-\log p(w) = \frac1b\|w\|_1 + \text{常数}$，乘以 $\sigma^2$ 即 Lasso，$\lambda = \sigma^2/b$。
+
+拉普拉斯密度在 0 处有一个尖峰，把后验的众数“吸”到 0 上——这是稀疏性的概率解释。噪声越大、先验越窄，$\lambda$ 越大。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题：三个点，四种估计
+
+<Box kind="example" title="手算最小二乘、帽子矩阵、岭回归与 Lasso">
+
+数据 $x = (1, 2, 3)$，$y = (1, 3, 2)$，模型 $y \approx w_0 + w_1 x$。
+
+**最小二乘。** $X^\top X = \begin{pmatrix}3 & 6\\ 6 & 14\end{pmatrix}$，$X^\top y = (6, 13)^\top$，行列式为 6，解得 $\hat w = (1,\ 0.5)$。拟合值 $\hat y = (1.5,\ 2,\ 2.5)$，残差 $e = (-0.5,\ 1,\ -0.5)$。验证正交：$\mathbf 1^\top e = 0$，$x^\top e = -0.5 + 2 - 1.5 = 0$。$\mathrm{RSS} = 1.5$，高斯 MLE 给出 $\hat\sigma^2 = 1.5/3 = 0.5$。
+
+**帽子矩阵。** $H = \frac16\begin{pmatrix}5 & 2 & -1\\ 2 & 2 & 2\\ -1 & 2 & 5\end{pmatrix}$，杠杆值 $(5/6,\ 1/3,\ 5/6)$，迹为 2。两端的点杠杆大。
+
+**岭回归与 Lasso（只惩罚斜率）。** 中心化后 $x = (-1, 0, 1)$，$y = (-1, 1, 0)$，$S_{xx} = 2$，$S_{xy} = 1$。
+
+| | 斜率 | 说明 |
+|---|---|---|
+| 最小二乘 | $S_{xy}/S_{xx} = 0.5$ | |
+| 岭回归，$\lambda = 1$ | $S_{xy}/(S_{xx} + \lambda) = 1/3$ | 收缩因子 $d^2/(d^2+\lambda) = 2/3$ |
+| Lasso，$\lambda = 0.5$ | $S_\lambda(S_{xy})/S_{xx} = 0.25$ | 先减 0.5 再除以 2 |
+| Lasso，$\lambda \ge 1$ | $0$ | 斜率被整个删掉 |
+
+截距始终是 $\bar y = 2$。
+
+</Box>
+
+### 回到情景：交叉验证选 λ
+
+回到开头的组件。12 个点、9 次多项式（组件里的 λ 按样本平均缩放，即目标函数前乘了 $1/n$，见图注）：
+
+- λ 接近 0 时，训练误差约 0.02，4 折交叉验证误差却高达 16 左右——典型的过拟合。
+- **岭回归**：交叉验证在 $\lambda \approx 0.075$ 处最低（约 0.077），9 个系数全部保留，只是都缩小了。
+- **Lasso**：交叉验证在 $\lambda = 0.01$ 处最低（约 0.13），只保留 5 个系数（$u, u^3, u^4, u^6, u^9$），其余恰好为 0。
+
+λ 再增大，两种方法都退化成一条水平线（只剩截距），训练误差和交叉验证误差一起上升——这是欠拟合。选 λ 的标准做法就是像这样画出交叉验证曲线，取最低点（或取“最低点一个标准误以内最简单的模型”）。偏差–方差权衡的理论在第 02 章。
+
+### 拓展
+
+| | 岭回归（L2） | Lasso（L1） |
+|---|---|---|
+| 解 | 闭式解，唯一 | 无闭式解，坐标下降 / LARS |
+| 系数 | 一起收缩，不为 0 | 逐个归零，自动选特征 |
+| 相关特征 | 平均分摊权重 | 往往只挑其中一个 |
+| 先验 | 高斯 | 拉普拉斯 |
+
+- **弹性网（Elastic Net）**：$\lambda_1\|w\|_1 + \lambda_2\|w\|^2$，兼顾稀疏与对相关特征的稳定性。
+- **$p > n$ 与双下降**：特征比样本多时，$\lambda \to 0$ 的岭回归趋于“最小范数插值”。Hastie 等人（2022）证明，在这种情形下测试误差随参数个数先升后降，出现**双下降**——这与第 02 章的经典 U 形曲线并不矛盾，而是补上了插值区之后的那一段。
+- **广义线性模型**：把平方损失换成伯努利似然，就得到第 04 章的逻辑回归；同样可以加 L1 / L2 惩罚。
+
+</Section>

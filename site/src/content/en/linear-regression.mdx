@@ -1,0 +1,213 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import RegPath from "../../components/chapters/ch03/RegPath";
+import NormBall from "../../components/chapters/ch03/NormBall";
+import ProjectionView from "../../components/chapters/ch03/ProjectionView";
+import SoftThreshold from "../../components/chapters/ch03/SoftThreshold";
+
+<Section lang="en" k="scenario">
+
+An automotive engineer makes 12 runs on a test track: each at a fixed speed, recording fuel use (L/100 km). Fuel use first falls and then rises with speed: the engine is inefficient when crawling, and drag dominates when fast. She wants a smooth curve that estimates fuel use at any speed.
+
+A straight line is clearly not bendy enough. So she picks a "flexible enough" model: a degree-9 polynomial plus an intercept, ten parameters in all, just two fewer than there are data points. A least-squares fit drives the training error almost to 0, but the curve swings wildly between the points and in places even predicts negative fuel use.
+
+In the widget below, λ is a brake: it penalizes large coefficients. Start with λ at the far left to see how wild the curve gets, then slowly drag it to the right:
+
+<RegPath client:visible lang="en" />
+
+After playing with it, three questions probably come to mind:
+
+1. **Why is least squares the right starting point?** It has a clean geometric meaning (a projection) and a probabilistic one (maximum likelihood under Gaussian noise).
+2. **How do we put a brake on the model?** Add a penalty on the size of the coefficients to the squared loss: the L2 norm gives **ridge regression**, the L1 norm gives the **lasso**.
+3. **Why do the two brakes behave differently?** Ridge shrinks all coefficients together; the lasso sets them to **exactly 0**, one after another. It selects features automatically.
+
+</Section>
+
+<Section lang="en" k="method">
+
+### The triad
+
+- **Model**: $f(x) = w^\top \phi(x) + b$, where $\phi(x) = (u, u^2, \dots, u^9)$ are polynomial features of the scaled speed $u$. The curve is bent, but it is **linear** in the parameters $w$, and that is what "linear regression" means.
+- **Strategy**: squared loss plus a penalty.
+- **Algorithm**: least squares and ridge have closed forms (the normal equations); the lasso does not and is solved by coordinate descent (one soft threshold per step); for very large data, all three can use gradient descent (Ch. 00).
+
+<Box kind="definition" title="Three objectives">
+
+Let $X\in\mathbb R^{n\times p}$ be the design matrix (one row per sample) and $y\in\mathbb R^n$ the observations.
+
+- **Ordinary least squares (OLS)**: $\displaystyle \min_w \|y - Xw\|^2$
+- **Ridge**: $\displaystyle \min_w \|y - Xw\|^2 + \lambda\|w\|_2^2$
+- **Lasso**: $\displaystyle \min_w \tfrac12\|y - Xw\|^2 + \lambda\|w\|_1$, where $\|w\|_1 = \sum_j |w_j|$
+
+In practice each feature is **standardized** first (otherwise the penalty treats features on different scales unfairly), and the intercept is not penalized.
+
+</Box>
+
+### A penalty is a budget
+
+By Lagrangian duality (the KKT conditions of Ch. 00), every $\lambda > 0$ corresponds to a budget $t$ for which the penalized form and the constrained form have the same solution:
+
+$$
+\min_w \|y - Xw\|^2 \quad \text{s.t.}\quad \|w\|_2 \le t \ (\text{ridge}) \quad\text{or}\quad \|w\|_1 \le t \ (\text{lasso}).
+$$
+
+The constrained form can be drawn. In the coefficient plane, the contours of the squared loss are ellipses centred at the least-squares solution $\hat w_{\text{OLS}}$; the feasible region is a disc (L2) or a diamond (L1). The constrained solution is where the ellipses, growing outward from the centre, **first touch the region**.
+
+<NormBall client:visible lang="en" />
+
+<Box kind="insight" title="Why L1 gives sparse solutions">
+
+The diamond's four corners sit exactly on the axes and stick out. Ellipses approaching from outside very often touch a corner first, and at a corner one coordinate is exactly 0. The disc is smooth everywhere: for the touching point to land on an axis, the ellipse centre would already have to be on that axis, which happens with probability 0. In higher dimensions the corners and edges of the L1 ball make up an ever larger share of its surface, so sparse solutions become even more common.
+
+</Box>
+
+</Section>
+
+<Section lang="en" k="math">
+
+### The normal equations and projection
+
+Expand the squared loss: $\|y - Xw\|^2 = y^\top y - 2w^\top X^\top y + w^\top X^\top X w$. Setting the gradient with respect to $w$ to zero gives
+
+$$
+\nabla_w = -2X^\top(y - Xw) = 0 \quad\Longrightarrow\quad X^\top X\,\hat w = X^\top y .
+$$
+
+These are the **normal equations**. When $X$ has full column rank, $X^\top X$ is invertible and $\hat w = (X^\top X)^{-1}X^\top y$. The Hessian $2X^\top X$ is positive semidefinite, so this is a global minimum.
+
+Geometrically, $X^\top(y - X\hat w) = 0$ says that the residual $e = y - \hat y$ is **orthogonal to every column** of $X$. As $w$ ranges over all vectors, $Xw$ sweeps out the column space of $X$; $\hat y$ is the **orthogonal projection** of $y$ onto that subspace, the point of the subspace closest to $y$.
+
+<Box kind="theorem" title="The hat matrix">
+
+$$
+\hat y = Hy,\qquad H = X(X^\top X)^{-1}X^\top .
+$$
+
+$H$ is symmetric and idempotent ($H^2 = H$: projecting twice is the same as projecting once), $\mathrm{tr}\,H = p$ (the dimension of the column space), and $I - H$ maps $y$ to the residual. The diagonal entry $h_{ii}$ is the **leverage** of point $i$, measuring how strongly it pulls its own fitted value.
+
+</Box>
+
+<ProjectionView client:visible lang="en" />
+
+By Pythagoras, for any $w$, $\|y - Xw\|^2 = \|e\|^2 + \|X(\hat w - w)\|^2 \ge \|e\|^2$. This is a second proof of minimality, with no derivatives at all.
+
+### Least squares = maximum likelihood under Gaussian noise
+
+Assume $y_i = x_i^\top w + \varepsilon_i$ with $\varepsilon_i \overset{\text{iid}}{\sim} \mathcal N(0, \sigma^2)$. The log-likelihood is
+
+$$
+\ell(w, \sigma^2) = -\frac n2\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|y - Xw\|^2 .
+$$
+
+Maximizing over $w$ only requires minimizing $\|y - Xw\|^2$: **least squares is the MLE under Gaussian noise**. Differentiating in $\sigma^2$ then gives $\hat\sigma^2 = \|y - X\hat w\|^2/n$. With Laplace noise instead, the MLE becomes the more robust absolute loss of Ch. 01.
+
+### Ridge: closed form and shrinkage in the SVD basis
+
+The ridge gradient is $-2X^\top(y - Xw) + 2\lambda w$; setting it to zero gives
+
+$$
+\hat w_{\text{ridge}} = (X^\top X + \lambda I)^{-1}X^\top y .
+$$
+
+For any $\lambda > 0$ every eigenvalue of $X^\top X + \lambda I$ is at least $\lambda$, so it is always invertible: the solution exists and is unique even with more features than samples or strongly correlated features.
+
+The singular value decomposition $X = UDV^\top$ (Ch. 00) makes this clearer. Substituting gives $\hat w_{\text{ridge}} = V\,\mathrm{diag}\!\big(\tfrac{d_j}{d_j^2+\lambda}\big)U^\top y$, so
+
+$$
+\hat y_{\text{ridge}} = \sum_{j} u_j\,\frac{d_j^2}{d_j^2 + \lambda}\,u_j^\top y .
+$$
+
+Least squares projects $y$ onto each principal direction $u_j$ and keeps it as is; ridge also multiplies by the **shrinkage factor** $d_j^2/(d_j^2+\lambda) \in (0, 1)$. Directions with small $d_j$ (where the data barely spread out, so the estimate has the largest variance) are shrunk the most. The sum of the factors, $\mathrm{df}(\lambda) = \sum_j d_j^2/(d_j^2+\lambda)$, is the **effective degrees of freedom**: $p$ at $\lambda = 0$, tending to 0 as $\lambda\to\infty$.
+
+### Lasso: subgradients and soft thresholding
+
+$|w|$ is not differentiable at 0, so we use **subgradients**: $\partial|w| = \{\mathrm{sign}(w)\}$ for $w \ne 0$ and $\partial|0| = [-1, 1]$. A convex function is minimized at $\hat w$ if and only if $0$ lies in its subgradient set there. For the lasso this gives the KKT conditions
+
+$$
+x_j^\top(y - X\hat w) = \lambda\,\mathrm{sign}(\hat w_j)\ \ (\hat w_j \ne 0),\qquad \big|x_j^\top(y - X\hat w)\big| \le \lambda\ \ (\hat w_j = 0).
+$$
+
+In words: every selected feature's correlation with the residual sits exactly at the cap $\pm\lambda$, and no unselected feature's correlation exceeds $\lambda$.
+
+Start with one dimension (or orthonormal columns). Minimize $\tfrac12(z - w)^2 + \lambda|w|$. If $w>0$, then $w = z - \lambda$, which needs $z > \lambda$; if $w<0$, then $w = z + \lambda$, which needs $z < -\lambda$; otherwise $w = 0$. Together, this is the **soft-thresholding operator**:
+
+$$
+S_\lambda(z) = \mathrm{sign}(z)\,\max(|z| - \lambda,\ 0).
+$$
+
+Compare ridge's $z/(1+\lambda)$: ridge rescales and never reaches 0, while soft thresholding shifts and then clips, so any coefficient with $|z| \le \lambda$ becomes exactly 0.
+
+**Coordinate descent** carries the 1-D solution over to the general case: fix all other coordinates and optimize $w_j$ alone, cycling through $j$. With the partial residual $r^{(j)} = y - \sum_{k\ne j} x_k w_k$, the subproblem is solved by
+
+$$
+w_j \leftarrow \frac{S_\lambda\big(x_j^\top r^{(j)}\big)}{\|x_j\|^2}.
+$$
+
+Each step never increases the objective; because the objective is convex and its non-smooth part separates across coordinates, coordinate descent converges to the global optimum.
+
+<SoftThreshold client:visible lang="en" />
+
+### Regularization = a prior (MAP)
+
+Put a prior on $w$ on top of the Gaussian likelihood and take the mode of the posterior (MAP):
+
+$$
+\hat w_{\text{MAP}} = \arg\min_w\ \frac{1}{2\sigma^2}\|y - Xw\|^2 - \log p(w).
+$$
+
+- **Gaussian prior** $w_j \sim \mathcal N(0, \tau^2)$: $-\log p(w) = \frac{1}{2\tau^2}\|w\|^2 + \text{const}$; multiplying by $2\sigma^2$ gives ridge with $\lambda = \sigma^2/\tau^2$.
+- **Laplace prior** $p(w_j) \propto e^{-|w_j|/b}$: $-\log p(w) = \frac1b\|w\|_1 + \text{const}$; multiplying by $\sigma^2$ gives the lasso with $\lambda = \sigma^2/b$.
+
+The Laplace density has a spike at 0 that pulls the posterior mode onto 0: that is the probabilistic reading of sparsity. More noise or a narrower prior means a larger $\lambda$.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: three points, four estimates
+
+<Box kind="example" title="Least squares, the hat matrix, ridge and lasso by hand">
+
+Data $x = (1, 2, 3)$, $y = (1, 3, 2)$, model $y \approx w_0 + w_1 x$.
+
+**Least squares.** $X^\top X = \begin{pmatrix}3 & 6\\ 6 & 14\end{pmatrix}$ and $X^\top y = (6, 13)^\top$; the determinant is 6 and $\hat w = (1,\ 0.5)$. Fitted values $\hat y = (1.5,\ 2,\ 2.5)$, residuals $e = (-0.5,\ 1,\ -0.5)$. Orthogonality checks out: $\mathbf 1^\top e = 0$ and $x^\top e = -0.5 + 2 - 1.5 = 0$. $\mathrm{RSS} = 1.5$, and the Gaussian MLE gives $\hat\sigma^2 = 1.5/3 = 0.5$.
+
+**The hat matrix.** $H = \frac16\begin{pmatrix}5 & 2 & -1\\ 2 & 2 & 2\\ -1 & 2 & 5\end{pmatrix}$, leverages $(5/6,\ 1/3,\ 5/6)$, trace 2. The two end points have the most leverage.
+
+**Ridge and lasso (penalizing the slope only).** After centring, $x = (-1, 0, 1)$, $y = (-1, 1, 0)$, $S_{xx} = 2$ and $S_{xy} = 1$.
+
+| | Slope | Note |
+|---|---|---|
+| Least squares | $S_{xy}/S_{xx} = 0.5$ | |
+| Ridge, $\lambda = 1$ | $S_{xy}/(S_{xx} + \lambda) = 1/3$ | shrinkage factor $d^2/(d^2+\lambda) = 2/3$ |
+| Lasso, $\lambda = 0.5$ | $S_\lambda(S_{xy})/S_{xx} = 0.25$ | subtract 0.5, then divide by 2 |
+| Lasso, $\lambda \ge 1$ | $0$ | the slope is dropped entirely |
+
+The intercept is always $\bar y = 2$.
+
+</Box>
+
+### Back to the scenario: choosing λ by cross-validation
+
+Back to the opening widget: 12 points and a degree-9 polynomial (the widget's λ is scaled per sample, i.e. the objective carries a factor $1/n$; see its caption):
+
+- With λ near 0 the training error is about 0.02, but the 4-fold cross-validation error is around 16: textbook overfitting.
+- **Ridge**: cross-validation is lowest at $\lambda \approx 0.075$ (about 0.077); all 9 coefficients stay, just smaller.
+- **Lasso**: cross-validation is lowest at $\lambda = 0.01$ (about 0.13) and keeps only 5 coefficients ($u, u^3, u^4, u^6, u^9$); the rest are exactly 0.
+
+As λ grows further, both methods collapse to a flat line (only the intercept is left) and training and cross-validation error rise together: underfitting. The standard way to choose λ is exactly this: draw the cross-validation curve and take its minimum (or the simplest model within one standard error of it). The theory of the bias–variance trade-off is in Ch. 02.
+
+### Extensions
+
+| | Ridge (L2) | Lasso (L1) |
+|---|---|---|
+| Solution | closed form, unique | no closed form; coordinate descent / LARS |
+| Coefficients | shrink together, never 0 | drop to 0 one by one; selects features |
+| Correlated features | share the weight | often keeps just one |
+| Prior | Gaussian | Laplace |
+
+- **Elastic net**: $\lambda_1\|w\|_1 + \lambda_2\|w\|^2$ combines sparsity with stability under correlated features.
+- **$p > n$ and double descent**: with more features than samples, ridge with $\lambda \to 0$ tends to the minimum-norm interpolator. Hastie et al. (2022) showed that in this regime the test error first rises and then falls again as the number of parameters grows, a **double descent**. This does not contradict the classical U-curve of Ch. 02; it adds the part beyond the interpolation threshold.
+- **Generalized linear models**: replace the squared loss with a Bernoulli likelihood and you get the logistic regression of Ch. 04, which can take L1 / L2 penalties in exactly the same way.
+
+</Section>
