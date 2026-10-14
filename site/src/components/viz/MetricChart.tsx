@@ -37,7 +37,8 @@ export default function MetricChart({ series, cursor, height = 150, zero = true 
             d={"M" + s.values.map((v, i) => `${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join("L")}
             stroke={s.color}
             strokeDasharray={s.dashed ? "5 4" : undefined}
-            className="mc-line"
+            pathLength={s.dashed ? undefined : 1}
+            className={s.dashed ? "mc-line" : "mc-line draw"}
           />
         ))}
         <line x1={sx(cursor)} x2={sx(cursor)} y1={pad.t} y2={H - pad.b} className="mc-cursor" />

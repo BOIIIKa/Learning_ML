@@ -1,6 +1,6 @@
 .plot2d { width: 100%; max-width: 560px; margin: 0 auto; height: auto; display: block; border-radius: 12px; touch-action: none; user-select: none; }
 .plot-bg { fill: var(--surface-2); }
-.plot-griddot { fill: var(--border); }
+.plot-gridline { fill: none; stroke: var(--grid-major); stroke-width: 1; }
 
 .field-pos { fill: var(--class-pos); fill-opacity: 0.13; }
 .field-neg { fill: var(--class-neg); fill-opacity: 0.13; }
@@ -46,3 +46,4 @@
 .cp-handle { fill: var(--class-pos); stroke: var(--bg); stroke-width: 2.5; cursor: grab; filter: drop-shadow(0 0 6px var(--class-pos)); }
 .cp-vline { stroke-width: 2; stroke-dasharray: 5 4; }
 .cp-vlabel { font-size: 11px; font-weight: 700; font-family: var(--mono); }
+.cp-extra { fill: none; stroke: var(--class-pos); stroke-width: 1.6; opacity: 0.75; animation: pop-in 0.4s ease both; transform-box: fill-box; transform-origin: center; }

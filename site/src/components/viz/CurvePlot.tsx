@@ -1,5 +1,6 @@
 import { scaleLinear } from "d3-scale";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { Crosshair } from "./Crosshair";
 import "./plot.css";
 
 export interface Curve {
@@ -8,6 +9,7 @@ export interface Curve {
   dashed?: boolean;
   width?: number;
   label?: string;
+  opacity?: number;
 }
 
 export interface CurvePlotProps {
@@ -26,16 +28,21 @@ export interface CurvePlotProps {
   handles?: { p: [number, number]; onDrag: (p: [number, number]) => void }[];
   height?: number;
   vlines?: { x: number; color: string; label?: string }[];
+  /** Per-point fill colours (overrides the default class colour). */
+  pointColors?: string[];
+  /** Extra hollow points, e.g. unseen test data. */
+  extraPoints?: { xs: number[]; ys: number[] };
 }
 
 const W = 460;
 const f1 = (v: number) => v.toFixed(1);
 
 /** A 1-D function plot: scatter points, curves, residual sticks and draggable handles. */
-export default function CurvePlot({ xs, ys, curves = [], residualsTo, outliers = [], xDomain, yDomain, xLabel, yLabel, handles = [], height = 320, vlines = [] }: CurvePlotProps) {
+export default function CurvePlot({ xs, ys, curves = [], residualsTo, outliers = [], xDomain, yDomain, xLabel, yLabel, handles = [], height = 320, vlines = [], pointColors, extraPoints }: CurvePlotProps) {
   const H = height;
   const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<number | null>(null);
+  const [hover, setHover] = useState<[number, number] | null>(null);
   const sx = scaleLinear().domain(xDomain).range([34, W - 10]);
   const sy = scaleLinear().domain(yDomain).range([H - 26, 10]);
   const grid = Array.from({ length: 161 }, (_, i) => xDomain[0] + ((xDomain[1] - xDomain[0]) * i) / 160);
@@ -48,8 +55,12 @@ export default function CurvePlot({ xs, ys, curves = [], residualsTo, outliers =
 
   return (
     <svg ref={svg} className="curve-plot" viewBox={`0 0 ${W} ${H}`} role="img"
-      onPointerMove={(e) => drag.current !== null && handles[drag.current]?.onDrag(toData(e))}
-      onPointerUp={() => (drag.current = null)} onPointerLeave={() => (drag.current = null)}>
+      onPointerMove={(e) => {
+        const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.current!.getScreenCTM()!.inverse());
+        setHover([pt.x, pt.y]);
+        if (drag.current !== null) handles[drag.current]?.onDrag(toData(e));
+      }}
+      onPointerUp={() => (drag.current = null)} onPointerLeave={() => { drag.current = null; setHover(null); }}>
       <defs><clipPath id="cp-clip"><rect x={34} y={10} width={W - 44} height={H - 36} /></clipPath></defs>
       <rect width={W} height={H} rx={12} className="plot-bg" />
       {sx.ticks(5).map((t) => <text key={`x${t}`} x={sx(t)} y={H - 8} textAnchor="middle" className="cp-tick">{t}</text>)}
@@ -73,14 +84,17 @@ export default function CurvePlot({ xs, ys, curves = [], residualsTo, outliers =
         ))}
         {curves.map((c, i) => (
           <path key={`c${i}`} d={"M" + grid.map((x) => `${f1(sx(x))},${f1(clampY(c.f(x)))}`).join("L")}
-            stroke={c.color} strokeWidth={c.width ?? 2.6} strokeDasharray={c.dashed ? "6 4" : undefined} className="cp-curve" />
+            stroke={c.color} strokeWidth={c.width ?? 2.6} strokeDasharray={c.dashed ? "6 4" : undefined} strokeOpacity={c.opacity}
+            pathLength={c.dashed ? undefined : 1} className={c.dashed ? "cp-curve" : "cp-curve draw"} />
         ))}
-        {xs.map((x, i) => <circle key={`p${i}`} cx={f1(sx(x))} cy={f1(sy(ys[i]))} r={4} className={out.has(i) ? "cp-out" : "cp-pt"} />)}
+        {extraPoints?.xs.map((x, i) => <circle key={`e${i}`} cx={f1(sx(x))} cy={f1(clampY(extraPoints.ys[i]))} r={3.5} className="cp-extra" />)}
+        {xs.map((x, i) => <circle key={`p${i}`} cx={f1(sx(x))} cy={f1(sy(ys[i]))} r={4} className={out.has(i) ? "cp-out" : "cp-pt"} style={pointColors ? { fill: pointColors[i] } : undefined} />)}
       </g>
       {handles.map((h, i) => (
         <circle key={`h${i}`} cx={f1(sx(h.p[0]))} cy={f1(sy(h.p[1]))} r={9} className="cp-handle"
           onPointerDown={(e) => { (e.target as Element).setPointerCapture?.(e.pointerId); drag.current = i; }} />
       ))}
+      <Crosshair p={hover} W={W} H={H} label={hover ? `x=${sx.invert(hover[0]).toFixed(2)}  y=${sy.invert(hover[1]).toFixed(2)}` : ""} />
     </svg>
   );
 }
