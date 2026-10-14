@@ -46,6 +46,12 @@ export function chapterPage(lang: Lang, slug: string) {
   return pages[`../content/${lang}/${slug}.mdx`];
 }
 
+const decks = import.meta.glob("../slides/*/*.mdx", { eager: true }) as Record<string, any>;
+const recaps = import.meta.glob("../recaps/*/*.mdx", { eager: true }) as Record<string, any>;
+
+export const deck = (lang: Lang, slug: string) => decks[`../slides/${lang}/${slug}.mdx`];
+export const recap = (lang: Lang, slug: string) => recaps[`../recaps/${lang}/${slug}.mdx`];
+
 /** Slugs that have content in every language. */
 export const readySlugs: string[] = allChapters
   .map((c) => c.slug)
@@ -75,3 +81,6 @@ export function handbook(lang: Lang): HandbookEntry[] {
       Content: mod.default,
     }));
 }
+
+/** Slugs that also have an animated course deck in every language. */
+export const courseSlugs: string[] = readySlugs.filter((slug) => deck("zh", slug) && deck("en", slug));

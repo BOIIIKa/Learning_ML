@@ -1,0 +1,223 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import ScenarioLines from "../../components/chapters/ch07/ScenarioLines";
+import SvmPlayground from "../../components/chapters/ch07/SvmPlayground";
+import SmoReplay from "../../components/chapters/ch07/SmoReplay";
+import KernelPlayground from "../../components/chapters/ch07/KernelPlayground";
+import FivePoints from "../../components/chapters/ch07/FivePoints";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 07 章 · 动画课程" title="支持向量机与核方法" say="这一章，我们从一个医院的初筛问题出发，推导出支持向量机，再用核函数让它画出弯曲的边界。按右箭头或空格继续，按 P 自动播放。">
+
+从“哪条线更可靠”到最大间隔、对偶与核技巧
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="一家医院的初筛问题" say="医院想用两项影像指标给肿瘤初筛：肿块半径和边缘纹理。历史病例已经由病理确诊。">
+
+<Step say="蓝色是良性，橙色是恶性。在这批训练数据上，两类恰好可以被一条直线分开。">蓝 = 良性，橙 = 恶性</Step>
+
+<Step say="但能分开训练数据的直线有无穷多条。右边画了两条，它们在训练集上都是零错误。">能分开数据的直线**有无穷多条**</Step>
+
+<Step say="现在点‘来了 40 位新病人’按钮，多点几次，看看哪条线先犯错。">点按钮，让新病人到来 →</Step>
+
+<div slot="visual"><ScenarioLines client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" say="贴着某一类样本的直线，很快就会把新病人判错。">
+
+<Step effect="focus" say="直觉是：新病人和旧病人来自同一分布，会落在旧数据附近。">
+<p class="big-q">离两类都尽量远的那条线，最经得起波动。</p>
+</Step>
+
+<Step say="所以本章的问题是：怎样把‘离两类都尽量远’，变成一个可以精确求解的数学问题？">
+<p><span class="callout">本章问题：如何把“离两类都尽量远”变成可精确求解的数学问题？</span></p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="用间隔度量安全缓冲" say="先定义一个点离超平面有多远。">
+
+<Step say="超平面 $w^\top x+b=0$ 把空间一分为二，用 $\mathrm{sign}(w^\top x+b)$ 预测，标签取正负一。">超平面 $w^\top x + b = 0$，预测 $\mathrm{sign}(w^\top x + b)$</Step>
+
+<Step effect="draw" say="点到超平面的几何间隔：分对时就是距离，分错时为负。">
+
+$$
+\gamma_i = \frac{y_i\,(w^\top x_i + b)}{\|w\|}
+$$
+
+</Step>
+
+<Step say="数据集的间隔取最小的那个。最大间隔原则：在所有分开数据的超平面里，选间隔最大的。">最大间隔：$\displaystyle\max_{w,b}\ \min_i \gamma_i$</Step>
+
+<div slot="visual">
+<Step effect="pop" say="关键一步：把 w 和 b 同时放大，超平面不变。所以可以约定，最近的点满足 $y_i(w^\top x_i+b)=1$。">
+<Box kind="insight" title="缩放不变性">
+
+$(w,b) \to (cw, cb)$ 不改变超平面，于是可约定最近点满足 $y_i(w^\top x_i+b)=1$，此时间隔 $=1/\|w\|$。
+
+</Box>
+</Step>
+<Step effect="pop" say="最大化一除以 w 的范数，等价于最小化二分之一 w 的平方——这就是硬间隔 SVM，一个凸二次规划。">
+<Box kind="theorem" title="硬间隔 SVM">
+
+$$
+\min_{w,b}\ \tfrac12\|w\|^2\quad \text{s.t.}\quad y_i(w^\top x_i+b)\ge 1
+$$
+
+</Box>
+</Step>
+</div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="软间隔：允许犯一点错" say="真实数据很少能完美分开。">
+
+<Step say="给每个样本一个松弛变量 $\xi_i$，允许它进入间隔，但要付出代价 $C\xi_i$。">
+
+$$
+\min\ \tfrac12\|w\|^2 + C\sum_i \xi_i,\quad y_if(x_i)\ge 1-\xi_i,\ \xi_i\ge0
+$$
+
+</Step>
+
+<Step say="最优时 $\xi_i$ 恰好等于 $\max(0, 1-y_if(x_i))$，这就是合页损失。">$\xi_i = \max(0,\,1-y_if(x_i))$ ← **合页损失**</Step>
+
+<Step say="所以软间隔 SVM 就是：合页损失加 L2 正则。模型、策略、算法，三要素一目了然。">软间隔 SVM = 合页损失 + L2 正则</Step>
+
+<Step say="右边可以直接拖动数据点，或者调节 C。C 小，间隔宽、更宽容；C 大，逼近硬间隔。">拖点、调 $C$，看间隔怎样变化 →</Step>
+
+<div slot="visual"><SvmPlayground client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" say="刚才的实验里，你可能已经发现了一个现象。">
+
+<Step effect="focus" say="拖动远离边界的点，超平面纹丝不动；拖动带圈的点，它立刻跟着变。">
+<p class="big-q">只有边界上的少数点说了算。</p>
+</Step>
+
+<Step say="这些点叫支持向量。下一部分，我们用 KKT 条件严格证明这一点。">它们叫**支持向量**——下一部分用 KKT 条件证明。</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="工具：拉格朗日对偶与 KKT" say="先回顾第零章的一个工具：凸优化的 KKT 条件。">
+
+<Step say="对凸问题，引入乘子 $\alpha_i\ge 0$，构造拉格朗日函数。">$L = f + \sum_i \alpha_i g_i,\quad \alpha_i \ge 0$</Step>
+
+<Step say="满足 Slater 条件时，强对偶成立，最优解当且仅当满足四个条件。第一，平稳性。">① 平稳性：$\nabla_\theta L = 0$</Step>
+
+<Step say="第二，原始可行。">② 原始可行：$g_i(\theta^*) \le 0$</Step>
+
+<Step say="第三，对偶可行。">③ 对偶可行：$\alpha_i^* \ge 0$</Step>
+
+<Step say="第四，也是最关键的：互补松弛。乘子和约束，至少有一个为零。">④ **互补松弛**：$\alpha_i^*\, g_i(\theta^*) = 0$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="推导对偶问题" say="现在对软间隔 SVM 的拉格朗日函数，逐个对原变量求导。">
+
+<Step say="对 w 求导，得到 w 是样本的加权组合。">$\partial_w L = 0 \Rightarrow w = \sum_i \alpha_i y_i x_i$</Step>
+
+<Step say="对 b 求导，得到一个等式约束。">$\partial_b L = 0 \Rightarrow \sum_i \alpha_i y_i = 0$</Step>
+
+<Step say="对松弛变量求导，得到乘子的上界 C。">$\partial_{\xi_i} L = 0 \Rightarrow 0 \le \alpha_i \le C$</Step>
+
+<div slot="visual">
+<Step effect="pop" say="全部代回，原变量消失，只剩下 $\alpha$。注意：数据只以内积的形式出现——这是核技巧的伏笔。">
+<Box kind="theorem" title="SVM 对偶问题">
+
+$$
+\max_{\alpha}\ \sum_i \alpha_i - \tfrac12\sum_{i,j} \alpha_i\alpha_j y_i y_j\, \boxed{x_i^\top x_j}
+$$
+
+$$
+\text{s.t.}\ \ 0 \le \alpha_i \le C,\ \ \sum_i \alpha_i y_i = 0
+$$
+
+</Box>
+</Step>
+</div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="互补松弛 ⇒ 支持向量" say="互补松弛把每个样本分成三类。">
+
+<Step say="乘子为零：点在间隔外面，对 w 毫无贡献。">$\alpha_i = 0$：在间隔外，**对 $w$ 毫无贡献**</Step>
+
+<Step say="乘子在零和 C 之间：点恰好在间隔边界上，这是自由支持向量，可以用它求出 b。">$0<\alpha_i<C$：恰在间隔边界上（可由它求 $b$）</Step>
+
+<Step say="乘子等于 C：点进入间隔，甚至被分错。">$\alpha_i = C$：进入间隔或被分错</Step>
+
+<Step effect="focus" say="因为 w 只对乘子大于零的点求和，所以解只由支持向量决定。这正是拖动实验看到的现象。">
+<p class="big-q sm">$w=\sum_{\alpha_i>0}\alpha_iy_ix_i$ ⇒ 解只由支持向量决定</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="SMO：每次只解两个变量" say="对偶问题怎么解？SMO 的思路非常巧妙。">
+
+<Step say="等式约束会把单个变量钉死，所以每次至少要同时改两个。">等式约束 ⇒ 每次至少改**两个** $\alpha$</Step>
+
+<Step say="选最违反 KKT 的 $\alpha_i$，再选让误差差值最大的 $\alpha_j$。">选最违反 KKT 的 $\alpha_i$，以及使 $|E_i-E_j|$ 最大的 $\alpha_j$</Step>
+
+<Step say="固定其余变量，目标变成一元二次函数，直接写出解析解。">$\alpha_j \leftarrow \alpha_j + y_j(E_i-E_j)/\eta$，再裁剪到 $[L,H]$</Step>
+
+<Step say="右边是 SMO 的逐步回放：黄色圈是被选中的一对样本，下方曲线是单调上升的对偶目标。">右侧：逐步回放，对偶目标单调上升 →</Step>
+
+<div slot="visual"><SmoReplay client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：一个能手算的 SVM" say="来做一道可以手算到底的例题。正类三个点，负类两个点。">
+
+<Step say="第一步，猜支持向量：离对方最近的是 $x_1$、$x_2$ 和原点 $x_4$。让它们恰在间隔上。">① 猜支持向量 $x_1,x_2,x_4$：$2w_1+b=1,\ 2w_2+b=1,\ -b=1$</Step>
+
+<Step say="解得 w 等于一一，b 等于负一。">⇒ $w=(1,1),\ b=-1$</Step>
+
+<Step say="第二步，检查另外两个点都满足约束。">② $x_3$：$3\ge1$ ✓；$x_5$：$2\ge1$ ✓</Step>
+
+<Step say="第三步，由 $w=\sum\alpha_iy_ix_i$ 和等式约束求出乘子：二分之一、二分之一、一。都非负。">③ $\alpha_1=\alpha_2=\tfrac12,\ \alpha_4=1$，全部 $\ge 0$ ✓</Step>
+
+<Step say="KKT 全部满足，问题是凸的，所以这就是全局最优。有意思的是：原点对 w 贡献为零，乘子却最大。">④ 全局最优：$x_1+x_2=1$，间隔 $\sqrt2$</Step>
+
+<div slot="visual"><FivePoints client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="拓展：换一个核" say="如果数据根本不是线性可分的呢？">
+
+<Step say="回忆对偶问题：数据只以内积出现。">对偶中只有内积 $x_i^\top x_j$</Step>
+
+<Step say="把内积换成核函数，就相当于先映射到高维空间，再在那里找最大间隔超平面——却从不需要显式计算映射。">换成核 $K(x_i,x_j)=\phi(x_i)^\top\phi(x_j)$，SMO 一行不改</Step>
+
+<Step say="右边试试线性核、多项式核和 RBF 核。RBF 的 γ 越大，边界越弯曲，也越容易过拟合。">试试 RBF 的 $\gamma$：越大越弯、越易过拟合 →</Step>
+
+<div slot="visual"><KernelPlayground client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="更多情景" say="同一套思想，还能用在很多地方。">
+
+<Step say="多分类：一对多或一对一。">**多分类**：一对多 / 一对一</Step>
+
+<Step say="回归：把合页损失换成 ε 不敏感损失，就是支持向量回归。">**回归 SVR**：$\varepsilon$-不敏感损失</Step>
+
+<Step say="异常检测：只用正常样本，就是单类 SVM。">**异常检测**：One-Class SVM</Step>
+
+<Step say="数据上百万时，直接对合页损失加 L2 做随机梯度下降。">**大规模**：对“合页 + L2”做 SGD / 坐标下降</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="动画课到这里就结束了。课后训练在讲义页面里：四道推导题，加上两道可以在浏览器里直接运行的代码题。">
+
+<Step say="手写 SMO，与 libsvm 对拍，并回放你的超平面怎样一步步移动。">✎ 4 道推导题 · ⌨ 手写 SMO 并与 libsvm 对拍 · ⚙ 组装 RBF-SVM 调参</Step>
+
+<Step say="卡住时，在空里连按两次 Tab，就能看到参考答案。">卡住了？在空里连按两次 <kbd>Tab</kbd> 填入参考答案</Step>
+
+<Step effect="pop" say="点下面的按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/svm-kernels/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

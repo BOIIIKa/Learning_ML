@@ -4,6 +4,7 @@ import ScenarioLines from "../../components/chapters/ch07/ScenarioLines";
 import SvmPlayground from "../../components/chapters/ch07/SvmPlayground";
 import SmoReplay from "../../components/chapters/ch07/SmoReplay";
 import KernelPlayground from "../../components/chapters/ch07/KernelPlayground";
+import FivePoints from "../../components/chapters/ch07/FivePoints";
 
 <Section lang="en" k="scenario">
 
@@ -172,6 +173,8 @@ Hence $b = -1$ and $w = (1, 1)$.
 **Step 4: conclude.** All KKT conditions hold and the problem is convex, so this is the global optimum. The separating hyperplane is $x_1 + x_2 = 1$ and the margin width is $2/\|w\| = \sqrt2$. Strong duality checks out too: the dual objective $\sum\alpha - \tfrac12\|w\|^2 = 2 - 1 = 1$ equals the primal $\tfrac12\|w\|^2 = 1$ ✓.
 
 </Box>
+
+<FivePoints client:visible lang="en" />
 
 A detail that is easy to miss: $x_4$ sits at the origin and contributes nothing to $w$, yet its multiplier $\alpha_4 = 1$ is the largest of all. It acts through the equality constraint $\sum\alpha_iy_i = 0$ and through $b$. Being a "support vector" means "its constraint is active", not "it contributes a lot to $w$".
 

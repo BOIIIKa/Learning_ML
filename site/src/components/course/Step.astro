@@ -1,0 +1,7 @@
+---
+// A fragment revealed on the next "advance"; `say` is its narration.
+// `as="span"` keeps it inline; `effect` picks the entrance animation.
+interface Props { say?: string; as?: "div" | "span"; effect?: "up" | "pop" | "draw" | "focus" }
+const { say = "", as: Tag = "div", effect = "up" } = Astro.props;
+---
+<Tag class={`step fx-${effect}`} data-say={say}><slot /></Tag>

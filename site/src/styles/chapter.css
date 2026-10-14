@@ -86,3 +86,14 @@
 /* ---------- code blocks (Shiki output) ---------- */
 .ch-article pre { padding: 0.9rem 1rem; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; font-size: 0.86rem; line-height: 1.6; }
 .ch-article pre code { background: none; border: none; padding: 0; font-size: inherit; }
+
+/* ---------- course link & recap ---------- */
+.ch-course-btn { margin: 0 0 0.9rem; font-size: 0.95rem; }
+.ch-recap { margin-top: 1.2rem; padding: 0.8rem 1.2rem; }
+.ch-recap summary { cursor: pointer; font-weight: 700; list-style: none; display: flex; align-items: center; gap: 0.5rem; }
+.ch-recap summary::before { content: "▸"; color: var(--accent); transition: transform 0.25s ease; }
+.ch-recap[open] summary::before { transform: rotate(90deg); }
+.ch-recap .recap { margin-top: 0.6rem; font-size: 0.95rem; }
+.ch-recap .recap ul { padding-left: 1.2rem; columns: 2; column-gap: 2rem; }
+.ch-recap .recap li { break-inside: avoid; margin-bottom: 0.4rem; }
+@media (max-width: 900px) { .ch-recap .recap ul { columns: 1; } }

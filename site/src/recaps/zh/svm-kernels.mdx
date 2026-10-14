@@ -1,0 +1,7 @@
+- **最大间隔**：在所有能分开数据的超平面里，选几何间隔 $\min_i y_i(w^\top x_i+b)/\|w\|$ 最大的那个；把最近点的函数间隔定为 1 后，等价于 $\min \tfrac12\|w\|^2$，约束为 $y_i(w^\top x_i+b)\ge 1$。
+- **软间隔 = 合页损失 + L2**：$\sum_i\max(0,1-y_if(x_i)) + \tfrac{1}{2C}\|w\|^2$。$C$ 越大越不容忍错误。
+- **对偶问题**：$\max_\alpha \sum\alpha_i - \tfrac12\sum\alpha_i\alpha_jy_iy_j\,x_i^\top x_j$，约束为 $0\le\alpha_i\le C$、$\sum\alpha_iy_i=0$；解出后 $w=\sum\alpha_iy_ix_i$。
+- **支持向量**：由互补松弛，只有 $\alpha_i>0$ 的点（在间隔上、进入间隔或被分错）决定解。
+- **SMO**：每次选两个 $\alpha$，沿约束直线解析求解：$\alpha_j \leftarrow \alpha_j + y_j(E_i-E_j)/\eta$，再裁剪到 $[L,H]$；对偶目标单调上升。
+- **核技巧**：对偶中只出现内积，把 $x_i^\top x_j$ 换成半正定核 $K(x_i,x_j)$，就能在高维特征空间里找最大间隔。
+- **实战**：先标准化；在对数尺度上搜索 $C$ 与 $\gamma$；数据很大时改用线性 SVM 或近似核。

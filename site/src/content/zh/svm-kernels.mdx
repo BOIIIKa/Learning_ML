@@ -4,6 +4,7 @@ import ScenarioLines from "../../components/chapters/ch07/ScenarioLines";
 import SvmPlayground from "../../components/chapters/ch07/SvmPlayground";
 import SmoReplay from "../../components/chapters/ch07/SmoReplay";
 import KernelPlayground from "../../components/chapters/ch07/KernelPlayground";
+import FivePoints from "../../components/chapters/ch07/FivePoints";
 
 <Section lang="zh" k="scenario">
 
@@ -172,6 +173,8 @@ $$
 **第 4 步：结论。** KKT 条件全部满足，而问题是凸的，所以这就是全局最优：分离超平面为 $x_1 + x_2 = 1$，间隔宽度 $2/\|w\| = \sqrt2$。验证强对偶：对偶目标 $\sum\alpha - \tfrac12\|w\|^2 = 2 - 1 = 1$，等于原目标 $\tfrac12\|w\|^2 = 1$ ✓。
 
 </Box>
+
+<FivePoints client:visible lang="zh" />
 
 一个容易忽略的细节：$x_4$ 位于原点，对 $w$ 的贡献为零，但它的乘子 $\alpha_4 = 1$ 却最大。它通过等式约束 $\sum\alpha_iy_i = 0$ 和 $b$ 起作用。“支持向量”的含义是“约束起作用”，不等于“对 $w$ 贡献大”。
 

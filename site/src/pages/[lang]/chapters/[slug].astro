@@ -2,8 +2,9 @@
 import Base from "../../../layouts/Base.astro";
 import Section from "../../../components/astro/Section.astro";
 import Practice from "../../../components/exercise/Practice";
+import Recap from "../../../components/course/Recap.astro";
 import { LANGS, SECTIONS, href, pick, t, type Lang } from "../../../i18n/ui";
-import { allChapters, chapterPage, exercises, handbook, outline, readyChapters, readySlugs } from "../../../lib/data";
+import { allChapters, chapterPage, courseSlugs, exercises, handbook, outline, readyChapters, readySlugs, recap } from "../../../lib/data";
 import { renderRich } from "../../../lib/rich";
 import "../../../styles/chapter.css";
 
@@ -22,6 +23,12 @@ const idx = readyChapters.findIndex((c) => c.slug === slug);
 const prev = readyChapters[idx - 1];
 const next = readyChapters[idx + 1];
 const byId = Object.fromEntries(allChapters.map((c) => [c.id, c]));
+const hasCourse = courseSlugs.includes(slug);
+const hasRecap = !!recap(lang, slug);
+const L = {
+  course: { zh: "▶ 动画课程（初学推荐）", en: "▶ Animated course (best for first-timers)" },
+  recap: { zh: "本章一页纸 · 复习用", en: "The chapter on one page · for review" },
+}
 ---
 <Base lang={lang} title={`${chapter.id} ${pick(chapter.title, lang)} · ${t(lang, "siteName")}`} path={`chapters/${slug}/`}>
   <header class="ch-hero">
@@ -30,6 +37,7 @@ const byId = Object.fromEntries(allChapters.map((c) => [c.id, c]));
       <div class="ch-hero-text">
         <p class="ch-part">{pick(part.title, lang)}</p>
         <h1 class="ch-title"><span class="gradient-text">{pick(chapter.title, lang)}</span></h1>
+        {hasCourse && <a class="btn btn-primary ch-course-btn" href={href(`${lang}/course/${slug}/`)}>{L.course[lang]}</a>}
         <div class="ch-meta">
           <span class="meta-chip">{t(lang, "sources")}: {Object.entries(chapter.sources).map(([b, chs]) => `${b} ${chs.join(", ")}`).join(" · ")}</span>
           {chapter.prereqs.length > 0 && (
@@ -55,6 +63,15 @@ const byId = Object.fromEntries(allChapters.map((c) => [c.id, c]));
       )}
     </div>
   </header>
+
+  {hasRecap && (
+    <div class="container">
+      <details class="ch-recap card reveal">
+        <summary>{L.recap[lang]}</summary>
+        <Recap lang={lang} slug={slug} />
+      </details>
+    </div>
+  )}
 
   <div class="ch-body container">
     <nav class="ch-rail" aria-label="sections">
