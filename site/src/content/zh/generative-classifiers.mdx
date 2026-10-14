@@ -1,0 +1,221 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import GaussianBoundaries from "../../components/chapters/ch05/GaussianBoundaries";
+import PosteriorShape from "../../components/chapters/ch05/PosteriorShape";
+import NaiveBayesText from "../../components/chapters/ch05/NaiveBayesText";
+import LearningCurves from "../../components/chapters/ch05/LearningCurves";
+
+<Section lang="zh" k="scenario">
+
+一家社区诊所想做两件分诊的事：一是根据体检中两项常规指标（标准化后的血糖与体重指数），提示哪些人**需要复查**；二是把患者的在线留言分成**紧急**和**常规**两类，紧急的优先回复。麻烦在于，带标签的历史记录很少：体检只有几十份确诊结果，留言只有寥寥几条被人工标注过。
+
+第 04 章的逻辑回归会直接去找那条分开两类的边界。这一章换一个思路：先回答“**每一类的人通常长什么样**”，再用贝叶斯公式反推“**眼前这个人属于哪一类**”。先动手试试：
+
+<GaussianBoundaries client:visible lang="zh" />
+
+拖动之后你会注意到几件事：
+
+1. 只要描述出每一类数据的**分布**（一个均值、一个协方差椭圆），边界就自动出现了，用不着单独去“学”边界。
+2. 假设两类形状相同（共享协方差），边界是直线；允许形状不同，边界就弯成二次曲线。
+3. 训练点很少时，三条边界的稳定程度并不一样。
+
+还有两个问题要回答：这种“先建模数据、再反推类别”的做法和逻辑回归是什么关系？留言是一串离散的词，“每一类长什么样”又该怎么描述？
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 生成式与判别式
+
+<Box kind="definition" title="生成式分类器">
+
+为每一类 $k$ 建立**类先验** $\pi_k = P(Y = k)$ 和**类条件密度** $p(x\mid Y = k)$，两者相乘就是联合分布 $p(x, y)$。预测时用贝叶斯公式得到后验，并按第 01 章的贝叶斯分类器取后验最大的类：
+
+$$
+P(Y = k\mid x) = \frac{\pi_k\,p(x\mid k)}{\sum_{l}\pi_l\,p(x\mid l)},\qquad \hat y(x) = \arg\max_k\ \big[\log\pi_k + \log p(x\mid k)\big].
+$$
+
+**判别式**方法（如逻辑回归）则跳过 $p(x\mid y)$，直接为 $P(y\mid x)$ 建模。
+
+</Box>
+
+套用三要素：
+
+- **模型**：$\pi_k \times p(x\mid k;\ \theta_k)$，其中 $p(x\mid k)$ 取某个分布族（高斯、多项式……）。
+- **策略**：最大化**联合**似然 $\prod_i \pi_{y_i}\,p(x_i\mid y_i)$；判别式最大化的则是**条件**似然 $\prod_i P(y_i\mid x_i)$。
+- **算法**：联合对数似然按类拆开后，每一项都有闭式解，靠**计数和求平均**就够了，不需要迭代。
+
+联合对数似然可以拆成互不相干的几块：
+
+$$
+\sum_{i=1}^n \log\big[\pi_{y_i}\,p(x_i\mid y_i)\big] = \underbrace{\sum_{k} n_k \log \pi_k}_{\text{只含先验}} + \sum_{k}\ \underbrace{\sum_{i:\,y_i = k} \log p(x_i\mid \theta_k)}_{\text{只含第 }k\text{ 类的参数}},
+$$
+
+所以**每一类只用自己的数据各自拟合一个分布**，先验就是各类所占的比例。
+
+### 类条件密度的三种选择
+
+| | 假设 | 决策边界 | 参数量（$K$ 类、$d$ 维） |
+|---|---|---|---|
+| **QDA**（二次判别分析） | $p(x\mid k) = \mathcal N(\mu_k, \Sigma_k)$ | 二次曲线 | $Kd + K\frac{d(d+1)}{2}$ |
+| **LDA**（线性判别分析） | 各类共享同一个 $\Sigma$ | 直线 / 超平面 | $Kd + \frac{d(d+1)}{2}$ |
+| **朴素贝叶斯** | 给定类别后各特征**条件独立** | 视分布族而定 | 与 $d$ 成线性关系 |
+
+三者从上往下假设越来越强，参数越来越少。假设越强，估计越稳；但假设一旦不符合实际，就会带来偏差。这又是第 02 章的偏差–方差权衡。
+
+<Box kind="insight" title="同一模型族，不同估计策略">
+
+后面会证明：LDA 的后验恰好是 $\sigma(w^\top x + b)$，**和逻辑回归属于同一个模型族**。两者的区别只在策略：LDA 用联合似然、借助高斯假设去估计 $w$；逻辑回归用条件似然直接拟合 $w$，对 $x$ 的分布不作任何假设。这样的一对方法叫**生成式–判别式对**。
+
+</Box>
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 工具回顾：多元高斯
+
+<Box kind="definition" title="多元高斯密度（第 00 章）">
+
+$$
+\log\mathcal N(x;\mu,\Sigma) = -\tfrac12 (x-\mu)^\top\Sigma^{-1}(x-\mu) - \tfrac12\log\det\Sigma - \tfrac d2\log 2\pi .
+$$
+
+对样本 $x_1,\dots,x_m$ 的极大似然估计是样本均值 $\hat\mu = \frac1m\sum_i x_i$ 和**除以 $m$** 的样本协方差 $\hat\Sigma = \frac1m\sum_i (x_i - \hat\mu)(x_i-\hat\mu)^\top$。等密度线是以 $\Sigma$ 的特征向量为轴的椭圆。
+
+</Box>
+
+### 极大似然估计
+
+先验只出现在 $\sum_k n_k\log\pi_k$ 中，约束为 $\sum_k\pi_k = 1$。引入拉格朗日乘子：$\frac{n_k}{\pi_k} = \lambda$，求和得 $\lambda = n$，所以 $\hat\pi_k = n_k / n$。每一类的 $\mu_k, \Sigma_k$ 只用该类样本估计，即第 $k$ 类的样本均值和样本协方差。LDA 要求共享协方差，对 $\Sigma$ 求导后得到**合并协方差**
+
+$$
+\hat\Sigma = \frac1n\sum_k\sum_{i:\,y_i=k}(x_i-\hat\mu_k)(x_i-\hat\mu_k)^\top = \sum_k \hat\pi_k\,\hat\Sigma_k .
+$$
+
+### 判别函数与边界的形状
+
+取对数后，第 $k$ 类的判别函数是
+
+$$
+\delta_k(x) = \log\pi_k - \tfrac12\log\det\Sigma_k - \tfrac12 (x-\mu_k)^\top\Sigma_k^{-1}(x-\mu_k).
+$$
+
+两类边界为 $\delta_1(x) = \delta_0(x)$，其中含 $-\tfrac12 x^\top(\Sigma_1^{-1} - \Sigma_0^{-1})x$，所以是**二次曲线**（QDA，见课后第 2 题）。若 $\Sigma_0 = \Sigma_1 = \Sigma$，二次项 $x^\top\Sigma^{-1}x$ 在两类中相同，作差时消去，只剩下一次项：
+
+<Box kind="theorem" title="LDA 的后验是逻辑函数">
+
+共享协方差时，
+
+$$
+\log\frac{P(Y=1\mid x)}{P(Y=0\mid x)} = w^\top x + b,\qquad w = \Sigma^{-1}(\mu_1 - \mu_0),\quad b = -\tfrac12\big(\mu_1^\top\Sigma^{-1}\mu_1 - \mu_0^\top\Sigma^{-1}\mu_0\big) + \log\frac{\pi_1}{\pi_0},
+$$
+
+即 $P(Y = 1\mid x) = \sigma(w^\top x + b)$，与逻辑回归的形式完全一样。
+
+</Box>
+
+方向 $w = \Sigma^{-1}(\mu_1-\mu_0)$ 不是简单的“均值连线”：先用 $\Sigma^{-1}$ 把椭圆拉成圆，再连接两个均值。拖动下面的方差比，观察后验的形状如何从 sigmoid 变成非单调的曲线：
+
+<PosteriorShape client:visible lang="zh" />
+
+反过来不成立：后验是逻辑函数，**并不**要求类条件密度是高斯分布（任何指数族、只要“形状参数”相同都行）。所以逻辑回归的假设更弱、更稳健；LDA 多用了 $p(x)$ 的信息，在高斯假设成立时估计效率更高（Efron, 1975）。
+
+### 朴素贝叶斯
+
+$d$ 很大时连对角线外的协方差都估不准，更别说离散的词。朴素贝叶斯假设**给定类别后，各特征相互独立**：
+
+$$
+p(x\mid k) = \prod_{j=1}^d p(x_j\mid k).
+$$
+
+于是 $d$ 维的密度估计拆成 $d$ 个一维问题。连续特征取一维高斯，就是**高斯朴素贝叶斯**（相当于协方差为对角阵的 QDA）。文本取**多项式模型**：留言 $x = (x_1,\dots,x_V)$ 记录词表中每个词出现的次数，
+
+$$
+p(x\mid k) \propto \prod_{j=1}^V \theta_{kj}^{\,x_j},\qquad \sum_j \theta_{kj} = 1 .
+$$
+
+在约束 $\sum_j\theta_{kj}=1$ 下最大化 $\sum_j N_{kj}\log\theta_{kj}$（$N_{kj}$ 为第 $k$ 类训练文本中词 $j$ 的总次数），与先验的推导相同，得到 $\hat\theta_{kj} = N_{kj}/N_k$。
+
+麻烦就出在这里：如果词 $j$ 在第 $k$ 类中**一次也没出现**，$\hat\theta_{kj} = 0$。只要新留言含有这个词，整类的似然就变成 0，其余证据再强也没用。
+
+<Box kind="theorem" title="贝叶斯估计：拉普拉斯平滑">
+
+给 $\theta_k$ 一个对称狄利克雷先验 $\mathrm{Dir}(\alpha,\dots,\alpha)$，后验仍是狄利克雷分布，其均值为
+
+$$
+\tilde\theta_{kj} = \frac{N_{kj} + \alpha}{N_k + \alpha V}.
+$$
+
+$\alpha = 0$ 时退化为极大似然估计；$\alpha = 1$ 称为**拉普拉斯平滑**，相当于每个词先“虚拟出现”一次。先验 $\pi_k$ 也可以同样平滑。推导见课后第 3 题。
+
+</Box>
+
+计算时始终在对数空间里做加法，避免几十个小概率相乘后下溢。顺带可以看到，多项式朴素贝叶斯的对数几率 $\log\frac{\pi_1}{\pi_0} + \sum_j x_j\log\frac{\theta_{1j}}{\theta_{0j}}$ 是词频的**一次函数**，所以它同样是一个线性分类器。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题一：手算一维 LDA
+
+<Box kind="example" title="一项指标、两类病人">
+
+常规组的血糖（已缩放）为 $4, 5, 6$，复查组为 $7, 8, 9$。
+
+- 均值：$\hat\mu_0 = 5$，$\hat\mu_1 = 8$。合并方差（除以 $n=6$）：$\hat s^2 = \frac{2 + 2}{6} = \frac23$。
+- 由定理：$w = \frac{8-5}{2/3} = 4.5$，$b = -\frac{64 - 25}{2\cdot 2/3} + \log\frac{\pi_1}{\pi_0} = -29.25 + \log\frac{\pi_1}{\pi_0}$。
+- 先验相等时，阈值为 $29.25/4.5 = 6.5$，正好是两个均值的中点。$x = 6.6$ 处，对数几率为 $0.45$，$P(\text{复查}\mid x) = \sigma(0.45) \approx 0.611$。
+- 若复查者只占 20%，$b$ 再加上 $\log\frac{0.2}{0.8} = -1.386$，阈值右移到 $\frac{29.25 + 1.386}{4.5} \approx 6.81$：病人越少见，越需要更强的证据才判为复查。
+
+</Box>
+
+### 例题二：用朴素贝叶斯分拣留言
+
+<Box kind="example" title="一个没见过的词能否决一整类">
+
+词表只有 fever、pain、refill、schedule 四个词，$V = 4$。紧急留言 2 条、常规留言 3 条，先验 $\pi = (2/5,\ 3/5)$。词频如下：
+
+| | fever | pain | refill | schedule | 合计 $N_k$ |
+|---|---|---|---|---|---|
+| 紧急 | 4 | 3 | **0** | 1 | 8 |
+| 常规 | 1 | 1 | 4 | 6 | 12 |
+
+新留言：“fever pain refill”。
+
+- **极大似然**（$\alpha = 0$）：$\hat\theta_{\text{紧急},\,\text{refill}} = 0$，于是 $P(\text{紧急}\mid x) = 0$。可是 fever 和 pain 都强烈指向紧急。
+- **拉普拉斯平滑**（$\alpha = 1$）：紧急类 $\tilde\theta = (\frac5{12}, \frac4{12}, \frac1{12}, \frac2{12})$，常规类 $\tilde\theta = (\frac2{16}, \frac2{16}, \frac5{16}, \frac7{16})$。
+
+$$
+\frac25\cdot\frac5{12}\cdot\frac4{12}\cdot\frac1{12} = \frac1{216},\qquad \frac35\cdot\frac2{16}\cdot\frac2{16}\cdot\frac5{16} = \frac3{1024},
+$$
+
+所以 $P(\text{紧急}\mid x) = \frac{1/216}{1/216 + 3/1024} = \frac{1024}{1672} \approx 0.612$。换成对数几率来记账：先验 $-0.405$，fever $+1.204$，pain $+0.981$，refill $-1.322$，合计 $+0.458$。
+
+</Box>
+
+<NaiveBayesText client:visible lang="zh" />
+
+### 生成式 vs 判别式：谁需要更多数据
+
+Ng 与 Jordan（2002）比较了朴素贝叶斯和逻辑回归这一对方法，结论是：
+
+- **渐近误差**：样本无穷多时，逻辑回归不差于朴素贝叶斯。独立性假设不成立时，朴素贝叶斯会重复计算相关特征提供的证据，误差停在更高的位置。
+- **收敛速度**：朴素贝叶斯的每个参数都是一个简单平均，彼此独立估计，大约 $O(\log d)$ 个样本就接近它的极限；逻辑回归要联合拟合全部 $d+1$ 个参数，需要 $O(d)$ 个样本。
+
+所以两条学习曲线常常**交叉**：数据少时生成式领先，数据多时判别式反超。
+
+<LearningCurves client:visible lang="zh" />
+
+需要注意的是，给逻辑回归加上较强的 L2 正则（第 03、04 章）会显著改善它在小样本时的表现，交叉点随之左移。课后的库练习里可以亲手验证这条曲线。
+
+### 拓展：什么时候选生成式
+
+- **类别比例变了**：例如流感季复查者比例上升。生成式只需改 $\pi_k$，不必重新训练。
+- **特征缺失**：某位病人缺一项指标时，对 $p(x\mid k)$ 中的这一维积分（高斯分布直接删掉对应的行和列）即可。
+- **未标注数据**：把类别看作隐变量，用 EM 算法同时利用有标签和无标签的数据（第 11 章）。
+- **异常检测**：$p(x) = \sum_k\pi_k p(x\mid k)$ 很小的样本，哪一类都不像。
+- **正则化判别分析**：介于 LDA 与 QDA 之间，$\Sigma_k(\lambda) = \lambda\hat\Sigma_k + (1-\lambda)\hat\Sigma$，对应 scikit-learn 中的 `reg_param` 与 `shrinkage`。
+- 把“为 $p(x)$ 建模”推向图像和文本，就是第 22–25 章的深度生成模型。
+
+</Section>

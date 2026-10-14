@@ -1,0 +1,185 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import KnnBoundary from "../../components/chapters/ch06/KnnBoundary";
+import KdTreeSearch from "../../components/chapters/ch06/KdTreeSearch";
+import CurseOfDim from "../../components/chapters/ch06/CurseOfDim";
+import SplineFit from "../../components/chapters/ch06/SplineFit";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 06 · Animated course" title="Non-parametric Methods and Basis Expansions" say="This chapter covers two ways to make a model flexible: skip the parameters altogether and just ask the neighbours, or give a linear model a new set of basis functions so that it can bend.">
+
+kNN · kd-trees · the curse of dimensionality · splines and GAMs
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Will this order be late?" say="A food-delivery platform has past orders on a city map: blue arrived on time, orange was late. A new address comes in, and we want to predict whether it will be late.">
+
+<Step say="The most naive idea is to look at nearby past orders. If most of them were late, this one probably will be too.">Look at the nearby past orders →</Step>
+
+<Step say="Click anywhere on the map to drop a new address. Dashed lines join it to its neighbours, and the background shows the verdict at every location.">Click to drop an address; dashed lines = neighbours</Step>
+
+<Step say="Drag the k slider. With k equal to one the boundary is jagged; with a huge k it is smeared flat.">Drag k: jagged → smooth → flattened</Step>
+
+<div slot="visual"><KnnBoundary client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" say="Play with it for a minute and four questions come up. This chapter answers them one by one.">
+
+<Step say="First, how many neighbours?">① How many neighbours? → **k**</Step>
+
+<Step say="Second, how do we measure near? City streets run on a grid, so a rider's route is closer to the L1 distance.">② What does “near” mean? → **the distance**</Step>
+
+<Step say="Third, with millions of orders, comparing against all of them every time is far too slow.">③ Millions of orders? → **kd-trees**</Step>
+
+<Step say="Fourth, are the neighbours still near when there are many features? And delivery time bends with distance: can linear regression bend too?">④ Many features? Curves? → **the curse · splines**</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="kNN's triad" say="Let us look at k nearest neighbours through the triad of chapter one.">
+
+<Step say="The model is local averaging. There are no parameters to train; the training set itself is the model, and its complexity grows with the data. That is what non-parametric means.">Model: local averaging — the training set is the model</Step>
+
+<Step say="The strategy minimizes the loss within the neighbourhood: the majority class under zero-one loss, the mean under squared loss.">Strategy: majority vote / mean in the neighbourhood</Step>
+
+<Step say="In other words, kNN estimates the posterior by the neighbours' vote shares and then applies the Bayes classifier.">≈ estimate $P(Y\mid X=x)$ by vote shares</Step>
+
+<Step say="The algorithm is just finding the neighbours. Brute force costs n times d per query.">Algorithm: neighbour search, brute force $O(nd)$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="The distance and k" say="kNN has three design choices: the distance, k, and the decision rule.">
+
+<Step say="Switch between L1, L2 and L-infinity: the shape that holds the neighbours is a diamond, a circle and a square, so the same query finds different neighbours.">L1 diamond · L2 circle · L∞ square</Step>
+
+<Step say="When features are measured in different units, standardize them first, or the one with the largest numbers takes over the distance.">Different units ⇒ standardize first</Step>
+
+<Step say="Small k means low bias and high variance; large k the opposite. Look at the stats: at k equal to one the training error is zero but the test error is the highest.">Small k: low bias, high variance; large k: the reverse</Step>
+
+<Step say="The effective number of parameters is about n over k. In practice k is chosen by cross-validation.">Effective parameters ≈ $n/k$; choose $k$ by cross-validation</Step>
+
+<div slot="visual"><KnnBoundary client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="kd-trees: cut layer by layer" say="To find neighbours fast, first cut up the plane.">
+
+<Step say="Cut at the median x coordinate, then cut each half at its median y coordinate, and keep alternating. Press the build button on the right to watch it.">Alternate axes, cut at the median → balanced, depth ≈ $\log_2 n$</Step>
+
+<Step say="To search, first walk all the way down the side that contains the query, giving a candidate nearest point and a radius r.">Walk down first: a candidate and a radius $r$</Step>
+
+<Step say="On the way back, if the splitting line is at least r away from the query, the circle does not cross it, and the whole subtree on the other side is pruned.">Line at distance $\ge r$ from $q$ ⇒ prune the subtree</Step>
+
+<Step say="Click on the left plot to place another query and replay the backtracking and pruning. In low dimensions only about log n points are checked on average.">Click to place a query; watch it backtrack and prune →</Step>
+
+<div slot="visual"><KdTreeSearch client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Basis expansions" say="Back to delivery time. It bends with distance, so can linear regression bend too?">
+
+<Step say="Linear regression only needs to be linear in its parameters. Replace x by a set of basis functions; the model is still linear in beta, and least squares applies unchanged.">
+
+$$
+f(x) = \sum_{m} \beta_m h_m(x)
+$$
+
+</Step>
+
+<Step say="Switch to a global polynomial and raise the degree: the ends start to swing wildly.">Global polynomial: high degree ⇒ wild ends</Step>
+
+<Step say="A spline stitches low-degree polynomials together at the knots. A cubic spline can be written in the truncated power basis.">Cubic spline: $1, x, x^2, x^3, (x-\xi_k)_+^3$</Step>
+
+<Step say="Add a smoothing penalty lambda and the effective degrees of freedom shrink continuously. Carry the idea to several features, one curve per feature added together, and you get a generalized additive model.">Smoothing penalty $\lambda$ · GAM: $\alpha + \sum_j f_j(x_j)$</Step>
+
+<div slot="visual"><SplineFit client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Cover–Hart: at most twice" say="How good can a method with no parameters at all be?">
+
+<Step say="Let eta be the probability of class one at x. With infinitely many samples, the nearest neighbour's label and x's label are independent and identically distributed.">$n\to\infty$: the neighbour's label $Y'$ and $Y$ are i.i.d.</Step>
+
+<Step say="They differ with probability two eta times one minus eta, which is twice the Bayes error times one minus the Bayes error.">
+
+$$
+P(Y\ne Y') = 2\eta(1-\eta) = 2r^*(1-r^*)
+$$
+
+</Step>
+
+<Step effect="focus" say="Average over x, apply Jensen's inequality once, and you get the Cover–Hart bound: the 1-NN error is at most twice the Bayes error.">
+<p class="big-q sm">$R^* \le R_{1\text{NN}} \le 2R^*(1-R^*) \le 2R^*$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The curse of dimensionality" say="But that result assumes the nearest neighbour really is near. In high dimensions it is not.">
+
+<Step say="The shell of thickness epsilon in the unit ball holds one minus one minus epsilon to the d of the volume, which tends to one as d grows.">Shell share $1-(1-\varepsilon)^d \to 1$</Step>
+
+<Step say="To capture one percent of the data in ten dimensions, the cube needs an edge of zero point six three.">Holding a fraction $p$: edge $p^{1/d}$ ($0.63$ at $d=10$)</Step>
+
+<Step say="The relative spread of squared distances is the square root of seven over five d, which tends to zero: all distances look alike. Drag d on the right to see it.">Relative spread $\sqrt{7/(5d)} \to 0$ →</Step>
+
+<Step say="That is also why kd-trees fail in high dimensions: the circle crosses almost every splitting line, so nothing gets pruned.">⇒ nearest neighbours lose meaning; kd-tree pruning fails</Step>
+
+<div slot="visual"><CurseOfDim client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Degrees of freedom of a spline" say="How many free parameters does a spline really have?">
+
+<Step say="K knots cut the x axis into K plus one pieces, each a degree M polynomial with M plus one coefficients.">$(K+1)(M+1)$ coefficients</Step>
+
+<Step say="Each knot requires the derivatives of order zero to M minus one to be continuous: M constraints.">$M$ constraints per knot, $KM$ in all</Step>
+
+<Step effect="focus" say="Subtracting gives M plus one plus K. A cubic spline has K plus four; a natural cubic spline loses four more and has K.">
+<p class="big-q sm">$\text{df} = M + 1 + K$ (cubic: $K+4$)</p>
+</Step>
+
+<Step say="kNN and penalized splines are both linear smoothers, and their effective degrees of freedom are the trace of the smoother matrix; for kNN it is n over k.">Effective df $\operatorname{tr} S$: $n/k$ for kNN</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: the distance changes the answer" say="Eight past orders, and a new address at four, four.">
+
+<Step say="With k equal to one: under L1 the nearest is A, straight to the right, so predict late; under L2 and L-infinity it is B on the diagonal, so predict on time.">$k=1$: L1 → A (late); L2, L∞ → B (on time)</Step>
+
+<Step say="With k equal to three: L1 and L2 both vote late two to one, while L-infinity picks B, D and A and votes on time two to one.">$k=3$: L1, L2 → late; L∞ → on time</Step>
+
+<Step effect="focus" say="L1 penalizes moving diagonally, while L-infinity only looks at the largest coordinate difference, so the diagonal point is the nearest under L-infinity.">
+<p class="big-q sm">The meaning of “near” is part of the model</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: a kd-tree computes three distances" say="Build a kd-tree on the same points and query seven point five, two.">
+
+<Step say="The root is B; go right to A, then left to F. The best distance is one point one two.">B → A → F, $r = 1.12$</Step>
+
+<Step say="Back at A, the line y equals four is two away from the query, more than one point one two, so G is pruned.">At A: $2 \ge 1.12$, prune G</Step>
+
+<Step say="Back at B, the line x equals five point five is also two away, so the whole left subtree of four points is pruned. Only three of the eight distances were computed.">At B: $2 \ge 1.12$, prune the left subtree → 3 / 8 distances</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Extensions" say="The ideas in this chapter come back in many places.">
+
+<Step say="Replace the average of the k nearest by an average weighted by distance and you get kernel smoothing; it is the same kernel as in chapter seven.">Kernel smoothing ↔ the kernels of Ch. 07</Step>
+
+<Step say="Vector databases and retrieval for large language models search for neighbours among hundreds of millions of high-dimensional vectors, using approximate methods such as HNSW.">Approximate NN: HNSW · product quantization · LSH</Step>
+
+<Step say="And since the distance decides everything, we can learn the distance from data. That is metric learning.">Metric learning: learn the distance from data</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The exercises are on the notes page: four derivations, kNN from scratch with k chosen by leave-one-out, and splines and a GAM with scikit-learn.">
+
+<Step say="After running the code you can replay the decision boundary as k grows from one to sixty-one, from jagged to smooth.">✎ 4 derivations · ⌨ kNN from scratch · ⚙ splines + ridge and a GAM</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/nonparametric/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

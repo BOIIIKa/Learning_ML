@@ -1,0 +1,139 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import DrawYourLine from "../../components/chapters/ch01/DrawYourLine";
+import TriadComposer from "../../components/chapters/ch01/TriadComposer";
+import RiskGap from "../../components/chapters/ch01/RiskGap";
+import BayesClassifier from "../../components/chapters/ch01/BayesClassifier";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 01 章 · 动画课程" title="学习问题与三要素" say="这一章回答一个最基本的问题：机器“学习”到底是在做什么？答案可以拆成三件彼此独立的事：模型、策略、算法。">
+
+模型 · 策略 · 算法——以及“学得好”到底是什么意思
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="用学习时长预测成绩" say="一位老师收集了去年 40 位学生的每周学习时长和期末成绩，想提前提醒可能考砸的学生。">
+
+<Step say="其中有四位缺考，成绩记为零分，图中用红圈标出。">红圈：4 位缺考、记 0 分的学生</Step>
+
+<Step say="拖动两个橙色把手，自己画一条线。黄色竖线是每个学生的误差。">拖把手画线，黄色竖线 = 残差 →</Step>
+
+<Step say="再点两个按钮：按平方误差最优的线被缺考学生拉低了，按绝对误差最优的线几乎不受影响。">两种“最好”：平方误差 vs 绝对误差</Step>
+
+<div slot="visual"><DrawYourLine client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" say="画线这件事，其实包含三个独立的决定。">
+
+<Step say="第一，允许哪些规律？只许直线，还是也允许曲线？这叫模型。">① 允许哪些规律？→ **模型**</Step>
+
+<Step say="第二，怎样算好？平方误差还是绝对误差？这叫策略。">② 怎样算“好”？→ **策略**</Step>
+
+<Step say="第三，怎样把最好的找出来？这叫算法。">③ 怎样找到最好的？→ **算法**</Step>
+
+<Step effect="focus" say="还有更深的问题：老师关心的是明年的学生。在去年数据上最好的规律，对新学生也好吗？">
+<p class="big-q sm">更深的问题：对**明年的学生**也好吗？</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="期望风险与经验风险" say="先把“好”说清楚。">
+
+<Step say="损失函数衡量一次预测的代价。">损失 $L(y, f(x))$：一次预测的代价</Step>
+
+<Step say="期望风险是在整个分布上的平均损失。它才是真正的目标，但分布未知，算不出来。">期望风险 $R(f) = \mathbb E[L(Y, f(X))]$ ——真正的目标，但算不出来</Step>
+
+<Step say="经验风险是在手头数据上的平均损失，这是能算的替代品。">经验风险 $\hat R_n(f) = \frac1n\sum_i L(y_i, f(x_i))$ ——能算的替代品</Step>
+
+<Step say="最小化经验风险叫 ERM；再加一个复杂度惩罚，叫结构风险最小化 SRM。">ERM：$\min \hat R_n$ · SRM：$\min \hat R_n + \lambda J(f)$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="三要素组合器" say="三要素可以自由组合，每一种组合都是一个学习算法。">
+
+<Step say="常数模型配平方损失，得到的是平均数；配绝对值损失，得到的是中位数。">常数 + 平方 = 均值；常数 + 绝对值 = 中位数</Step>
+
+<Step say="闭式解只适用于平方损失，其他损失要靠迭代。">闭式解只适用于平方损失</Step>
+
+<Step say="右边自己组合试试，看看训练过程中经验风险怎样下降。">在右侧自由组合 →</Step>
+
+<div slot="visual"><TriadComposer client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="平方损失下的最优预测" say="如果知道真实分布，最好的预测是什么？">
+
+<Step say="固定 x，用常数 c 预测 Y。期望平方损失可以拆成两项：条件方差，加上均值与 c 的差的平方。">
+
+$$
+\mathbb E[(Y-c)^2\mid x] = \mathrm{Var}(Y\mid x) + (\mu(x) - c)^2
+$$
+
+</Step>
+
+<Step say="第一项与 c 无关，是不可约噪声；第二项在 c 等于条件均值时为零。">⇒ $f^*(x) = \mathbb E[Y\mid X = x]$</Step>
+
+<Step say="同理，绝对损失的最优预测是条件中位数。这就是两条线不同的原因：缺考学生拉低了均值，却几乎不影响中位数。">绝对损失 ⇒ 条件**中位数**</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="贝叶斯分类器" say="分类问题用 0-1 损失。">
+
+<Step say="在每个 x 处，预测为 k 的期望损失是一减后验概率，所以应当选后验最大的类。">$f^*(x) = \arg\max_k\ p(x\mid k)\,P(k)$</Step>
+
+<Step say="它的错误率叫贝叶斯错误率，是任何分类器都突破不了的下限。">贝叶斯错误率：任何分类器的下限</Step>
+
+<Step say="右边拖动你的阈值：无论怎么拖，错误率都不会低于贝叶斯阈值处的值。">拖动阈值，永远低不过贝叶斯 →</Step>
+
+<div slot="visual"><BayesClassifier client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="经验风险能代替期望风险吗" say="对一个固定的函数，大数定律保证经验风险收敛到期望风险。">
+
+<Step say="右边：用常数预测指数分布，损失取绝对值。紫色是期望风险，橙色是经验风险。">紫 = 期望风险，橙 = 经验风险 →</Step>
+
+<Step say="样本少时，两者的最小点差得远；样本多时，经验风险最小化的解趋于最优解。">$n$ 增大 ⇒ ERM 的解 → 最优解</Step>
+
+<Step effect="focus" say="但要小心：ERM 是看过数据才挑出函数的，所以它的经验风险总是偏乐观。下一章专门处理这个问题。">
+<p class="big-q sm">注意：$\hat R_n(\hat f)$ 偏乐观 → 第 02 章</p>
+</Step>
+
+<div slot="visual"><RiskGap client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：一个缺考学生的影响" say="五位学生，成绩五十二、六十、六十四、七十，和一个缺考的零分。">
+
+<Step say="平方损失下最优常数是均值，四十九点二；去掉缺考学生是六十一点五，被拉动了十二分多。">均值：$49.2$（去掉缺考：$61.5$，偏移 $12.3$）</Step>
+
+<Step say="绝对损失下最优常数是中位数，六十；去掉缺考学生是六十二，只动了两分。">中位数：$60$（去掉缺考：$62$，偏移 $2$）</Step>
+
+<Step effect="focus" say="每个 c 只在自己的损失下最优。平方损失对大残差的惩罚是平方级的，所以对离群点敏感。">
+<p class="big-q sm">每个 $c$ 只在自己的损失下最优</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="用三要素拆解后面的算法" say="后面学到的每个算法，都可以拆成三要素。">
+
+<Step say="最小二乘：线性模型、平方损失、正规方程。">最小二乘：线性 · 平方 · 正规方程</Step>
+
+<Step say="逻辑回归：线性加 sigmoid、交叉熵、牛顿法。">逻辑回归：线性 + sigmoid · 交叉熵 · 牛顿法</Step>
+
+<Step say="支持向量机：线性或核、合页损失加 L2、对偶加 SMO。">SVM：线性 / 核 · 合页 + L2 · 对偶 + SMO</Step>
+
+<Step say="神经网络：复合函数、交叉熵、反向传播加 Adam。">神经网络：复合函数 · 交叉熵 · 反向传播 + Adam</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现经验风险最小化，再用 scikit-learn 对比三种回归。">
+
+<Step say="代码题运行后，可以回放直线如何被梯度下降一步步拉到位。">✎ 4 道推导 · ⌨ 从零实现 ERM · ⚙ OLS / Huber / 中位数回归</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/learning-triad/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

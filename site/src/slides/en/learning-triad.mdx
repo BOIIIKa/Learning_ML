@@ -1,0 +1,139 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import DrawYourLine from "../../components/chapters/ch01/DrawYourLine";
+import TriadComposer from "../../components/chapters/ch01/TriadComposer";
+import RiskGap from "../../components/chapters/ch01/RiskGap";
+import BayesClassifier from "../../components/chapters/ch01/BayesClassifier";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 01 · Animated course" title="The Learning Problem" say="This chapter answers the most basic question: what is a machine actually doing when it learns? The answer splits into three independent pieces: the model, the strategy and the algorithm.">
+
+Model · strategy · algorithm, and what "learning well" really means
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Predicting scores from study hours" say="A teacher has last year's weekly study hours and final scores for 40 students, and wants to warn students who are likely to fail.">
+
+<Step say="Four of them missed the exam and were recorded as zero; they are circled in red.">Red rings: 4 absent students recorded as 0</Step>
+
+<Step say="Drag the two orange handles to draw a line yourself. The yellow sticks are each student's error.">Drag the handles; yellow sticks = residuals →</Step>
+
+<Step say="Then try the two buttons. The line that is best by squared error is dragged down by the absentees, while the line that is best by absolute error barely moves.">Two kinds of "best": squared vs absolute error</Step>
+
+<div slot="visual"><DrawYourLine client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" say="Drawing that line actually involves three independent decisions.">
+
+<Step say="First, which rules are allowed? Only straight lines, or curves too? That is the model.">① Which rules are allowed? → **model**</Step>
+
+<Step say="Second, what counts as good: squared error or absolute error? That is the strategy.">② What counts as "good"? → **strategy**</Step>
+
+<Step say="Third, how do we find the best one? That is the algorithm.">③ How do we find the best one? → **algorithm**</Step>
+
+<Step effect="focus" say="And a deeper question: the teacher cares about next year's students. Is the rule that is best on last year's data also good for new students?">
+<p class="big-q sm">The deeper question: is it good for **next year's students**?</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Expected and empirical risk" say="First, make 'good' precise.">
+
+<Step say="A loss function measures the cost of one prediction.">Loss $L(y, f(x))$: the cost of one prediction</Step>
+
+<Step say="The expected risk is the average loss over the whole distribution. It is the real target, but the distribution is unknown, so we cannot compute it.">Expected risk $R(f) = \mathbb E[L(Y, f(X))]$: the real target, but not computable</Step>
+
+<Step say="The empirical risk is the average loss on the data in hand, a stand-in we can compute.">Empirical risk $\hat R_n(f) = \frac1n\sum_i L(y_i, f(x_i))$: a computable stand-in</Step>
+
+<Step say="Minimizing the empirical risk is called ERM. Adding a complexity penalty gives structural risk minimization, SRM.">ERM: $\min \hat R_n$ · SRM: $\min \hat R_n + \lambda J(f)$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="The triad composer" say="The three pieces combine freely, and every combination is a learning algorithm.">
+
+<Step say="A constant model with squared loss gives the mean; with absolute loss it gives the median.">Constant + squared = mean; constant + absolute = median</Step>
+
+<Step say="A closed form exists only for squared loss; other losses need iterative methods.">A closed form exists only for squared loss</Step>
+
+<Step say="Try your own combinations on the right and watch the empirical risk fall during training.">Mix and match on the right →</Step>
+
+<div slot="visual"><TriadComposer client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The best prediction under squared loss" say="If we knew the true distribution, what would the best prediction be?">
+
+<Step say="Fix x and predict Y with a constant c. The expected squared loss splits into the conditional variance plus the squared gap between the mean and c.">
+
+$$
+\mathbb E[(Y-c)^2\mid x] = \mathrm{Var}(Y\mid x) + (\mu(x) - c)^2
+$$
+
+</Step>
+
+<Step say="The first term does not depend on c; it is irreducible noise. The second term vanishes when c equals the conditional mean.">⇒ $f^*(x) = \mathbb E[Y\mid X = x]$</Step>
+
+<Step say="Likewise, the best prediction under absolute loss is the conditional median. That is why the two lines differ: the absentees drag the mean down but barely move the median.">Absolute loss ⇒ the conditional **median**</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The Bayes classifier" say="Classification uses the 0-1 loss.">
+
+<Step say="At each x, predicting k has expected loss one minus its posterior, so we should pick the class with the largest posterior.">$f^*(x) = \arg\max_k\ p(x\mid k)\,P(k)$</Step>
+
+<Step say="Its error rate is the Bayes error, a floor no classifier can break.">Bayes error: the floor for every classifier</Step>
+
+<Step say="Drag your threshold on the right: wherever you put it, the error rate never drops below its value at the Bayes threshold.">Drag the threshold; you never beat Bayes →</Step>
+
+<div slot="visual"><BayesClassifier client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Can empirical risk stand in for expected risk?" say="For a fixed function, the law of large numbers makes the empirical risk converge to the expected risk.">
+
+<Step say="On the right, we predict an exponential variable with a constant under absolute loss. Purple is the expected risk, orange the empirical risk.">Purple = expected risk, orange = empirical risk →</Step>
+
+<Step say="With few samples the two minimizers are far apart; with many, the ERM solution approaches the optimum.">As $n$ grows, the ERM solution → the optimum</Step>
+
+<Step effect="focus" say="But beware: ERM picks the function after seeing the data, so its empirical risk is always optimistic. The next chapter deals with exactly this.">
+<p class="big-q sm">Beware: $\hat R_n(\hat f)$ is optimistic → Ch. 02</p>
+</Step>
+
+<div slot="visual"><RiskGap client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: one absent student" say="Five students scored fifty-two, sixty, sixty-four, seventy, and one absentee scored zero.">
+
+<Step say="Under squared loss the best constant is the mean, 49.2. Without the absentee it is 61.5, a shift of more than twelve points.">Mean: $49.2$ (without the absentee: $61.5$, a shift of $12.3$)</Step>
+
+<Step say="Under absolute loss the best constant is the median, 60. Without the absentee it is 62, a shift of only two points.">Median: $60$ (without the absentee: $62$, a shift of $2$)</Step>
+
+<Step effect="focus" say="Each c is optimal only under its own loss. Squared loss penalizes large residuals quadratically, which makes it sensitive to outliers.">
+<p class="big-q sm">Each $c$ is optimal only under its own loss</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="The algorithms ahead, through the triad" say="Every algorithm later in the course can be broken down into the triad.">
+
+<Step say="Least squares: a linear model, squared loss, the normal equations.">Least squares: linear · squared · normal equations</Step>
+
+<Step say="Logistic regression: linear plus sigmoid, cross-entropy, Newton's method.">Logistic regression: linear + sigmoid · cross-entropy · Newton</Step>
+
+<Step say="Support vector machines: linear or kernel, hinge loss plus L2, the dual plus SMO.">SVM: linear / kernel · hinge + L2 · dual + SMO</Step>
+
+<Step say="Neural networks: composed functions, cross-entropy, backpropagation plus Adam.">Neural nets: composed functions · cross-entropy · backprop + Adam</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, empirical risk minimization from scratch, and a comparison of three regressions with scikit-learn.">
+
+<Step say="After running the coding exercise, replay the line being pulled into place by gradient descent.">✎ 4 derivations · ⌨ ERM from scratch · ⚙ OLS / Huber / median regression</Step>
+
+<Step effect="pop" say="Use the button to start practising.">
+<a class="btn btn-primary btn-xl" href="../../chapters/learning-triad/#s-practice">Start practising →</a>
+</Step>
+
+</Slide>

@@ -1,0 +1,219 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import OverfitScenario from "../../components/chapters/ch02/OverfitScenario";
+import CvFolds from "../../components/chapters/ch02/CvFolds";
+import BiasVarianceSim from "../../components/chapters/ch02/BiasVarianceSim";
+import DoubleDescent from "../../components/chapters/ch02/DoubleDescent";
+
+<Section lang="en" k="scenario">
+
+Back to the teacher from Ch. 01. Looking more closely, she finds that scores do not rise along a straight line with study hours: the first few hours barely help, scores then climb quickly, and beyond eight hours or so they level off. A straight line is clearly too stiff, so she tries polynomials: degree 2, degree 3, … all the way to degree 11.
+
+This time she has only **12 students** from last year. The question is still the one Ch. 01 ended on: which curve will best predict **next year's** students?
+
+<OverfitScenario client:visible lang="en" />
+
+Drag the degree and you will see three things:
+
+1. **Training error only goes down.** Each higher degree contains the lower ones (set the top coefficient to 0 and you get the lower degree back), so it can never fit worse. At degree 11 the curve passes through all 12 points and the training error is 0.
+2. **Test error first falls, then rises.** At degree 0 or 1 the model cannot represent the "slow, fast, flat" shape; around degree 3–4 it gets it right; at higher degrees the curve starts chasing each student's noise and oscillates wildly between the points.
+3. **Training error cannot pick the model.** It always favours the most complex one.
+
+This chapter answers three questions: *why* the test error is U-shaped (the bias–variance decomposition), *how* to estimate test error when next year's data is not available (validation, cross-validation, the bootstrap), and *why* today's enormous models seem to break the U (double descent).
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Training error, test error and the generalization gap
+
+<Box kind="definition" title="Generalization">
+
+For the model $\hat f$ learned from a training set $D$:
+
+- **Training error** $\widehat{\mathrm{Err}}_{\text{train}} = \hat R_n(\hat f)$: the average loss on the training data itself.
+- **Test (generalization) error** $\mathrm{Err} = R(\hat f) = \mathbb E_{(X,Y)}\big[L(Y, \hat f(X))\big]$: the average loss on **new samples** from the same distribution.
+- **Generalization gap** $R(\hat f) - \hat R_n(\hat f)$: how optimistic the training error is. It is usually positive, and grows with model complexity.
+
+</Box>
+
+In the triad language of Ch. 01, the setup of this chapter is: the **model** is a nested family $\mathcal F_0 \subset \mathcal F_1 \subset \cdots$ of increasing complexity (here, polynomial degree); the **strategy** is to pick the member with the smallest *estimated test error*; the **algorithm** is the procedure that produces that estimate, namely cross-validation or the bootstrap.
+
+### Hold-out validation
+
+The simplest approach is to hold part of the data back. Split the data into a training set and a validation set (say 70% / 30%), fit each candidate model on the training part, compare them on the validation part, and finally refit the winner on all the data. Hold-out has two weaknesses: training uses only 70% of the data, so the estimate is **pessimistic**; and the result depends on one particular random split, so it has **high variance**. With 12 students, a different split of 3–4 validation points can produce a completely different verdict.
+
+### k-fold cross-validation
+
+<Box kind="definition" title="k-fold cross-validation">
+
+1. Shuffle the $n$ samples at random and cut them into $k$ nearly equal **folds** $F_1, \dots, F_k$.
+2. For $j = 1, \dots, k$: train $\hat f^{(-j)}$ on every fold except $F_j$, then compute its average loss $E_j$ on $F_j$.
+3. The CV estimate is $\mathrm{CV}_k = \frac1n\sum_{j=1}^k |F_j|\, E_j$.
+
+With $k = n$ this is **leave-one-out** (LOO); $k = 5$ or $10$ are the usual choices.
+
+</Box>
+
+Every sample is used for validation exactly once and for training $k-1$ times, so no data is wasted. Watch it happen fold by fold:
+
+<CvFolds client:visible lang="en" />
+
+To **choose a model** with CV: compute $\mathrm{CV}_k$ for every candidate degree, pick the smallest, then **refit it on all the data**. A common refinement is the **one-standard-error rule**: among the models whose CV error lies within one standard error of the minimum, take the simplest.
+
+### The bootstrap
+
+The bootstrap draws $n$ samples **with replacement** from the training set to build a new training set of the same size. Some samples appear several times; others are left out. The probability that a given sample is never drawn is
+
+$$
+\Big(1 - \frac1n\Big)^n \xrightarrow{\ n\to\infty\ } e^{-1} \approx 0.368,
+$$
+
+so each bootstrap set leaves out about 36.8% of the data, the **out-of-bag** (OOB) samples, which can serve as a natural validation set. Repeating this $B$ times also yields standard errors and confidence intervals for any statistic. Random forests (Ch. 08) use exactly these OOB samples to estimate their error.
+
+<Box kind="warning" title="Do not let validation data leak">
+
+- **The test set is touched once.** If you pick models by test error, the test error becomes the new optimistic training error. The safe workflow is: CV on the training set to choose the model → a single evaluation on the test set.
+- **Preprocessing goes inside the folds.** Standardization, feature selection and imputation must be fitted on the training folds only. Fitting them on all the data and then running CV lets validation information leak into training.
+
+</Box>
+
+</Section>
+
+<Section lang="en" k="math">
+
+### The bias–variance decomposition
+
+Fix an input $x_0$ and let $Y_0 = f(x_0) + \varepsilon$, with $\mathbb E[\varepsilon] = 0$, $\mathrm{Var}(\varepsilon) = \sigma^2$, independent of the training set $D$. The prediction $\hat f(x_0)$ is random because $D$ is random; write its mean as $\bar f(x_0) = \mathbb E_D[\hat f(x_0)]$. Split the error into three pieces:
+
+$$
+Y_0 - \hat f(x_0) = \underbrace{\varepsilon}_{\text{noise}} + \underbrace{\big(f(x_0) - \bar f(x_0)\big)}_{\text{bias}} + \underbrace{\big(\bar f(x_0) - \hat f(x_0)\big)}_{\text{fluctuation}}.
+$$
+
+Square it and take expectations over both $D$ and $\varepsilon$. All three cross terms vanish: $\varepsilon$ has mean 0 and is independent of the other two pieces; the bias is a constant and the fluctuation has mean 0. Hence
+
+<Box kind="theorem" title="Bias–variance decomposition (squared loss)">
+
+$$
+\mathbb E_{D,\varepsilon}\big[(Y_0 - \hat f(x_0))^2\big] = \underbrace{\sigma^2}_{\text{noise}} + \underbrace{\big(f(x_0) - \bar f(x_0)\big)^2}_{\text{bias}^2} + \underbrace{\mathbb E_D\big[(\hat f(x_0) - \bar f(x_0))^2\big]}_{\text{variance}}.
+$$
+
+Averaging over $x_0$ gives the expected test error. The noise is the Bayes error of Ch. 01, which no model can remove.
+
+</Box>
+
+A more complex model can bend closer to the truth, so its **bias falls**; it also follows the noise in each training set more closely, so its **variance rises**. Their sum is the U-shaped curve. The simulator below makes the expectation over $D$ concrete: the same 12 study-hour values with 200 independent draws of noise.
+
+<BiasVarianceSim client:visible lang="en" />
+
+Least squares makes the variance side exact. With a fixed design matrix $\Phi$ ($n\times p$, $p = d+1$), the fitted values are $\hat{\mathbf y} = H\mathbf y$ with $H = \Phi(\Phi^\top\Phi)^{-1}\Phi^\top$, so $\mathrm{Cov}(\hat{\mathbf y}) = \sigma^2 H H^\top = \sigma^2 H$. Since $\mathrm{tr}\,H = p$,
+
+$$
+\frac1n\sum_{i=1}^n \mathrm{Var}\big(\hat f(x_i)\big) = \frac{\sigma^2\, p}{n}.
+$$
+
+**Each extra parameter adds $\sigma^2/n$ of variance.** This is also why more data helps: the same model has a smaller variance when $n$ is larger.
+
+### A generalization bound for a finite hypothesis space
+
+Ch. 01 left a question open: ERM picks $\hat f$ after looking at the data, so how far can $\hat R_n(\hat f)$ be from $R(\hat f)$? Assume the loss lies in $[0, 1]$ and $\mathcal F$ contains $|\mathcal F|$ functions.
+
+**Step 1 (one fixed $f$).** The losses $L(Y_i, f(X_i))$ are i.i.d. and bounded, so **Hoeffding's inequality** gives
+
+$$
+P\big(|R(f) - \hat R_n(f)| > \varepsilon\big) \le 2e^{-2n\varepsilon^2}.
+$$
+
+**Step 2 (all $f$ at once).** $\hat f$ could be any member of $\mathcal F$, so we need every $f$ to be accurate simultaneously. The **union bound** $P(\bigcup_f A_f) \le \sum_f P(A_f)$ gives
+
+$$
+P\big(\exists f\in\mathcal F:\ |R(f) - \hat R_n(f)| > \varepsilon\big) \le 2|\mathcal F|\,e^{-2n\varepsilon^2}.
+$$
+
+**Step 3 (solve for $\varepsilon$).** Setting the right side to $\delta$:
+
+<Box kind="theorem" title="Generalization bound for a finite hypothesis space">
+
+With probability at least $1-\delta$, every $f\in\mathcal F$, and in particular the ERM solution $\hat f$, satisfies
+
+$$
+R(f) \le \hat R_n(f) + \sqrt{\frac{\ln|\mathcal F| + \ln(2/\delta)}{2n}}.
+$$
+
+It follows that $R(\hat f) \le \min_{f\in\mathcal F} R(f) + 2\varepsilon$: ERM is at most $2\varepsilon$ worse than the best function in the class.
+
+</Box>
+
+This is the bias–variance trade-off in another guise. Enlarging $\mathcal F$ lowers $\min_{f} R(f)$ (the approximation error, the bias side) but raises $\ln|\mathcal F|$ (the estimation error, the variance side). The dependence on $|\mathcal F|$ is only logarithmic, which is mild. For an infinite class, such as all lines, $\ln|\mathcal F|$ must be replaced by the VC dimension or the Rademacher complexity.
+
+### The bias and variance of the CV estimator itself
+
+The CV estimate is itself a random variable, so it has its own bias and variance.
+
+- **Bias.** Each model is trained on $n(1 - 1/k)$ samples, fewer than $n$. Since the learning curve falls with more data, $\mathbb E[\mathrm{CV}_k] \approx \mathrm{Err}\big(n(1-\tfrac1k)\big) \ge \mathrm{Err}(n)$: the estimate is **pessimistic**, the more so for small $k$. LOO is nearly unbiased.
+- **Variance.** Write $\mathrm{CV}_k \approx \frac1k\sum_j E_j$. If each fold error has variance $v$ and any two have covariance $c$, then
+
+$$
+\mathrm{Var}(\mathrm{CV}_k) \approx \frac{v}{k} + \Big(1 - \frac1k\Big)c.
+$$
+
+Larger $k$ averages more folds (the first term shrinks), but the training sets overlap more and more (in LOO any two share $n-2$ samples), which makes the fold errors highly correlated, so $c$ does not shrink. For stable models such as least squares the overall variance still falls with $k$, as the widget's bottom panel shows; for unstable models the variance of LOO can be large. Together with the cost of $k$ fits, this is why $k = 5$ or $10$ is the usual compromise.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example 1: the training error is optimistic
+
+<Box kind="example" title="Leave-one-out for the mean">
+
+Four students scored $52, 60, 64, 70$, and we predict with the mean. The training mean is $61.5$, the residuals are $-9.5, -1.5, 2.5, 8.5$, and the **training MSE** is $(90.25 + 2.25 + 6.25 + 72.25)/4 = 42.75$.
+
+| Held-out student | Mean of the other three | Squared error |
+|---|---|---|
+| 52 | 64.67 | 160.44 |
+| 60 | 62 | 4 |
+| 64 | 60.67 | 11.11 |
+| 70 | 58.67 | 128.44 |
+
+The **LOO error** is $304/4 = 76$, and indeed $\big(\tfrac{4}{3}\big)^2 \times 42.75 = 76$ (derivation exercise 4). The training error understates the test error by almost half.
+
+</Box>
+
+### Worked example 2: a little bias for a lot less variance
+
+<Box kind="example" title="Shrinkage estimator">
+
+Estimate a mean $\mu = 2$ from $n = 9$ samples with standard deviation $\sigma = 3$, using $a\bar Y$. The bias² is $(1-a)^2\mu^2$ and the variance is $a^2\sigma^2/n = a^2$.
+
+| $a$ | Bias² | Variance | MSE |
+|---|---|---|---|
+| 1 (unbiased) | 0 | 1 | 1 |
+| 0.8 | 0.16 | 0.64 | **0.8** |
+| 0.5 | 1 | 0.25 | 1.25 |
+
+The best value is $a^* = \mu^2/(\mu^2 + \sigma^2/n) = 4/5$ (derivation exercise 2): **an unbiased estimator is not necessarily the most accurate.** If the target is to predict a new sample $Y$, add the noise $\sigma^2 = 9$ to every row; the ranking does not change. In practice $\mu$ is unknown, so $a$ is chosen by cross-validation, which is exactly how the ridge strength of Ch. 03 is chosen.
+
+</Box>
+
+### Worked example 3: how much data does the bound need?
+
+With $|\mathcal F| = 1000$ candidate classifiers, $n = 1000$ and $\delta = 0.05$: $\ln(2\times1000/0.05) = \ln 40000 \approx 10.60$, so $\varepsilon = \sqrt{10.60/2000} \approx 0.073$. With 95% probability the true error of every candidate is within 7.3 percentage points of its training error. Halving $\varepsilon$ to about 0.036 requires four times as much data ($n \approx 4000$); getting $\varepsilon$ down to $0.05$ needs $n \ge 10.60/(2\times 0.05^2) \approx 2120$.
+
+### Back to the scenario
+
+In the opening widget the test error is lowest around degree 3–4, but the teacher cannot see next year's students. Cross-validation needs only the data she has. In code exercise 1, 6-fold CV on a class of 24 students picks degree 3; in code exercise 2, scikit-learn's `validation_curve` on 40 students picks degree 4. Both land in the range the hidden test error favours, and neither touched a single test sample.
+
+### Extension: double descent
+
+The classical U curve stops at the point where the model "just" fits the training set. Modern practice goes much further: neural networks often have far more parameters than samples, interpolate the training set perfectly, and still predict well. To see this in a small model, use $p$ random features $\cos(\omega_j u + b_j)$ and fit least squares to 20 students. When $p > n$, infinitely many solutions pass through every point, and we take the one with the **smallest norm**.
+
+<DoubleDescent client:visible lang="en" />
+
+- **$p < n$**: the classical regime. Test error first falls, then starts to rise as $p$ approaches $n$.
+- **$p \approx n$, the interpolation threshold**: there are just enough parameters to pass through every point. The system $\Phi w = y$ is nearly square and its smallest singular value is close to 0, so passing through the noise requires enormous coefficients, and both variance and test error peak.
+- **$p \gg n$**: there are many interpolating solutions, and the smallest-norm one becomes smoother as $p$ grows, so test error falls again. More parameters here does not mean more complexity; the **norm** is the right measure of complexity. A little ridge regularization (Ch. 03) removes the peak altogether.
+
+The same phenomenon has been observed in deep networks along three axes: model size, number of training epochs and amount of data (see the frontier reading below). Zhang et al. found that networks can fit random labels perfectly, which means "number of parameters" or "size of the hypothesis space" alone cannot explain why networks generalize. Implicit regularization, by the optimizer and by the norm, is a central topic of modern learning theory, and it returns in Ch. 14 onward.
+
+</Section>

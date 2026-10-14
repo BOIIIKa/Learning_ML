@@ -1,0 +1,253 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import PerceptronSteps from "../../components/chapters/ch04/PerceptronSteps";
+import LogisticSurface from "../../components/chapters/ch04/LogisticSurface";
+import MaxEntDice from "../../components/chapters/ch04/MaxEntDice";
+import LossZoo from "../../components/chapters/ch04/LossZoo";
+
+<Section lang="zh" k="scenario">
+
+一家社区诊所想做糖尿病的早期筛查。每位来体检的人有两项指标：**空腹血糖**和 **BMI**（都已标准化，0 表示人群平均水平）。诊所手里有一批老病人的记录，知道他们后来有没有确诊。医生想要一条规则：输入两项指标，输出“要不要请他回来做进一步检查”。
+
+在平面上，每个病人是一个点，橙色是后来确诊的，蓝色是没有确诊的。最朴素的想法是**画一条直线把两类分开**。下面这个算法叫**感知机**，它的做法简单得近乎粗暴：拿一条线去试，碰到分错的点，就把线朝“改正它”的方向挪一下。
+
+<PerceptronSteps client:visible lang="zh" />
+
+看完回放，会冒出三个问题，它们正好对应本章的三个方法：
+
+1. **它一定会停吗？** 如果数据能被一条直线分开，答案是肯定的，而且犯错次数有上界（Novikoff 定理）。
+2. **只给一个“是/否”就够了吗？** 医生更想知道**风险有多大**，好决定先给谁打电话。这需要输出概率，于是有了**逻辑回归**。
+3. **类别不止两类怎么办？** 比如“正常 / 糖尿病前期 / 糖尿病”。**最大熵原则**会告诉我们，多类的概率模型应该长成 softmax 的样子。
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 感知机：只惩罚分错的点
+
+<Box kind="definition" title="感知机的三要素">
+
+- **模型**：$f(x) = \mathrm{sign}(w\cdot x + b)$，假设空间是平面上所有直线（高维中是超平面）。
+- **策略**：误分类点到超平面的距离之和。点 $x_i$ 到超平面的距离是 $|w\cdot x_i+b|/\|w\|$；对分错的点，$-y_i(w\cdot x_i+b) > 0$。略去与求和无关的 $1/\|w\|$，得到损失
+  $$L(w, b) = -\sum_{i\in M} y_i\,(w\cdot x_i + b),$$
+  其中 $M$ 是当前被分错（含恰在边界上）的点集。
+- **算法**：随机梯度下降。$\nabla_w L = -\sum_{i\in M} y_ix_i$，每次只取一个误分类点：
+  $$w \leftarrow w + \eta\,y_ix_i,\qquad b\leftarrow b+\eta\,y_i.$$
+
+</Box>
+
+更新的几何意义一目了然：正类点被分错，就把 $w$ 往 $x_i$ 的方向加一点，让 $w\cdot x_i$ 变大；负类点则反过来。只要数据线性可分，$L$ 最终会降到 0，但**解不唯一**：起点、步长、遍历顺序不同，停下来的线就不同。
+
+**对偶形式。** 从 $w = 0$、$b = 0$ 出发，最终的 $w$ 只是若干个 $\eta y_ix_i$ 之和。记点 $i$ 被用来更新了 $n_i$ 次，$\alpha_i = n_i\eta$，则
+
+$$
+w = \sum_{i=1}^N \alpha_i y_i x_i,\qquad b = \sum_{i=1}^N \alpha_i y_i,\qquad f(x) = \mathrm{sign}\Big(\sum_j \alpha_j y_j\,(x_j\cdot x) + b\Big).
+$$
+
+判断点 $x_i$ 是否分错只需要内积 $x_j\cdot x_i$，可以预先算好 **Gram 矩阵** $G = [x_i\cdot x_j]$。“只用内积”这个性质，在第 07 章会把线性方法变成核方法。
+
+### 逻辑回归：输出概率
+
+感知机只告诉医生“是”或“否”。逻辑回归换一个模型：让**对数几率**是线性的，
+
+$$
+\log\frac{P(Y=1\mid x)}{P(Y=0\mid x)} = w\cdot x + b
+\quad\Longleftrightarrow\quad
+P(Y=1\mid x) = \sigma(w\cdot x+b) = \frac{1}{1+e^{-(w\cdot x + b)}}.
+$$
+
+策略是**极大似然**：把每个标签 $t_i\in\{0,1\}$ 看作伯努利变量，最大化 $\prod_i p_i^{t_i}(1-p_i)^{1-t_i}$，其中 $p_i = \sigma(w\cdot x_i+b)$。取负对数，就是**交叉熵**：
+
+$$
+\ell(w, b) = -\sum_{i=1}^N\big[t_i\log p_i + (1-t_i)\log(1-p_i)\big].
+$$
+
+所以“伯努利极大似然”和“最小化交叉熵”是同一件事的两种说法。算法可以用梯度下降，但更常用的是**牛顿法**，它在这里有个专门的名字：迭代重加权最小二乘（IRLS）。
+
+<LogisticSurface client:visible lang="zh" />
+
+<Box kind="insight" title="为什么概率比“是/否”更有用">
+
+有了概率，医生可以按风险排序，诊所资源有限时先请最危险的人回来；漏诊和误诊的代价不对称时，还可以把阈值从 0.5 调到别处（回顾第 01 章的贝叶斯分类器：最优阈值由代价和先验决定）。感知机的输出没有这种刻度。
+
+</Box>
+
+### 最大熵模型：只用已知的，其余一概不猜
+
+最大熵原则说：在满足已知约束的所有概率分布里，选**熵最大**的那个，即除了约束之外不引入任何额外假设。对分类问题，设有特征函数 $f_k(x, y)$，约束是模型下每个特征的期望与训练数据中的经验期望相等。下一节会证明，答案必然是
+
+$$
+P_w(y\mid x) = \frac{\exp\big(\sum_k w_kf_k(x,y)\big)}{\sum_{y'}\exp\big(\sum_k w_kf_k(x,y')\big)}.
+$$
+
+取特征 $f_{c,j}(x,y) = x_j\,\mathbb 1[y = c]$，这就是多项逻辑回归（softmax）；只有两类时，它退化为上面的 $\sigma(w\cdot x+b)$。经典的求解算法是改进的迭代尺度法（IIS），今天更常用拟牛顿法（L-BFGS），scikit-learn 的 `LogisticRegression` 默认就是它。
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 感知机的收敛性：Novikoff 定理
+
+用增广记号 $\hat x = (x, 1)$、$\hat w = (w, b)$，更新写成 $\hat w\leftarrow\hat w+\eta y_i\hat x_i$。
+
+<Box kind="theorem" title="Novikoff 定理">
+
+设存在 $\|\hat w_{\text{opt}}\| = 1$ 使所有点满足 $y_i\,\hat w_{\text{opt}}\cdot\hat x_i \ge \gamma > 0$，并记 $R = \max_i\|\hat x_i\|$。那么感知机从 $\hat w_0 = 0$ 出发，误分类（即更新）的总次数满足
+
+$$
+k \le \Big(\frac{R}{\gamma}\Big)^2 .
+$$
+
+</Box>
+
+**证明。** 设第 $k$ 次更新发生在误分类点 $(x_i, y_i)$ 上。
+
+- **与最优方向的内积每次至少增加 $\eta\gamma$**：$\hat w_k\cdot\hat w_{\text{opt}} = \hat w_{k-1}\cdot\hat w_{\text{opt}} + \eta y_i\,\hat w_{\text{opt}}\cdot\hat x_i \ge \hat w_{k-1}\cdot\hat w_{\text{opt}} + \eta\gamma$，归纳得 $\hat w_k\cdot\hat w_{\text{opt}}\ge k\eta\gamma$。
+- **长度增长很慢**：$\|\hat w_k\|^2 = \|\hat w_{k-1}\|^2 + 2\eta y_i\,\hat w_{k-1}\cdot\hat x_i + \eta^2\|\hat x_i\|^2 \le \|\hat w_{k-1}\|^2 + \eta^2R^2$，因为点被分错意味着中间项 $\le 0$。归纳得 $\|\hat w_k\|^2\le k\eta^2R^2$。
+
+由柯西–施瓦茨，$k\eta\gamma \le \hat w_k\cdot\hat w_{\text{opt}}\le\|\hat w_k\| \le \sqrt k\,\eta R$，即 $k\le(R/\gamma)^2$。$\square$
+
+直观地说，$\hat w_k$ 与正确方向的夹角每一步都在被拉近，而一个单位向量与 $\hat w_{\text{opt}}$ 的余弦不能超过 1，所以更新不可能无限进行下去。间隔 $\gamma$ 越大、数据越“好分”，上界越小。反过来，**数据线性不可分时感知机永远不会停**，只会来回摆动。
+
+### 逻辑回归的梯度、Hessian 与凸性
+
+记 $z_i = w\cdot x_i+b$，$p_i = \sigma(z_i)$。利用 $\sigma'(z) = \sigma(z)(1-\sigma(z))$，单个样本的交叉熵对 $z_i$ 的导数是 $p_i - t_i$（课后第 2 题）。用增广记号 $\theta = (w, b)$，设计矩阵 $\hat X$ 的第 $i$ 行是 $\hat x_i^\top$，
+
+$$
+\nabla\ell(\theta) = \sum_i (p_i - t_i)\,\hat x_i = \hat X^\top(p - t),\qquad
+\nabla^2\ell(\theta) = \sum_i p_i(1-p_i)\,\hat x_i\hat x_i^\top = \hat X^\top S\hat X,
+$$
+
+其中 $S = \mathrm{diag}\big(p_i(1-p_i)\big)$。对任意 $v$，$v^\top\hat X^\top S\hat X v = \sum_i p_i(1-p_i)(\hat x_i\cdot v)^2\ge 0$，所以：
+
+<Box kind="theorem" title="凸性">
+
+负对数似然 $\ell(\theta)$ 是凸函数（对数似然是凹函数）；当 $\hat X$ 列满秩时严格凸，最小值点若存在则唯一。
+
+</Box>
+
+一个容易踩的坑：**数据线性可分时，极大似然估计不存在。** 沿着能分开数据的方向把 $\|w\|$ 不断放大，每个 $p_i$ 都会趋向正确的 0 或 1，损失单调趋于 0 却永远达不到。在上面的曲面组件里把 $w$ 拉长就能看到曲面越来越陡。实际中要加 L2 正则（scikit-learn 的参数 `C` 就是正则强度的倒数），这正是第 01 章说的结构风险最小化。
+
+### 牛顿法就是迭代重加权最小二乘
+
+牛顿法用二阶近似求根：$\theta^{\text{new}} = \theta - (\hat X^\top S\hat X)^{-1}\hat X^\top(p-t)$。把 $\theta$ 吸收进去，
+
+$$
+\theta^{\text{new}} = (\hat X^\top S\hat X)^{-1}\hat X^\top S\,u,\qquad u = \hat X\theta + S^{-1}(t - p).
+$$
+
+这正是以 $S$ 为权重、把**工作响应** $u$ 对 $\hat X$ 做的加权最小二乘（回顾第 03 章的正规方程）。每次迭代都更新权重 $S$ 和响应 $u$，所以叫“迭代重加权”。由于目标是光滑的凸函数，牛顿法在最优点附近**二次收敛**：误差大约每步平方一次，通常五六步就到机器精度。
+
+### 最大熵的对偶就是 softmax
+
+设训练数据的经验分布为 $\tilde P(x, y)$，边缘为 $\tilde P(x)$。最大熵模型求解
+
+$$
+\max_P\ H(P) = -\sum_x\tilde P(x)\sum_y P(y\mid x)\log P(y\mid x)
+\quad\text{s.t.}\quad
+\sum_{x,y}\tilde P(x)P(y\mid x)f_k(x,y) = \sum_{x,y}\tilde P(x,y)f_k(x,y),\ \ \sum_y P(y\mid x) = 1 .
+$$
+
+引入乘子 $w_k$（特征约束）与 $\beta_x$（归一化约束），拉格朗日函数为
+
+$$
+\mathcal L = H(P) + \sum_k w_k\Big(\sum_{x,y}\tilde P(x)P(y\mid x)f_k(x,y) - \mathbb E_{\tilde P}[f_k]\Big) + \sum_x\beta_x\Big(\sum_yP(y\mid x) - 1\Big).
+$$
+
+对 $P(y\mid x)$ 求偏导并令其为零：$\tilde P(x)\big[-\log P(y\mid x) - 1 + \sum_kw_kf_k(x,y)\big] + \beta_x = 0$，所以 $P(y\mid x)\propto\exp\big(\sum_kw_kf_k(x,y)\big)$，归一化后得到
+
+$$
+P_w(y\mid x) = \frac{1}{Z_w(x)}\exp\Big(\sum_kw_kf_k(x,y)\Big),\qquad Z_w(x) = \sum_y\exp\Big(\sum_kw_kf_k(x,y)\Big).
+$$
+
+把它代回 $\mathcal L$，得到对偶函数
+
+$$
+\Psi(w) = \sum_{x,y}\tilde P(x,y)\sum_kw_kf_k(x,y) - \sum_x\tilde P(x)\log Z_w(x) = \sum_{x,y}\tilde P(x,y)\log P_w(y\mid x),
+$$
+
+它恰好是**条件对数似然**。于是：
+
+<Box kind="theorem" title="最大熵 = 对数线性模型的极大似然">
+
+最大熵问题的解是指数族（对数线性）形式 $P_w(y\mid x)\propto e^{w\cdot f(x,y)}$，而求最优 $w$ 的对偶问题就是对这个模型做极大似然估计。取 $f_{c,j}(x,y) = x_j\mathbb 1[y=c]$（再加上 $\mathbb 1[y=c]$ 作为截距），得到 softmax 回归；两类时化为逻辑回归。
+
+</Box>
+
+一个可以验证的推论是**矩匹配**：在极大似然解处梯度为零，即 $\sum_i p_i\hat x_i = \sum_i t_i\hat x_i$，模型预测的特征期望与数据完全一致。下面的骰子把这件事画了出来：唯一的约束是平均点数，最大熵分布就是 $p_k\propto e^{\lambda k}$。
+
+<MaxEntDice client:visible lang="zh" />
+
+### 一张图看所有分类损失
+
+对 $y\in\{-1,+1\}$ 与实值打分 $f(x)$，记**间隔** $m = yf(x)$。逻辑回归的负对数似然可以写成 $\log(1+e^{-m})$，感知机损失是 $\max(0, -m)$，第 07 章 SVM 的合页损失是 $\max(0, 1-m)$，第 08 章 AdaBoost 的指数损失是 $e^{-m}$。它们都是 0-1 损失 $\mathbb 1[m\le 0]$ 的替身：
+
+<LossZoo client:visible lang="zh" />
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题一：三个点上的感知机
+
+<Box kind="example" title="原始形式与对偶形式">
+
+正类 $x_1 = (2,2)$、$x_2 = (0,2)$，负类 $x_3 = (1,0)$。$\eta = 1$，从 $w = 0$、$b = 0$ 出发，按 $x_1, x_2, x_3$ 的顺序循环检查。
+
+| 更新 | 误分类点 | 检查时的 $y_i(w\cdot x_i+b)$ | 更新后 $w$ | 更新后 $b$ |
+|---|---|---|---|---|
+| 1 | $x_1$ | $0$ | $(2, 2)$ | $1$ |
+| 2 | $x_3$ | $-(2+1) = -3$ | $(1, 2)$ | $0$ |
+| 3 | $x_3$ | $-(1+0) = -1$ | $(0, 2)$ | $-1$ |
+
+此时 $y_i(w\cdot x_i+b)$ 依次为 $3, 3, 1$，全部为正，算法停止，分离线是 $x^{(2)} = 0.5$。
+
+**对偶形式**：$\alpha = (1, 0, 2)$，Gram 矩阵 $G = \begin{pmatrix}8&4&2\\4&4&0\\2&0&1\end{pmatrix}$。验证：$w = 1\cdot(2,2) - 2\cdot(1,0) = (0,2)$，$b = 1 - 2 = -1$。第 3 次更新前检查 $x_3$ 时，$f(x_3) = \alpha_1y_1G_{13} + \alpha_3y_3G_{33} + b = 2 - 1 + 0 = 1$，$y_3f(x_3) = -1\le 0$，与原始形式完全一致。
+
+**收敛界**：$R = \|(2,2,1)\| = 3$。以最终解 $\hat w = (0,2,-1)/\sqrt5$ 为参照，$\gamma = 1/\sqrt5$，上界 $(R/\gamma)^2 = 45$，实际只更新了 3 次。上界很松，但它保证了一定会停。
+
+</Box>
+
+### 例题二：五个点上的牛顿法
+
+<Box kind="example" title="一步就走对方向">
+
+一维数据 $x = (-2,-1,0,1,2)$，标签 $t = (0,1,0,1,1)$，参数 $\theta = (b, w)$。
+
+**第一步**：$\theta = 0$ 时 $p_i = \tfrac12$，$\ell = 5\ln2\approx3.466$。梯度 $\big(\sum(p_i-t_i),\ \sum x_i(p_i-t_i)\big) = (-0.5, -2)$；Hessian $=\tfrac14\begin{pmatrix}5&0\\0&10\end{pmatrix}$。于是 $\theta_1 = (0.5/1.25,\ 2/2.5) = (0.4, 0.8)$，$\ell = 2.480$。
+
+| 迭代 $k$ | $b$ | $w$ | $\ell$ | $\|\nabla\ell\|$ |
+|---|---|---|---|---|
+| 0 | 0 | 0 | 3.4657 | 2.06 |
+| 1 | 0.4000 | 0.8000 | 2.4795 | 0.355 |
+| 2 | 0.5797 | 1.0398 | 2.4236 | 0.052 |
+| 3 | 0.6210 | 1.0886 | 2.42197 | $1.8\times10^{-3}$ |
+| 4 | 0.6227 | 1.0904 | 2.42197 | $2.6\times10^{-6}$ |
+| 5 | 0.6227 | 1.0904 | 2.42197 | $5\times10^{-12}$ |
+
+梯度范数的指数大约每步翻倍——这就是二次收敛。最终概率为 $(0.174, 0.385, 0.651, 0.847, 0.943)$，它们的和是 $3.000$，正好等于正类样本数：矩匹配。
+
+</Box>
+
+### 例题三：平均点数为 4.5 的骰子
+
+已知平均点数 $\mu = 4.5$。最大熵解为 $p_k\propto e^{\lambda k}$，解 $\sum_k k\,p_k = 4.5$ 得 $\lambda\approx0.371$，
+
+$$
+p\approx(0.054,\ 0.079,\ 0.114,\ 0.165,\ 0.240,\ 0.347),\qquad H(p)\approx1.614 .
+$$
+
+对比：“只在 3–6 点上均匀”也满足均值 4.5，但熵只有 $\ln4\approx1.386$，它额外假设了“绝不会出 1 和 2”，而数据并没有告诉我们这一点。
+
+### 回到诊所
+
+组件里的 60 位病人两类有重叠，感知机在这里永远不会停。逻辑回归从 $\theta = 0$ 出发，牛顿法 7 步就把梯度范数从 28 压到 $10^{-9}$ 以下，平均交叉熵从 $\ln 2\approx0.693$ 降到 $0.243$，训练准确率 $86.7\%$。更重要的是每个人都得到一个风险值，诊所可以按它排序安排复查。
+
+### 拓展
+
+- **多分类的两种思路**：一对其余（训练 $K$ 个二分类器）与 softmax（一次性建模 $K$ 个类的联合分布）。后者的概率天然归一化，是最大熵给出的答案。
+- **判别式与生成式**：若假设每类内部是协方差相同的高斯分布，用贝叶斯公式算出的后验也恰好是 $\sigma(w\cdot x+b)$ 的形式。第 05 章的 LDA 与朴素贝叶斯会从这一侧走到同一个模型，但参数的估计方式不同。
+- **从感知机到神经网络**：把 $\mathrm{sign}$ 换成光滑的激活函数、把很多感知机叠起来，就是第 14 章的多层感知机；交叉熵加梯度下降的组合也原样保留。
+- **概率要校准**：正则化、类别不平衡都会让 $\sigma(w\cdot x+b)$ 偏离真实频率。用作风险评分之前，要检查可靠性曲线。
+
+</Section>

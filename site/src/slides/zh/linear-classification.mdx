@@ -1,0 +1,224 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import PerceptronSteps from "../../components/chapters/ch04/PerceptronSteps";
+import LogisticSurface from "../../components/chapters/ch04/LogisticSurface";
+import MaxEntDice from "../../components/chapters/ch04/MaxEntDice";
+import LossZoo from "../../components/chapters/ch04/LossZoo";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 04 章 · 动画课程" title="线性分类：感知机、逻辑回归与最大熵" say="这一章用一条直线做分类。我们会看到三种方法：只会说是或否的感知机，能给出概率的逻辑回归，以及解释这个概率为什么长这样的最大熵原则。">
+
+一条直线 · 一个概率 · 一个原则
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="诊所里的糖尿病筛查" say="一家社区诊所有一批老病人的空腹血糖和 BMI，也知道他们后来是否确诊了糖尿病。医生想要一条规则，决定该请谁回来复查。">
+
+<Step say="每个病人是平面上的一个点：橙色是后来确诊的，蓝色是没有确诊的。">橙 = 后来确诊，蓝 = 未确诊</Step>
+
+<Step say="感知机拿一条线去试。黄色脉冲圈是当前被分错的点，紫色箭头是它对 w 的修正。">黄圈 = 分错的点；紫箭头 = 修正量 →</Step>
+
+<Step say="按播放键，看这条线被一个个分错的点拽着转动，直到所有点都分对。">错一个，改一次，直到全对</Step>
+
+<div slot="visual"><PerceptronSteps client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" say="看完回放，会冒出三个问题，正好对应本章的三个方法。">
+
+<Step say="第一，它一定会停吗？如果数据能被一条直线分开，答案是肯定的，这就是 Novikoff 定理。">① 一定会停吗？→ **Novikoff 定理**</Step>
+
+<Step say="第二，只给是或否就够了吗？医生更想知道风险有多大。这就需要逻辑回归。">② 只要“是/否”够吗？→ **逻辑回归**给出概率</Step>
+
+<Step say="第三，类别不止两类怎么办？最大熵原则会告诉我们答案应该是 softmax。">③ 不止两类呢？→ **最大熵**与 softmax</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="感知机的三要素" say="先把感知机拆成模型、策略、算法。">
+
+<Step say="模型是一条直线，输出它的符号。">模型：$f(x)=\mathrm{sign}(w\cdot x+b)$</Step>
+
+<Step say="策略是误分类点到这条线的距离之和，去掉与求和无关的一除以 w 的长度，就得到感知机损失。">
+
+$$
+L(w,b) = -\sum_{i\in M} y_i\,(w\cdot x_i+b)
+$$
+
+</Step>
+
+<Step say="算法是随机梯度下降：每次只拿一个分错的点，把 w 加上 eta 乘 y 乘 x，b 加上 eta 乘 y。">算法：$w\leftarrow w+\eta y_ix_i,\quad b\leftarrow b+\eta y_i$</Step>
+
+<Step effect="focus" say="正类点分错就把 w 拉向它，负类点分错就把 w 推开。可分时一定能停，但停在哪里取决于起点和顺序：解不唯一。">
+<p class="big-q sm">正类拉近，负类推开；解不唯一</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="对偶形式：只记“用了几次”" say="从零出发，最终的 w 只是若干个 eta y x 的和。">
+
+<Step say="记点 i 被用来更新的次数乘以 eta 为 alpha i，那么 w 就是 alpha i 乘 y i 乘 x i 的和。">$w=\sum_i\alpha_iy_ix_i,\quad b=\sum_i\alpha_iy_i$</Step>
+
+<Step say="判断一个点是否分错，只需要内积，也就是 Gram 矩阵。">只需内积：Gram 矩阵 $G_{ij}=x_i\cdot x_j$</Step>
+
+<Step say="在右边切到对偶形式，点的大小就是 alpha。最终只有少数犯过错的点有非零的 alpha。">切到“对偶形式”：点越大，α 越大 →</Step>
+
+<Step say="只用内积这个性质，第 07 章会把它变成核方法。">“只用内积” ⇒ 第 07 章的核方法</Step>
+
+<div slot="visual"><PerceptronSteps client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="逻辑回归：让对数几率是线性的" say="感知机只会说是或否。逻辑回归让模型输出一个概率。">
+
+<Step say="模型假设对数几率是 w x 加 b 的线性函数，等价于概率是它的 sigmoid。">$P(Y=1\mid x)=\sigma(w\cdot x+b)$</Step>
+
+<Step say="策略是伯努利极大似然，取负对数就是交叉熵。两种说法是同一件事。">伯努利极大似然 = 最小化交叉熵</Step>
+
+<Step say="在右边拖动青色把手改变 w，用滑块改变 b。所有等概率线都是直线，w 越长，概率过渡越陡。">拖动 w 与 b：等概率线都是直线 →</Step>
+
+<Step say="点牛顿法走一步，几步就能到达交叉熵的最小值。">牛顿法几步就到最低点</Step>
+
+<div slot="visual"><LogisticSurface client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="最大熵：除了已知，什么都不猜" say="为什么偏偏是 sigmoid 和 softmax？最大熵原则给出了回答。">
+
+<Step say="最大熵原则：在满足已知约束的所有分布里，选熵最大的那个。">满足约束的分布里，选熵最大的</Step>
+
+<Step say="右边是一枚骰子，我们只知道它的平均点数。最大熵分布永远是 e 的 lambda k 次方的形式。">只知道均值 ⇒ $p_k\propto e^{\lambda k}$ →</Step>
+
+<Step say="点按钮换一个满足同样均值的分布，它的熵总是更低。">别的分布熵都更低</Step>
+
+<Step say="把点数换成特征函数，同样的推导给出 softmax，两类时就是逻辑回归。">换成特征 $f(x,y)$ ⇒ softmax</Step>
+
+<div slot="visual"><MaxEntDice client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="Novikoff 定理" say="现在证明：线性可分时，感知机一定会停。">
+
+<Step say="用增广向量，把 b 并进 w。设存在单位向量以间隔 gamma 分开所有点，R 是最长的样本长度。">设 $\|\hat w_{\text{opt}}\|=1$，$y_i\hat w_{\text{opt}}\cdot\hat x_i\ge\gamma$，$R=\max\|\hat x_i\|$</Step>
+
+<Step say="每次更新，w 与最优方向的内积至少增加 eta gamma。">$\hat w_k\cdot\hat w_{\text{opt}}\ge k\eta\gamma$</Step>
+
+<Step say="而因为更新发生在分错的点上，w 的长度平方每次至多增加 eta 方 R 方。">$\|\hat w_k\|^2\le k\eta^2R^2$</Step>
+
+<Step say="用柯西施瓦茨不等式把两者夹在一起，就得到更新次数的上界。eta 被约掉了。">
+
+$$
+k\eta\gamma\le\|\hat w_k\|\le\sqrt k\,\eta R\ \Rightarrow\ k\le\Big(\frac R\gamma\Big)^2
+$$
+
+</Step>
+
+<Step effect="focus" say="反过来，如果数据不可分，感知机永远停不下来。">
+<p class="big-q sm">不可分 ⇒ 永不停止</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="梯度、Hessian 与凸性" say="下面推导逻辑回归的负对数似然的一阶和二阶导数。">
+
+<Step say="单个样本的交叉熵对 z 求导，结果是预测减标签。">$\dfrac{\partial\ell_i}{\partial z_i}=p_i-t_i$</Step>
+
+<Step say="用链式法则得到梯度，再求一次导得到 Hessian，其中 S 是 p 乘一减 p 组成的对角阵。">
+
+$$
+\nabla\ell=\hat X^\top(p-t),\qquad \nabla^2\ell=\hat X^\top S\hat X,\quad S=\mathrm{diag}\big(p_i(1-p_i)\big)
+$$
+
+</Step>
+
+<Step say="对任意向量 v，二次型都是非负数之和，所以负对数似然是凸的。">$v^\top\hat X^\top S\hat Xv=\sum_ip_i(1-p_i)(\hat x_i\cdot v)^2\ge0$ ⇒ 凸</Step>
+
+<Step effect="focus" say="但要注意：数据可分时，把 w 无限拉长，损失会无限接近零却达不到。极大似然估计不存在，需要正则化。">
+<p class="big-q sm">可分 ⇒ MLE 不存在 ⇒ 加正则</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="牛顿法 = 迭代重加权最小二乘" say="牛顿法在这里有一个特别的形式。">
+
+<Step say="牛顿步是 theta 减去 Hessian 的逆乘以梯度。">$\theta^{\text{new}}=\theta-(\hat X^\top S\hat X)^{-1}\hat X^\top(p-t)$</Step>
+
+<Step say="整理一下，它正好是一个加权最小二乘，权重是 S，响应是 u。">
+
+$$
+\theta^{\text{new}}=(\hat X^\top S\hat X)^{-1}\hat X^\top S\,u,\qquad u=\hat X\theta+S^{-1}(t-p)
+$$
+
+</Step>
+
+<Step say="每一步都重新计算权重和响应，所以叫迭代重加权最小二乘，简称 IRLS。">每步更新权重 $S$ 与“工作响应” $u$</Step>
+
+<Step say="目标光滑而且凸，所以牛顿法二次收敛，误差每步大约平方一次。">二次收敛：五六步到机器精度</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="最大熵的对偶就是 softmax" say="最后证明最大熵模型的解是 softmax。">
+
+<Step say="最大化条件熵，约束是每个特征在模型下的期望等于它在数据中的期望，并且概率要归一。">$\max H(P)$ 使 $\mathbb E_P[f_k]=\mathbb E_{\tilde P}[f_k]$，$\sum_yP(y\mid x)=1$</Step>
+
+<Step say="写出拉格朗日函数，对条件概率求导并令为零，得到指数族的形式。">
+
+$$
+P_w(y\mid x)=\frac{1}{Z_w(x)}\exp\Big(\sum_kw_kf_k(x,y)\Big)
+$$
+
+</Step>
+
+<Step say="代回去得到的对偶函数，恰好就是这个模型的条件对数似然。">对偶函数 $\Psi(w)=\sum\tilde P(x,y)\log P_w(y\mid x)$ = 对数似然</Step>
+
+<Step effect="focus" say="所以最大熵和对数线性模型的极大似然是一回事。取线性特征就是 softmax，两类时就是逻辑回归。">
+<p class="big-q sm">最大熵 = softmax 的极大似然</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="分类损失动物园" say="把所有分类损失画在同一张图里，横轴是间隔 y 乘 f。">
+
+<Step say="零一损失是真正关心的错误率，但它不连续，无法优化。">0-1 损失：真目标，但没法优化</Step>
+
+<Step say="交叉熵、合页、指数损失都经过零一点，压在零一损失上方，是它的替身。">交叉熵 · 合页（第 07 章）· 指数（第 08 章）</Step>
+
+<Step say="感知机损失在零处就归零了：它只要求分对，不要求有把握。拖动滑块比较各个损失的数值。">感知机损失：分对就够，不求把握 →</Step>
+
+<div slot="visual"><LossZoo client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：三个点上的感知机" say="正类两个点二二和零二，负类一个点一零，步长为一，从零出发。">
+
+<Step say="第一次，所有点都在边界上，先改 x1：w 变成二二，b 变成一。">① $x_1$：$w=(2,2),\ b=1$</Step>
+
+<Step say="第二次，x3 被分错，函数间隔是负三：w 变成一二，b 变成零。">② $x_3$：$w=(1,2),\ b=0$</Step>
+
+<Step say="第三次，x3 仍然被分错，函数间隔是负一：w 变成零二，b 变成负一。此时三个点全部分对。">③ $x_3$：$w=(0,2),\ b=-1$ ✓</Step>
+
+<Step say="对偶形式中 alpha 等于一零二，用 Gram 矩阵计算的每一步与原始形式完全一致。">对偶：$\alpha=(1,0,2)$，$w=x_1-2x_3$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：五个点上的牛顿法" say="一维数据 x 从负二到二，标签是零一零一一。">
+
+<Step say="从零出发，所有概率都是二分之一。梯度是负零点五和负二，Hessian 是对角阵。">$\theta_0=0$：$\nabla=(-0.5,-2)$，$H=\tfrac14\mathrm{diag}(5,10)$</Step>
+
+<Step say="第一步就到了 b 等于零点四、w 等于零点八。">$\theta_1=(0.4,\ 0.8)$</Step>
+
+<Step say="梯度范数依次是二、零点三五、零点零五、千分之二、百万分之三：误差每步大约平方一次。">$\|\nabla\|$：2.06 → 0.355 → 0.052 → $1.8\times10^{-3}$ → $2.6\times10^{-6}$</Step>
+
+<Step effect="focus" say="收敛后五个概率之和正好等于三，也就是正类的个数：这就是矩匹配。">
+<p class="big-q sm">$\sum_ip_i=\sum_it_i=3$：矩匹配</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="练习在讲义页：四道推导题，从零实现感知机与牛顿法逻辑回归，以及用 scikit-learn 对比逻辑回归、感知机和 softmax。">
+
+<Step say="跑完代码题后，可以并排回放你的牛顿法和你的感知机。">✎ 4 道推导 · ⌨ 感知机 + IRLS · ⚙ LogisticRegression vs Perceptron</Step>
+
+<Step effect="pop" say="点按钮开始练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/linear-classification/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

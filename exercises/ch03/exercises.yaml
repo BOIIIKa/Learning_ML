@@ -1,0 +1,71 @@
+# 第 03 章 线性回归与正则化 —— 课后练习 / Chapter 03 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: leverage
+    title: {zh: "帽子矩阵的对角元：杠杆值", en: "The diagonal of the hat matrix: leverage"}
+    prompt:
+      zh: "简单线性回归 $y \\approx w_0 + w_1 x$，共 $n$ 个样本，$\\bar x$ 为均值，$S_{xx} = \\sum_k (x_k - \\bar x)^2$。帽子矩阵 $H = X(X^\\top X)^{-1}X^\\top$ 的第 $i$ 个对角元 $h_{ii}$ 是多少？可用变量：`n, xi, xbar, Sxx`。"
+      en: "Simple linear regression $y \\approx w_0 + w_1 x$ with $n$ samples, mean $\\bar x$ and $S_{xx} = \\sum_k (x_k - \\bar x)^2$. What is the $i$-th diagonal entry $h_{ii}$ of the hat matrix $H = X(X^\\top X)^{-1}X^\\top$? Variables: `n, xi, xbar, Sxx`."
+    answer: "1/n + (xi - xbar)^2/Sxx"
+    vars: {n: [3, 20], xi: [-3, 3], xbar: [-1, 1], Sxx: [1, 10]}
+    solution:
+      zh: "$H$ 只取决于列空间，所以可以换一组张成同一平面的列：$\\mathbf 1$ 与中心化后的 $x - \\bar x\\mathbf 1$。这两列正交，投影矩阵就是两个一维投影之和：$H = \\frac{\\mathbf 1\\mathbf 1^\\top}{n} + \\frac{(x-\\bar x\\mathbf 1)(x - \\bar x\\mathbf 1)^\\top}{S_{xx}}$。取第 $i$ 个对角元得 $h_{ii} = \\frac1n + \\frac{(x_i - \\bar x)^2}{S_{xx}}$。离 $\\bar x$ 越远的点杠杆越大，对拟合直线的“拉力”越强。对正文的三点例题 $x = (1,2,3)$：$h = (5/6,\\ 1/3,\\ 5/6)$，总和 $= \\mathrm{tr}\\,H = 2$ = 参数个数。"
+      en: "$H$ depends only on the column space, so swap in two columns spanning the same plane: $\\mathbf 1$ and the centred $x - \\bar x\\mathbf 1$. They are orthogonal, so the projection is the sum of two 1-D projections: $H = \\frac{\\mathbf 1\\mathbf 1^\\top}{n} + \\frac{(x-\\bar x\\mathbf 1)(x - \\bar x\\mathbf 1)^\\top}{S_{xx}}$. Its $i$-th diagonal entry is $h_{ii} = \\frac1n + \\frac{(x_i - \\bar x)^2}{S_{xx}}$. Points far from $\\bar x$ have high leverage and pull hardest on the line. For the three-point example $x = (1,2,3)$ in the notes, $h = (5/6,\\ 1/3,\\ 5/6)$, summing to $\\mathrm{tr}\\,H = 2$, the number of parameters."
+
+  - id: ridge-df
+    title: {zh: "岭回归的有效自由度", en: "Effective degrees of freedom of ridge"}
+    prompt:
+      zh: "设计矩阵 $X$（已中心化）只有两个非零奇异值 $d_1, d_2$。岭回归 $\\min_w \\|y - Xw\\|^2 + \\lambda\\|w\\|^2$ 的拟合值写成 $\\hat y = H_\\lambda y$。求有效自由度 $\\mathrm{tr}\\,H_\\lambda$。可用变量：`d1, d2, lam`。"
+      en: "A centred design matrix $X$ has exactly two non-zero singular values $d_1, d_2$. Write the ridge fit of $\\min_w \\|y - Xw\\|^2 + \\lambda\\|w\\|^2$ as $\\hat y = H_\\lambda y$. Find the effective degrees of freedom $\\mathrm{tr}\\,H_\\lambda$. Variables: `d1, d2, lam`."
+    answer: "d1^2/(d1^2 + lam) + d2^2/(d2^2 + lam)"
+    vars: {d1: [0.3, 4], d2: [0.3, 4], lam: [0, 5]}
+    solution:
+      zh: "令 $X = UDV^\\top$。岭回归解 $\\hat w = (X^\\top X + \\lambda I)^{-1}X^\\top y = V(D^2 + \\lambda I)^{-1}DU^\\top y$，于是 $\\hat y = X\\hat w = U\\,\\mathrm{diag}\\big(\\tfrac{d_j^2}{d_j^2+\\lambda}\\big)U^\\top y$。也就是说，岭回归先把 $y$ 投影到每个主方向 $u_j$ 上，再乘以收缩因子 $\\frac{d_j^2}{d_j^2+\\lambda}$：$d_j$ 小（数据在该方向上变化少、方差大）的方向被压得最狠。迹为 $\\sum_j \\frac{d_j^2}{d_j^2+\\lambda}$。$\\lambda = 0$ 时等于 2（普通最小二乘的参数个数），$\\lambda\\to\\infty$ 时趋于 0。"
+      en: "Let $X = UDV^\\top$. The ridge solution is $\\hat w = (X^\\top X + \\lambda I)^{-1}X^\\top y = V(D^2 + \\lambda I)^{-1}DU^\\top y$, so $\\hat y = X\\hat w = U\\,\\mathrm{diag}\\big(\\tfrac{d_j^2}{d_j^2+\\lambda}\\big)U^\\top y$. Ridge projects $y$ onto each principal direction $u_j$ and multiplies by the shrinkage factor $\\frac{d_j^2}{d_j^2+\\lambda}$; directions with small $d_j$ (little spread in the data, high variance) are shrunk the most. The trace is $\\sum_j \\frac{d_j^2}{d_j^2+\\lambda}$: 2 at $\\lambda = 0$ (the parameter count of least squares) and tending to 0 as $\\lambda\\to\\infty$."
+
+  - id: lasso-1d
+    title: {zh: "一维 Lasso 与软阈值", en: "One-dimensional lasso and soft thresholding"}
+    prompt:
+      zh: "只有一个特征时，最小化 $\\tfrac12\\sum_i (y_i - w x_i)^2 + \\lambda|w|$（$\\lambda > 0$）。记 $S_{xy} = \\sum_i x_i y_i$，$S_{xx} = \\sum_i x_i^2$。写出最优 $w$（可用 `sign`、`abs`、`max`）。可用变量：`Sxy, Sxx, lam`。"
+      en: "With a single feature, minimize $\\tfrac12\\sum_i (y_i - w x_i)^2 + \\lambda|w|$ ($\\lambda > 0$). Let $S_{xy} = \\sum_i x_i y_i$ and $S_{xx} = \\sum_i x_i^2$. Write the optimal $w$ (you may use `sign`, `abs`, `max`). Variables: `Sxy, Sxx, lam`."
+    answer: "sign(Sxy)*max(abs(Sxy) - lam, 0)/Sxx"
+    vars: {Sxy: [-4, 4], Sxx: [0.5, 4], lam: [0.2, 2]}
+    solution:
+      zh: "目标展开为 $\\tfrac12 S_{xx}w^2 - S_{xy}w + \\lambda|w| + \\text{常数}$。$|w|$ 在 0 处不可导，用次梯度：$0 \\in S_{xx}w - S_{xy} + \\lambda\\,\\partial|w|$，其中 $\\partial|w| = \\{\\mathrm{sign}(w)\\}$（$w\\ne0$）或 $[-1, 1]$（$w = 0$）。若 $w > 0$：$w = (S_{xy} - \\lambda)/S_{xx}$，要求 $S_{xy} > \\lambda$；若 $w < 0$：$w = (S_{xy} + \\lambda)/S_{xx}$，要求 $S_{xy} < -\\lambda$；否则只能 $w = 0$，条件 $|S_{xy}| \\le \\lambda$ 恰好让 $0$ 落在次梯度集合里。合起来 $w = S_\\lambda(S_{xy})/S_{xx}$，$S_\\lambda(z) = \\mathrm{sign}(z)\\max(|z| - \\lambda, 0)$。坐标下降的每一步正是这个公式，只是把 $y$ 换成部分残差。"
+      en: "The objective is $\\tfrac12 S_{xx}w^2 - S_{xy}w + \\lambda|w| + \\text{const}$. Since $|w|$ is not differentiable at 0, use subgradients: $0 \\in S_{xx}w - S_{xy} + \\lambda\\,\\partial|w|$, where $\\partial|w| = \\{\\mathrm{sign}(w)\\}$ for $w\\ne0$ and $[-1, 1]$ at $w = 0$. If $w > 0$, then $w = (S_{xy} - \\lambda)/S_{xx}$, which needs $S_{xy} > \\lambda$; if $w < 0$, then $w = (S_{xy} + \\lambda)/S_{xx}$, which needs $S_{xy} < -\\lambda$; otherwise $w = 0$, and $|S_{xy}| \\le \\lambda$ is exactly the condition for 0 to lie in the subgradient set. Together, $w = S_\\lambda(S_{xy})/S_{xx}$ with $S_\\lambda(z) = \\mathrm{sign}(z)\\max(|z| - \\lambda, 0)$. Each step of coordinate descent is this formula with $y$ replaced by the partial residual."
+
+  - id: laplace-map
+    title: {zh: "拉普拉斯先验给出 Lasso", en: "A Laplace prior gives the lasso"}
+    prompt:
+      zh: "设 $y_i = x_i^\\top w + \\varepsilon_i$，$\\varepsilon_i \\sim \\mathcal N(0, \\sigma^2)$ 独立；每个 $w_j$ 独立服从拉普拉斯先验 $p(w_j) = \\frac{1}{2b}e^{-|w_j|/b}$。MAP 估计等价于最小化 $\\tfrac12\\|y - Xw\\|^2 + \\lambda\\|w\\|_1$，$\\lambda$ 等于多少？可用变量：`sigma, b`。"
+      en: "Let $y_i = x_i^\\top w + \\varepsilon_i$ with independent $\\varepsilon_i \\sim \\mathcal N(0, \\sigma^2)$, and give each $w_j$ an independent Laplace prior $p(w_j) = \\frac{1}{2b}e^{-|w_j|/b}$. The MAP estimate minimizes $\\tfrac12\\|y - Xw\\|^2 + \\lambda\\|w\\|_1$; what is $\\lambda$? Variables: `sigma, b`."
+    answer: "sigma^2/b"
+    vars: {sigma: [0.2, 3], b: [0.2, 3]}
+    solution:
+      zh: "负对数后验（去掉常数）为 $\\frac{1}{2\\sigma^2}\\|y - Xw\\|^2 + \\frac1b\\|w\\|_1$。乘以 $\\sigma^2$ 不改变最优点，得到 $\\tfrac12\\|y-Xw\\|^2 + \\frac{\\sigma^2}{b}\\|w\\|_1$，所以 $\\lambda = \\sigma^2/b$。同理，高斯先验 $w_j\\sim\\mathcal N(0,\\tau^2)$ 给出 $\\tfrac12\\|y-Xw\\|^2 + \\frac{\\sigma^2}{2\\tau^2}\\|w\\|^2$，即岭回归 $\\|y - Xw\\|^2 + \\lambda\\|w\\|^2$ 中的 $\\lambda = \\sigma^2/\\tau^2$。噪声越大、先验越窄，正则越强。拉普拉斯密度在 0 处有尖峰，这正是 MAP 解常常恰好为 0 的原因。"
+      en: "The negative log-posterior, up to constants, is $\\frac{1}{2\\sigma^2}\\|y - Xw\\|^2 + \\frac1b\\|w\\|_1$. Multiplying by $\\sigma^2$ does not move the minimizer, giving $\\tfrac12\\|y-Xw\\|^2 + \\frac{\\sigma^2}{b}\\|w\\|_1$, so $\\lambda = \\sigma^2/b$. Likewise a Gaussian prior $w_j\\sim\\mathcal N(0,\\tau^2)$ gives $\\tfrac12\\|y-Xw\\|^2 + \\frac{\\sigma^2}{2\\tau^2}\\|w\\|^2$, i.e. $\\lambda = \\sigma^2/\\tau^2$ in ridge's $\\|y - Xw\\|^2 + \\lambda\\|w\\|^2$. More noise or a narrower prior means stronger regularization. The Laplace density has a spike at 0, which is why the MAP solution is often exactly 0."
+
+code:
+  - id: ridge-lasso
+    kind: implement
+    file: ridge_lasso.py
+    packages: [numpy]
+    title: {zh: "从零实现岭回归与 Lasso 坐标下降", en: "Ridge and lasso coordinate descent from scratch"}
+    intro:
+      zh: "补全岭回归闭式解、软阈值算子和坐标下降的单坐标更新。测试会把岭回归与 SVD 收缩公式对拍，并检查 Lasso 解满足 KKT 条件。运行后回放 9 次多项式在油耗数据上的拟合曲线如何随每一轮坐标下降变化：目标值很快就平了，但非零系数的个数还要很多轮才稳定。"
+      en: "Fill in the ridge closed form, the soft-thresholding operator and the single-coordinate update. The tests check ridge against the SVD shrinkage formula and the lasso solution against the KKT conditions. Then replay how the degree-9 polynomial fit to the fuel data changes sweep by sweep: the objective flattens quickly, but the number of non-zero coefficients takes many more sweeps to settle."
+    metrics:
+      - {key: objective, label: {zh: "Lasso 目标值", en: "Lasso objective"}}
+      - {key: active, label: {zh: "非零系数比例", en: "Share of non-zero coefficients"}}
+  - id: regularization-library
+    kind: library
+    file: regularization_library.py
+    packages: [numpy, scikit-learn, scipy]
+    title: {zh: "用 scikit-learn 画正则化路径并交叉验证选 λ", en: "Regularization paths and cross-validated λ with scikit-learn"}
+    intro:
+      zh: "用管道组装“多项式特征 → 标准化 → Ridge / Lasso”，取出系数路径，再用 LassoCV 做 4 折交叉验证选 alpha（scikit-learn 中的 alpha 就是 Lasso 目标 (1/2n)‖y−Xw‖² + α‖w‖₁ 里的 λ）。回放时 alpha 从大到小，拟合曲线从一条水平线逐渐长出弯曲，下方曲线对比交叉验证误差与训练误差。"
+      en: "Assemble a “polynomial features → scaling → Ridge / Lasso” pipeline, extract the coefficient paths, and pick alpha by 4-fold cross-validation with LassoCV (scikit-learn's alpha is the λ in the lasso objective (1/2n)‖y−Xw‖² + α‖w‖₁). The replay runs alpha from large to small: the fit grows from a flat line into a curve, and the chart compares cross-validation error with training error."
+    metrics:
+      - {key: cv, label: {zh: "4 折交叉验证 MSE", en: "4-fold CV MSE"}}
+      - {key: train, label: {zh: "训练 MSE", en: "Training MSE"}}

@@ -1,0 +1,7 @@
+- **Generative vs discriminative**: a generative model describes $\pi_k\,p(x\mid k)$ and picks the largest posterior via Bayes' rule; a discriminative model describes $P(y\mid x)$ directly.
+- **Estimation is easy**: the joint likelihood splits by class, $\hat\pi_k = n_k/n$, and each class fits its own distribution to its own data (counting and averaging, closed form).
+- **Boundary shapes**: one covariance per class (QDA) ⇒ a conic; a shared covariance (LDA) ⇒ a line, $w = \Sigma^{-1}(\mu_1-\mu_0)$.
+- **The LDA posterior is a sigmoid**: the same model family as logistic regression, estimated with a different strategy (joint vs conditional likelihood).
+- **Naive Bayes**: features are conditionally independent given the class, $p(x\mid k)=\prod_j p(x_j\mid k)$; the parameter count grows linearly in $d$.
+- **Laplace smoothing**: $\tilde\theta_{kj} = (N_{kj}+\alpha)/(N_k+\alpha V)$, the posterior mean under a Dirichlet prior, so one unseen word cannot veto a whole class.
+- **Sample efficiency**: generative models converge fast (about $O(\log d)$ samples), discriminative ones reach a lower asymptotic error (but need $O(d)$ samples); the two learning curves often cross (Ng & Jordan, 2002).

@@ -1,0 +1,7 @@
+- **Perceptron**: model $\mathrm{sign}(w\cdot x+b)$; loss $-\sum_{i\in M}y_i(w\cdot x_i+b)$ (total distance of the misclassified points to the hyperplane); on each mistake $w\leftarrow w+\eta y_ix_i,\ b\leftarrow b+\eta y_i$. The solution is not unique, and it never converges on non-separable data.
+- **Dual form**: $w=\sum_i\alpha_iy_ix_i$, $b=\sum_i\alpha_iy_i$ with $\alpha_i$ = (times point $i$ was used) × $\eta$; it needs only the Gram matrix $x_i\cdot x_j$, paving the way to kernels (Ch. 07).
+- **Novikoff's theorem**: on separable data with margin $\gamma$, the number of updates is at most $(R/\gamma)^2$, whatever $\eta$ is.
+- **Logistic regression**: linear log-odds, $P(Y=1\mid x)=\sigma(w\cdot x+b)$; Bernoulli maximum likelihood = minimum cross-entropy. Gradient $\hat X^\top(p-t)$, Hessian $\hat X^\top S\hat X\succeq0$, so the negative log-likelihood is convex. On separable data the MLE does not exist; regularize.
+- **Newton = IRLS**: each step is a weighted least-squares fit with weights $p_i(1-p_i)$; convergence is quadratic.
+- **Maximum entropy**: the max-ent distribution under feature-expectation constraints is $P_w(y\mid x)\propto e^{w\cdot f(x,y)}$; its dual is maximum likelihood of that model. Linear features give softmax, two classes give logistic regression.
+- **The loss zoo**: all functions of the margin $m=yf(x)$: 0-1, perceptron $\max(0,-m)$, cross-entropy $\log(1+e^{-m})$, hinge $\max(0,1-m)$, exponential $e^{-m}$.

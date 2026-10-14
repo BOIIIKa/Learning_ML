@@ -1,0 +1,217 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import KnnBoundary from "../../components/chapters/ch06/KnnBoundary";
+import KdTreeSearch from "../../components/chapters/ch06/KdTreeSearch";
+import CurseOfDim from "../../components/chapters/ch06/CurseOfDim";
+import SplineFit from "../../components/chapters/ch06/SplineFit";
+
+<Section lang="en" k="scenario">
+
+A food-delivery platform wants to warn customers *before* they order that a delivery might be late. It has past orders on a city map: each point is a delivery address, blue if the order arrived on time, orange if it was late. A new address comes in. What should we say?
+
+The most naive idea is to **look at nearby past orders**: if most of them were late, this one probably will be too. Click anywhere on the map below to drop a new address:
+
+<KnnBoundary client:visible lang="en" />
+
+This “ask the neighbours” rule assumes nothing about whether the boundary is a line or a curve, and the more data it has, the more intricate the shapes it can express. Methods like this are called **non-parametric** (Ch. 01 introduced that axis). Play with it for a minute and four questions come up:
+
+1. **How many neighbours?** With $k=1$ the boundary shatters into jagged pieces; with a huge $k$ it is smeared flat.
+2. **How do we measure “near”?** City streets run on a grid, so the distance a rider covers is closer to L1 than to the straight-line distance.
+3. **What about millions of orders?** Comparing every new address with every past order is far too slow.
+4. **What if we add dozens of features (time slot, weather, floor…)?** Are the neighbours still near?
+
+Besides “will it be late”, the platform also wants to estimate **how many minutes** a delivery takes. Time is clearly not a straight-line function of distance, so can we make linear regression bend? That is the other half of this chapter: **basis expansions**.
+
+</Section>
+
+<Section lang="en" k="method">
+
+### k nearest neighbours: the training set is the model
+
+<Box kind="definition" title="k nearest neighbours (kNN)">
+
+Given a training set $\{(x_i, y_i)\}_{i=1}^n$, a distance $d(\cdot,\cdot)$ and a positive integer $k$, let $N_k(x)$ be the indices of the $k$ training points closest to $x$.
+
+- **Classification**: $\hat f(x) = \arg\max_c \sum_{i\in N_k(x)} \mathbb 1[y_i = c]$ (majority vote).
+- **Regression**: $\hat f(x) = \frac1k\sum_{i\in N_k(x)} y_i$ (local average).
+
+</Box>
+
+Through the lens of the triad (Ch. 01):
+
+- The **model** is local averaging. There are no parameters to train; the training set itself is the model. That is what “non-parametric” means: the model's complexity grows with $n$.
+- The **strategy** minimizes the loss within the neighbourhood: the best constant under 0-1 loss is the majority class there, and under squared loss it is the neighbourhood mean. In other words, kNN estimates the posterior $P(Y\mid X=x)$ by the neighbours' vote shares and then applies the Bayes classifier.
+- The **algorithm** is just “find the neighbours”: brute force costs $O(nd)$ per query, and data structures such as kd-trees speed this up a lot.
+
+kNN has three design choices:
+
+- **The distance.** The usual choice is the $L_p$ distance $\|x - x'\|_p = \big(\sum_j |x_j - x_j'|^p\big)^{1/p}$: $p=1$ is the Manhattan distance, $p=2$ the Euclidean one, and as $p\to\infty$ it becomes $\max_j |x_j - x_j'|$. Their “unit balls” are a diamond, a circle and a square, so the same query finds different neighbours. **Standardize features measured in different units first**, or the feature with the largest numbers takes over the distance.
+- **The value of k.** Small $k$ means low bias and high variance; large $k$ means high bias and low variance (the bias–variance trade-off of Ch. 02). In the widget above, $k = 1$ always has zero training error but the highest test error. In practice $k$ is chosen by cross-validation.
+- **The decision rule.** A plain majority vote, or a vote weighted by distance so that closer neighbours count more.
+
+### kd-trees: finding neighbours fast
+
+On a 2-D map a **kd-tree** is built like this: cut at the median $x$ coordinate to split the points into a left and a right half; cut each half at its median $y$ coordinate; keep alternating until every cell holds a single point. Median cuts keep the tree balanced, with depth about $\log_2 n$, and building it costs $O(n\log n)$.
+
+The nearest-neighbour search is **branch and bound**:
+
+1. Starting at the root, go at each level to the side that contains the query $q$, all the way down, remembering the closest point seen so far and its distance $r$.
+2. Backtrack. At each node, check how far the splitting line is from $q$. If it is **less than** $r$, the circle of radius $r$ around $q$ crosses the line and the other side might hide a closer point, so it must be searched. Otherwise the whole subtree on the other side is **pruned**.
+
+<KdTreeSearch client:visible lang="en" />
+
+In low dimensions a query checks only $O(\log n)$ points on average. As the dimension grows, the circle crosses almost every splitting line, pruning stops working, and the kd-tree degrades into brute force: one concrete face of the curse of dimensionality.
+
+### Basis expansions: making linear models bend
+
+Linear regression only needs the model to be **linear in its parameters**, not in its inputs. Choose functions $h_1(x), \dots, h_p(x)$ and set
+
+$$
+f(x) = \sum_{m=1}^{p} \beta_m h_m(x).
+$$
+
+This is still a linear model in $\beta$. Stack $h_m(x_i)$ into a matrix $H$ and the least-squares solution $\hat\beta = (H^\top H)^{-1}H^\top y$ carries over unchanged (Ch. 03). Common bases:
+
+- **Global polynomials** $1, x, x^2, \dots$: simple, but at high degree they swing wildly at the ends, and every data point affects the whole curve.
+- **Piecewise polynomials**: cut the $x$ axis at knots $\xi_1 < \dots < \xi_K$ and fit a separate low-degree polynomial on each piece.
+- **Splines**: piecewise polynomials that are also required to be smooth at the knots. A cubic spline can be written in the **truncated power basis** $1, x, x^2, x^3, (x-\xi_1)_+^3, \dots, (x-\xi_K)_+^3$, where $(t)_+ = \max(t, 0)$.
+
+<SplineFit client:visible lang="en" />
+
+A **smoothing spline** stops choosing knots. It puts a knot at every data point and controls wiggliness with a penalty instead:
+
+$$
+\min_f\ \sum_{i=1}^n \big(y_i - f(x_i)\big)^2 + \lambda\int f''(t)^2\,dt.
+$$
+
+One can prove that the minimizer is a natural cubic spline. Writing $f = N\beta$ turns the penalty into $\beta^\top\Omega\beta$, which gives a ridge-like closed form, $\hat\beta = (N^\top N + \lambda\Omega)^{-1}N^\top y$. As $\lambda$ goes from 0 to $\infty$, the fit moves from an interpolant through every point to a straight line.
+
+A **generalized additive model (GAM)** carries this idea to many inputs: $f(x) = \alpha + \sum_{j=1}^d f_j(x_j)$, each $f_j$ a one-dimensional spline. Delivery time can be written as “effect of distance + effect of time of day”; each curve can be plotted and explained on its own, and high-dimensional neighbourhoods are avoided altogether. It is fitted by **backfitting** (fit each $f_j$ in turn to the residuals of the others), or by stacking all the basis functions and running a single ridge regression.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### The 1-NN error is at most twice the Bayes error
+
+Take binary classification with $\eta(x) = P(Y=1\mid X=x)$. At a point $x$ the Bayes error is $r^*(x) = \min(\eta, 1-\eta)$ (Ch. 01).
+
+As $n\to\infty$, the nearest neighbour $x'$ of $x$ converges to $x$. If $\eta$ is continuous, the neighbour's label $Y'$ is then approximately independent of $Y$ and follows the same Bernoulli distribution. 1-NN predicts $Y'$ and errs exactly when $Y\ne Y'$:
+
+$$
+P(Y \ne Y') = \eta(1-\eta) + (1-\eta)\eta = 2\eta(1-\eta) = 2r^*(1-r^*).
+$$
+
+Taking the expectation over $x$ and using $\mathbb E[(r^*)^2] \ge (\mathbb E r^*)^2 = (R^*)^2$:
+
+<Box kind="theorem" title="The Cover–Hart bound">
+
+$$
+R^* \;\le\; R_{1\text{NN}} \;=\; \mathbb E\big[2r^*(1-r^*)\big] \;\le\; 2R^*(1-R^*) \;\le\; 2R^*.
+$$
+
+A method without a single parameter is asymptotically at most twice as bad as the best possible classifier. If moreover $k\to\infty$ with $k/n\to 0$, kNN is **consistent**: its error converges to $R^*$ itself.
+
+</Box>
+
+“Asymptotically”, however, assumes that the nearest neighbour really is near. In high dimensions that assumption breaks down.
+
+### Three quantitative faces of the curse of dimensionality
+
+**① Volume lives in the skin.** A $d$-dimensional ball has volume $V_d(r) = C_d r^d$. In the unit ball, the shell within $\varepsilon$ of the surface holds the fraction
+
+$$
+\frac{V_d(1) - V_d(1-\varepsilon)}{V_d(1)} = 1 - (1-\varepsilon)^d \xrightarrow{d\to\infty} 1.
+$$
+
+**② Neighbourhoods stop being local.** With data uniform on $[0,1]^d$, a cube that holds a fraction $p$ of the data needs edge $p^{1/d}$. For $p = 1\%$ and $d = 10$, the edge is $0.63$.
+
+**③ All distances look alike.** Let $X, X'$ be independent and uniform on $[0,1]^d$. Then $\|X - X'\|^2 = \sum_j D_j$ with i.i.d. $D_j = (U_j - V_j)^2$, $\mathbb E D_j = \tfrac16$ and $\mathbb E D_j^2 = \tfrac1{15}$, so $\mathrm{Var}\,D_j = \tfrac{7}{180}$ and
+
+$$
+\frac{\mathrm{sd}\,\|X-X'\|^2}{\mathbb E\,\|X-X'\|^2} = \frac{\sqrt{7d/180}}{d/6} = \sqrt{\frac{7}{5d}} \xrightarrow{d\to\infty} 0.
+$$
+
+The relative spread of distances vanishes like $1/\sqrt d$, so the ratio of the nearest to the farthest distance tends to 1 and “nearest neighbour” loses its meaning:
+
+<CurseOfDim client:visible lang="en" />
+
+<Box kind="insight" title="So what about high-dimensional data?">
+
+Real data rarely fill a high-dimensional space uniformly; they tend to sit near low-dimensional structure (the manifold hypothesis). In practice one often reduces the dimension first (Ch. 12) or learns a good representation (Ch. 14 onwards), and only then looks for neighbours. GAMs take a different route: they only ever smooth in one dimension and use additivity to sidestep high-dimensional neighbourhoods.
+
+</Box>
+
+### Degrees of freedom of a spline
+
+$K$ interior knots cut the $x$ axis into $K+1$ pieces, each a polynomial of degree $M$, for $(K+1)(M+1)$ coefficients. Each knot requires the derivatives of order $0, 1, \dots, M-1$ to be continuous: $M$ constraints per knot, $KM$ in all. Hence
+
+$$
+\text{df} = (K+1)(M+1) - KM = M + 1 + K.
+$$
+
+The truncated power basis has exactly this many functions: $(x-\xi_k)_+^M$ has zero derivatives of order $0$ to $M-1$ at $\xi_k$, so adding it never breaks continuity, yet it lets the $M$-th derivative jump at $\xi_k$. A cubic spline has $K + 4$ degrees of freedom; a **natural** cubic spline also forces linearity beyond the two boundary knots, 4 more constraints, leaving $K$.
+
+### Linear smoothers and effective degrees of freedom
+
+kNN regression and penalized splines are both **linear smoothers**: the fitted values at the training points are a linear function of $y$, $\hat y = S y$.
+
+- kNN: $S_{ij} = \frac1k\,\mathbb 1[j \in N_k(x_i)]$. Every point is its own neighbour, so $S_{ii} = 1/k$ and $\operatorname{tr} S = n/k$.
+- Penalized spline: $S_\lambda = N(N^\top N + \lambda\Omega)^{-1}N^\top$. At $\lambda = 0$, $\operatorname{tr}S_\lambda$ equals the number of basis functions, and it decreases monotonically as $\lambda$ grows.
+
+Defining $\operatorname{tr} S$ as the **effective degrees of freedom** puts “choosing $k$” and “choosing $\lambda$” on the same ruler; it is the “degrees of freedom” shown in both widgets.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: both the distance and k change the answer
+
+<Box kind="example" title="Eight past orders, one new address">
+
+Coordinates are in km and the new address is $q = (4, 4)$. “+” means late, “−” on time.
+
+| Order | Location | Label | L1 | L2 | L∞ |
+|---|---|---|---|---|---|
+| A | (6.2, 4) | + | **2.2** | 2.2 | 2.2 |
+| B | (5.5, 5.5) | − | 3 | **2.121** | **1.5** |
+| C | (4, 1.5) | + | 2.5 | 2.5 | 2.5 |
+| D | (2, 6) | − | 4 | 2.828 | 2 |
+| E | (1, 3) | − | 4 | 3.162 | 3 |
+| F | (7, 1) | + | 6 | 4.243 | 3 |
+| G | (8, 6) | + | 6 | 4.472 | 4 |
+| H | (2.5, 1) | − | 4.5 | 3.354 | 3 |
+
+- $k=1$: under L1 the nearest is A, so predict **late**; under L2 and L∞ it is B, so predict **on time**.
+- $k=3$: L1 picks \{A, C, B\}, late by 2:1; L2 picks \{B, A, C\}, late by 2:1; L∞ picks \{B, D, A\}, **on time** by 2:1.
+
+A lies straight to the right, B on the diagonal. L1 penalizes moving diagonally, while L∞ only looks at the largest coordinate difference, which is why the diagonal point B is the nearest under L∞.
+
+</Box>
+
+<Box kind="example" title="Building and searching a kd-tree on the same points">
+
+Cut on $x$ first: sorting the 8 points by $x$ and taking the 5th (index 4) gives B ($x=5.5$). The left half \{E, D, H, C\} is cut on $y$ at E ($y = 3$), the right half \{F, A, G\} on $y$ at A ($y = 4$). Further down, C ($x=4$, with left child H) and D hang below E, and F and G below A.
+
+Query the new address $q = (7.5, 2)$:
+
+1. Visit B, distance $4.03$; $q_x = 7.5 \ge 5.5$, go right.
+2. Visit A, distance $2.39$, the new best; $q_y = 2 < 4$, go left.
+3. Visit F, distance $\sqrt{0.25 + 1} = 1.12$, the new best, $r = 1.12$.
+4. Back at A: the line $y=4$ is $2 \ge 1.12$ away from $q$, so **prune** G.
+5. Back at B: the line $x = 5.5$ is $2 \ge 1.12$ away, so **prune** the entire left subtree (4 points).
+
+Three distances suffice to establish that F is the nearest neighbour. With $q = (7, 5)$ instead, the line at A is only $1 < r = 1.28$ away, and the search must cross over to check F.
+
+</Box>
+
+Back to the delivery platform: the coding exercises implement kNN from scratch on two moons and choose $k$ by leave-one-out cross-validation; the library exercise fits the time-versus-distance curve with scikit-learn's `SplineTransformer` plus `Ridge`, then applies the same pipeline to two features, distance and time of day, which gives a GAM.
+
+### Extensions
+
+- **Kernel smoothing**: replace “average the $k$ nearest” by “average everyone, weighted by distance”, $\hat f(x) = \sum_i K_h(x, x_i)y_i / \sum_i K_h(x, x_i)$ (Nadaraya–Watson). It is the same “kernel” as in Ch. 07.
+- **Approximate nearest neighbours**: vector databases and retrieval-augmented generation for large language models (RAG, Ch. 27) search for neighbours among hundreds of millions of high-dimensional vectors. Real systems give up exactness and use **approximate** methods such as HNSW graphs, product quantization and locality-sensitive hashing.
+- **Metric learning**: since the distance decides everything, learn it from data so that same-class examples are close and different-class examples far apart.
+- **Compared with decision trees** (Ch. 08): a kd-tree splits space according to where the data are, a decision tree according to label purity. Both carve space into rectangles, but for different purposes.
+
+</Section>

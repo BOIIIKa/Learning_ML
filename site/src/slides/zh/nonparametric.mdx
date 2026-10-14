@@ -1,0 +1,185 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import KnnBoundary from "../../components/chapters/ch06/KnnBoundary";
+import KdTreeSearch from "../../components/chapters/ch06/KdTreeSearch";
+import CurseOfDim from "../../components/chapters/ch06/CurseOfDim";
+import SplineFit from "../../components/chapters/ch06/SplineFit";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 06 章 · 动画课程" title="非参数方法与基函数扩展" say="这一章讲两种让模型变灵活的办法：一种是干脆不设参数，直接问邻居；另一种是给线性模型换一组基函数，让它弯起来。">
+
+kNN · kd 树 · 维数灾难 · 样条与 GAM
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="这单会迟到吗？" say="一家外卖平台有城市地图上的历史订单，蓝色是准时送达，橙色是迟到。新地址来了，想提前判断会不会迟到。">
+
+<Step say="最朴素的办法：看看附近的老订单。周围大多迟到，这单多半也会迟到。">看附近的老订单 →</Step>
+
+<Step say="点一下右图任意位置放一个新地址。虚线连向它的邻居，背景颜色是每个位置的判断。">点击放新地址，虚线 = 邻居</Step>
+
+<Step say="拖动 k 滑块：k 等于一时边界碎成锯齿，k 很大时又被抹平。">拖动 k：锯齿 → 平滑 → 抹平</Step>
+
+<div slot="visual"><KnnBoundary client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" say="玩一会儿就会冒出四个问题，这一章逐个回答。">
+
+<Step say="第一，看几个邻居？">① 看几个邻居？→ **k**</Step>
+
+<Step say="第二，近怎么量？城市街道横平竖直，骑手的路程更像 L1 距离。">② “近”怎么量？→ **距离**</Step>
+
+<Step say="第三，几百万单时，每次都和所有订单比一遍太慢了。">③ 几百万单怎么办？→ **kd 树**</Step>
+
+<Step say="第四，特征一多，邻居还近吗？另外，送达用时和距离的关系是弯的，线性回归能不能也弯起来？">④ 特征一多呢？曲线呢？→ **维数灾难 · 样条**</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="kNN 的三要素" say="用第一章的三要素来看 k 近邻。">
+
+<Step say="模型是局部平均。没有要训练的参数，训练集本身就是模型，复杂度随数据量增长，这就是非参数。">模型：局部平均——训练集就是模型</Step>
+
+<Step say="策略是在邻域内最小化损失：零一损失下取多数类，平方损失下取均值。">策略：邻域内多数表决 / 均值</Step>
+
+<Step say="也就是说，kNN 用邻居的投票比例去近似后验概率，再套用贝叶斯分类器。">≈ 用投票比例估计 $P(Y\mid X=x)$</Step>
+
+<Step say="算法只剩找邻居。暴力搜索每次要 n 乘 d 的时间。">算法：找邻居，暴力 $O(nd)$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="距离与 k" say="kNN 有三个设计选择：距离、k 和决策规则。">
+
+<Step say="切换 L1、L2、L-无穷：包住邻居的形状分别是菱形、圆和正方形，同一个查询点会找到不同的邻居。">L1 菱形 · L2 圆 · L∞ 正方形</Step>
+
+<Step say="特征的量纲不同时一定要先标准化，否则数值大的特征会独占距离。">量纲不同 ⇒ 先标准化</Step>
+
+<Step say="k 小，偏差小、方差大；k 大，偏差大、方差小。看右下角：k 等于一时训练误差为零，测试误差却最高。">小 k：低偏差高方差；大 k：反之</Step>
+
+<Step say="有效参数个数大约是 n 除以 k。k 一般用交叉验证来选。">有效参数 ≈ $n/k$，用交叉验证选 $k$</Step>
+
+<div slot="visual"><KnnBoundary client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="kd 树：逐层切分" say="要让找邻居变快，先把平面切好。">
+
+<Step say="按 x 坐标的中位数切一刀，再对每一半按 y 坐标的中位数切一刀，如此交替。点右边的建树按钮看动画。">交替坐标、中位数切分 → 平衡树，深度 ≈ $\log_2 n$</Step>
+
+<Step say="搜索时先沿查询点所在的一侧一路走到底，得到一个候选最近点和半径 r。">先下到底：候选点 + 半径 $r$</Step>
+
+<Step say="回溯时，如果分割线到查询点的距离不小于 r，圆没有越过分割线，另一侧整棵子树都可以剪掉。">分割线距 $q \ge r$ ⇒ 整棵剪掉</Step>
+
+<Step say="点击左图换一个查询点，回放回溯和剪枝。低维时平均只要检查 log n 个点。">点击放查询点，看回溯与剪枝 →</Step>
+
+<div slot="visual"><KdTreeSearch client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="基函数扩展" say="回到送达用时。它和距离的关系是弯的，线性回归能不能也弯起来？">
+
+<Step say="线性回归只要求对参数线性。把 x 换成一组基函数，模型仍然对 beta 线性，最小二乘照用。">
+
+$$
+f(x) = \sum_{m} \beta_m h_m(x)
+$$
+
+</Step>
+
+<Step say="切到全局多项式，把次数调高：两端开始剧烈摆动。">全局多项式：次数高 ⇒ 两端乱摆</Step>
+
+<Step say="样条在节点处把低次多项式缝起来，三次样条可以用截断幂基表示。">三次样条：$1, x, x^2, x^3, (x-\xi_k)_+^3$</Step>
+
+<Step say="再加上平滑惩罚 lambda，有效自由度会连续地变小。把这个思路推到多个特征上，每个特征一条曲线再相加，就是加性模型 GAM。">平滑惩罚 $\lambda$ · GAM：$\alpha + \sum_j f_j(x_j)$</Step>
+
+<div slot="visual"><SplineFit client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="Cover–Hart：最多两倍" say="一个连参数都没有的方法到底有多好？">
+
+<Step say="设在 x 处属于类一的概率是 eta。样本无穷多时，最近邻的标签和 x 的标签独立同分布。">$n\to\infty$：邻居标签 $Y'$ 与 $Y$ 独立同分布</Step>
+
+<Step say="两者不同的概率是二 eta 乘一减 eta，也就是二倍的贝叶斯误差乘一减贝叶斯误差。">
+
+$$
+P(Y\ne Y') = 2\eta(1-\eta) = 2r^*(1-r^*)
+$$
+
+</Step>
+
+<Step effect="focus" say="对 x 取期望，用一次 Jensen 不等式，就得到 Cover–Hart 界：1-NN 的误差最多是贝叶斯误差的两倍。">
+<p class="big-q sm">$R^* \le R_{1\text{NN}} \le 2R^*(1-R^*) \le 2R^*$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="维数灾难" say="但这个结论有前提：最近邻要真的近。高维空间里，它不近了。">
+
+<Step say="单位球外层厚度为 epsilon 的壳，体积占比是一减一减 epsilon 的 d 次方，随 d 趋于一。">外壳占比 $1-(1-\varepsilon)^d \to 1$</Step>
+
+<Step say="想圈住百分之一的数据，十维里立方体的边长要零点六三。">圈住比例 $p$：边长 $p^{1/d}$（$d=10$ 时 $0.63$）</Step>
+
+<Step say="距离平方的相对波动是根号下五 d 分之七，随 d 趋于零，所有距离都差不多。拖动右边的 d 看看。">相对波动 $\sqrt{7/(5d)} \to 0$ →</Step>
+
+<Step say="所以 kd 树在高维会失效：圆几乎总会越过分割线，剪不掉。">⇒ 最近邻失去意义，kd 树剪枝失效</Step>
+
+<div slot="visual"><CurseOfDim client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="样条的自由度" say="一条样条到底有几个自由参数？">
+
+<Step say="K 个节点把 x 轴分成 K 加一段，每段一个 M 次多项式，有 M 加一个系数。">$(K+1)(M+1)$ 个系数</Step>
+
+<Step say="每个节点要求零到 M 减一阶导数连续，共 M 个约束。">每个节点 $M$ 个约束，共 $KM$ 个</Step>
+
+<Step effect="focus" say="相减得到 M 加一加 K。三次样条是 K 加四，自然三次样条再减四，是 K。">
+<p class="big-q sm">$\text{df} = M + 1 + K$（三次：$K+4$）</p>
+</Step>
+
+<Step say="kNN 和惩罚样条都是线性平滑器，有效自由度都可以用平滑矩阵的迹来量，kNN 是 n 除以 k。">有效自由度 $\operatorname{tr} S$：kNN 为 $n/k$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：距离会改变答案" say="八个老订单，新地址在四、四。">
+
+<Step say="k 等于一：L1 下最近的是正右方的 A，判迟到；L2 和 L-无穷下最近的是斜对角的 B，判准时。">$k=1$：L1 → A（迟到）；L2、L∞ → B（准时）</Step>
+
+<Step say="k 等于三：L1 和 L2 都是二比一判迟到，L-无穷选出 B、D、A，二比一判准时。">$k=3$：L1、L2 → 迟到；L∞ → 准时</Step>
+
+<Step effect="focus" say="L1 惩罚斜着走，L-无穷只看最大的坐标差，所以斜对角的点在 L-无穷下反而最近。">
+<p class="big-q sm">“近”的定义，就是模型的一部分</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：kd 树只算了三个距离" say="在同一批点上建 kd 树，查询七点五、二。">
+
+<Step say="根是 B，向右到 A，再向左到 F，最近距离一点一二。">B → A → F，$r = 1.12$</Step>
+
+<Step say="回溯到 A，分割线 y 等于四离查询点有二，大于一点一二，剪掉 G。">在 A：$2 \ge 1.12$，剪掉 G</Step>
+
+<Step say="回溯到 B，分割线 x 等于五点五也离了二，整个左子树四个点全部剪掉。八个点只算了三个距离。">在 B：$2 \ge 1.12$，剪掉左子树 → 只算 3 / 8</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="拓展" say="这一章的想法在很多地方还会出现。">
+
+<Step say="把前 k 个邻居的平均换成按距离加权的平均，就是核平滑，和第七章的核是同一个核。">核平滑 ↔ 第 07 章的核</Step>
+
+<Step say="向量数据库和大模型的检索增强，都要在上亿个高维向量里找近邻，用的是 HNSW 等近似方法。">近似最近邻：HNSW · 乘积量化 · LSH</Step>
+
+<Step say="既然距离决定一切，还可以从数据中学一个距离，这叫度量学习。">度量学习：从数据里学距离</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现 kNN 并用留一法选 k，再用 scikit-learn 拟合样条和 GAM。">
+
+<Step say="代码题运行后，可以回放 k 从一到六十一时决策边界怎样由碎变平滑。">✎ 4 道推导 · ⌨ 从零实现 kNN · ⚙ 样条 + 岭回归与 GAM</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/nonparametric/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

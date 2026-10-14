@@ -1,0 +1,67 @@
+# 第 01 章 学习问题与三要素 —— 课后练习 / Chapter 01 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: mean
+    title: {zh: "平方损失下的最优常数", en: "The best constant under squared loss"}
+    prompt:
+      zh: "用一个常数 $c$ 预测三个观测 $y_1, y_2, y_3$，最小化 $\\sum_i (y_i - c)^2$。写出最优的 $c$。可用变量：`y1, y2, y3`。"
+      en: "Predict three observations $y_1, y_2, y_3$ with a single constant $c$ by minimizing $\\sum_i (y_i - c)^2$. Write the optimal $c$. Variables: `y1, y2, y3`."
+    answer: "(y1 + y2 + y3)/3"
+    vars: {y1: [-5, 5], y2: [-5, 5], y3: [-5, 5]}
+    solution:
+      zh: "求导：$-2\\sum_i (y_i - c) = 0 \\Rightarrow c = \\frac13\\sum_i y_i$，即样本均值。二阶导 $2n > 0$，确为最小值。若改用绝对值损失，导数变成 $-\\sum_i \\mathrm{sign}(y_i - c)$，令其为零得到的是使两侧点数相等的 $c$——**中位数**。"
+      en: "Differentiate: $-2\\sum_i (y_i - c) = 0 \\Rightarrow c = \\frac13\\sum_i y_i$, the sample mean. The second derivative $2n > 0$ confirms a minimum. With absolute loss the derivative becomes $-\\sum_i \\mathrm{sign}(y_i - c)$, which vanishes where equally many points lie on each side: the **median**."
+
+  - id: bias-var
+    title: {zh: "期望平方损失的分解", en: "Decomposing the expected squared loss"}
+    prompt:
+      zh: "随机变量 $Y$ 的均值为 $\\mu$、标准差为 $s$。用常数 $c$ 预测它，写出期望损失 $\\mathbb E[(Y - c)^2]$。可用变量：`mu, s, c`。"
+      en: "A random variable $Y$ has mean $\\mu$ and standard deviation $s$. Predicting it with a constant $c$, write the expected loss $\\mathbb E[(Y - c)^2]$. Variables: `mu, s, c`."
+    answer: "s^2 + (mu - c)^2"
+    vars: {mu: [-3, 3], s: [0.2, 2], c: [-3, 3]}
+    solution:
+      zh: "$\\mathbb E[(Y-c)^2] = \\mathbb E[(Y-\\mu + \\mu - c)^2] = \\mathbb E[(Y-\\mu)^2] + 2(\\mu-c)\\mathbb E[Y-\\mu] + (\\mu-c)^2 = s^2 + (\\mu - c)^2$，因为交叉项期望为 0。第一项是**不可约噪声**，与 $c$ 无关；第二项在 $c = \\mu$ 时为 0。把它应用到每个 $x$ 上的条件分布，就得到平方损失下的贝叶斯最优预测 $f^*(x) = \\mathbb E[Y\\mid X = x]$。"
+      en: "$\\mathbb E[(Y-c)^2] = \\mathbb E[(Y-\\mu + \\mu - c)^2] = \\mathbb E[(Y-\\mu)^2] + 2(\\mu-c)\\mathbb E[Y-\\mu] + (\\mu-c)^2 = s^2 + (\\mu - c)^2$, since the cross term has zero mean. The first term is **irreducible noise**, independent of $c$; the second vanishes at $c = \\mu$. Applying this to the conditional distribution at each $x$ gives the Bayes-optimal predictor under squared loss, $f^*(x) = \\mathbb E[Y\\mid X = x]$."
+
+  - id: exp-abs
+    title: {zh: "指数分布的期望绝对损失", en: "Expected absolute loss for an exponential"}
+    prompt:
+      zh: "$Y \\sim \\mathrm{Exp}(1)$，用常数 $c \\ge 0$ 预测。写出 $\\mathbb E|Y - c|$。提示：$|Y-c| = (Y - c) + 2(c - Y)^+$。可用变量：`c`。"
+      en: "$Y \\sim \\mathrm{Exp}(1)$, predicted with a constant $c \\ge 0$. Write $\\mathbb E|Y - c|$. Hint: $|Y-c| = (Y - c) + 2(c - Y)^+$. Variable: `c`."
+    answer: "c - 1 + 2*exp(-c)"
+    vars: {c: [0, 3]}
+    solution:
+      zh: "$\\mathbb E(Y - c) = 1 - c$；$\\mathbb E(c-Y)^+ = \\int_0^c (c - y)e^{-y}dy = c - 1 + e^{-c}$。合起来 $\\mathbb E|Y-c| = 1 - c + 2(c - 1 + e^{-c}) = c - 1 + 2e^{-c}$。求导令为零：$1 - 2e^{-c} = 0 \\Rightarrow c = \\ln 2$，正是指数分布的中位数。这就是“期望风险 vs 经验风险”组件里那条紫色曲线。"
+      en: "$\\mathbb E(Y - c) = 1 - c$ and $\\mathbb E(c-Y)^+ = \\int_0^c (c - y)e^{-y}dy = c - 1 + e^{-c}$, so $\\mathbb E|Y-c| = 1 - c + 2(c - 1 + e^{-c}) = c - 1 + 2e^{-c}$. Setting the derivative to zero, $1 - 2e^{-c} = 0 \\Rightarrow c = \\ln 2$, exactly the exponential's median. This is the purple curve in the “empirical vs expected risk” widget."
+
+  - id: bayes-threshold
+    title: {zh: "两个高斯类的贝叶斯阈值", en: "The Bayes threshold for two Gaussian classes"}
+    prompt:
+      zh: "类 0 服从 $\\mathcal N(m_0, s^2)$、先验 $p$；类 1 服从 $\\mathcal N(m_1, s^2)$、先验 $1-p$（$m_1 > m_0$）。0-1 损失下，$x$ 超过多少时判为类 1？可用变量：`m0, m1, s, p`。"
+      en: "Class 0 is $\\mathcal N(m_0, s^2)$ with prior $p$; class 1 is $\\mathcal N(m_1, s^2)$ with prior $1-p$ ($m_1 > m_0$). Under 0-1 loss, above which $x$ do we predict class 1? Variables: `m0, m1, s, p`."
+    answer: "(m0 + m1)/2 + s^2*log(p/(1 - p))/(m1 - m0)"
+    vars: {m0: [-2, 0], m1: [1, 3], s: [0.5, 2], p: [0.2, 0.8]}
+    solution:
+      zh: "0-1 损失下，贝叶斯分类器选后验最大的类：判 1 当且仅当 $(1-p)\\,\\phi\\big(\\tfrac{x-m_1}{s}\\big) > p\\,\\phi\\big(\\tfrac{x-m_0}{s}\\big)$。取对数：$\\frac{(x-m_0)^2 - (x-m_1)^2}{2s^2} > \\ln\\frac{p}{1-p}$。左边化简为 $\\frac{(m_1-m_0)(2x - m_0 - m_1)}{2s^2}$，解得 $x > \\frac{m_0+m_1}{2} + \\frac{s^2\\ln\\frac{p}{1-p}}{m_1 - m_0}$。先验越偏向类 0，阈值越往右移。"
+      en: "Under 0-1 loss the Bayes classifier picks the class with the larger posterior: predict 1 iff $(1-p)\\,\\phi\\big(\\tfrac{x-m_1}{s}\\big) > p\\,\\phi\\big(\\tfrac{x-m_0}{s}\\big)$. Taking logs, $\\frac{(x-m_0)^2 - (x-m_1)^2}{2s^2} > \\ln\\frac{p}{1-p}$, and the left side simplifies to $\\frac{(m_1-m_0)(2x - m_0 - m_1)}{2s^2}$. So $x > \\frac{m_0+m_1}{2} + \\frac{s^2\\ln\\frac{p}{1-p}}{m_1 - m_0}$: the more the prior favours class 0, the further right the threshold moves."
+
+code:
+  - id: erm
+    kind: implement
+    file: erm.py
+    packages: [numpy]
+    title: {zh: "从零实现经验风险最小化", en: "Empirical risk minimization from scratch"}
+    intro:
+      zh: "分别写出模型（设计矩阵已给出）、策略（两种经验风险）和算法（梯度与下降一步）。运行后与最小二乘闭式解对拍，并回放直线如何被梯度下降一步步“拉”到位。"
+      en: "Write the strategy (two empirical risks) and the algorithm (the gradient and one descent step); the model's design matrix is given. Then check against the least-squares closed form and replay the line being pulled into place by gradient descent."
+    metrics:
+      - {key: risk, label: {zh: "平方经验风险", en: "Squared empirical risk"}}
+  - id: robust-library
+    kind: library
+    file: robust_library.py
+    packages: [numpy, scikit-learn, scipy]
+    title: {zh: "同一模型，三种策略：OLS、Huber 与中位数回归", en: "One model, three strategies: OLS, Huber and median regression"}
+    intro:
+      zh: "用 scikit-learn 拟合三种线性回归，验证稳健损失（Huber、绝对值）受缺考学生的影响更小。回放中可以逐一切换三条直线。"
+      en: "Fit three linear regressions with scikit-learn and confirm that the robust losses (Huber, absolute) are less affected by the absent students. The replay steps through the three lines."
