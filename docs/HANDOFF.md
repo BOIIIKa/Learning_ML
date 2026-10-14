@@ -5,7 +5,7 @@
 
 ## 1. 现状一句话
 
-**完成 10/30 章（00–09）**。第 05、06、09 章在 PR BOIIIKa/Learning_ML#6 中，等待用户同意合并；其余已合并到 `main` 并部署到 https://boiiika.github.io/Learning_ML/。用户要求：流程已熟悉，**减少验证次数，先快速填充未完成章节**（每章只做一次：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk）。
+**完成 11/30 章（00–10）**。第 05、06、09、10 章在 PR BOIIIKa/Learning_ML#6 中，等待用户同意合并；其余已合并到 `main` 并部署到 https://boiiika.github.io/Learning_ML/。用户要求：流程已熟悉，**减少验证次数，先快速填充未完成章节**（每章只做一次：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk）。
 
 - 竖版讲义：工程蓝图风格。
 - 横版动画课程：3Blue1Brown / manim 风格，自动播放。
@@ -34,12 +34,12 @@
 - 章节顺序由我决定。**只有用户明确同意时才合并 PR**；用户会把网站链接发给学生测试。
 - 工作分支：`claude/charming-knuth-ti0cof`。每次 PR 合并后，从 `main` 重新开这个分支，再开新的 PR（草稿）。
 
-## 3. 下一步：第 10 章（聚类）
+## 3. 下一步：第 11 章（EM 与混合模型）
 
-第 09 章已完成（Trellis、BaumWelchFit、HmmVsCrf；引擎 `engines/structured-prediction.ts`，含前向、维特比、Baum–Welch、CRF 的 log Z）。下一章按 `curriculum/outline.yaml` 的顺序继续，流程不变：
+第 09、10 章已完成（引擎 `engines/structured-prediction.ts`、`engines/clustering.ts`：k 均值、k-means++、层次聚类、轮廓系数；第 11 章可复用 `subgroups` 数据与 k 均值作对照）。下一章按 `curriculum/outline.yaml` 的顺序继续，流程不变：
 
 ```bash
-python3 scripts/new_chapter.py 10 --widget <ScenarioWidget>
+python3 scripts/new_chapter.py 11 --widget <ScenarioWidget>
 ```
 
 可复用的引擎：`linear-classification.ts`（screening 数据、牛顿法）、`generative-classifiers.ts`（高斯采样 `sampleClasses`、`fitGda`）、`nonparametric.ts`（距离、kNN）、`generalization.ts`（学生数据 `sample`、`polyFit`）。
@@ -79,7 +79,7 @@ node scripts/verify/pages.mjs <slug>
 ## 6. 压缩上下文用的关键词 / Context-compression keywords
 
 Learning_ML · BOIIIKa/Learning_ML · boiiika.github.io/Learning_ML · 看得见的机器学习 / Visible ML · ISL + UDL(Prince) + 李航 · 重写不复制 · 中英双语 · 非商用 CC BY-NC-SA + MIT ·
-10/30 章完成（00–09）· 下一步 10 聚类 → 11 EM → 12 矩阵分解 → 13 马尔可夫链 ·
+11/30 章完成（00–10）· 下一步 11 EM → 12 矩阵分解 → 13 马尔可夫链 ·
 竖版讲义 = 蓝图风格（不改）· 横版动画课程 = 3B1B / manim 自动播放 · 六段结构（情景 / 方法 / 数学 / 例题拓展 / 课后训练 / 实战手册）+ 一页纸 recap ·
 Astro 7 + React 19 + MDX + KaTeX 0.16.47 + Pyodide 0.29.3 · src/manim（Clock、Write、Morph、Indicate、Circumscribe、createSvg）· drive DSL（s1=11/4、s1=80%、click:chip2、wait:1）· Step effect（write / fade / pop / focus / morph）· `<Morph>` 推导变形 ·
 练习：推导题（mathjs 数值比对）+ implement / library（@blank、双击 Tab 填答案、Trace 回放 classifier2d、field=f(x)−y）·

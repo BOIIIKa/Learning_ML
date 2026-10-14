@@ -1,0 +1,149 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import KMeansSteps from "../../components/chapters/ch10/KMeansSteps";
+import Dendrogram from "../../components/chapters/ch10/Dendrogram";
+import ChooseK from "../../components/chapters/ch10/ChooseK";
+
+<Section lang="en" k="scenario">
+
+The hospital suspects that a disease actually comes in several subtypes that need different treatments, but nobody knows who has which subtype: **there are no labels**. All we have are each patient's markers. Can the data split itself into groups?
+
+<KMeansSteps client:visible lang="en" />
+
+That is **clustering**, the archetypal unsupervised learning problem. This chapter answers:
+
+1. What does k-means optimize? Why is it guaranteed to stop, yet may stop in a bad place?
+2. What if we don't want to fix the number of clusters in advance? (Hierarchical clustering.)
+3. Without labels, how do we choose k and judge a clustering?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### k-means
+
+<Box kind="definition" title="k-means">
+
+**Model**: $K$ centres $\mu_1, \dots, \mu_K$ and a partition $c(i) \in \{1, \dots, K\}$.
+
+**Strategy**: minimize the within-cluster sum of squares (WCSS)
+
+$$
+J(c, \mu) = \sum_{i=1}^n \|x_i - \mu_{c(i)}\|^2.
+$$
+
+**Algorithm (Lloyd)**: alternate two steps until nothing changes:
+
+- **Assign**: with the centres fixed, $c(i) \leftarrow \arg\min_k \|x_i - \mu_k\|^2$;
+- **Update**: with the partition fixed, $\mu_k \leftarrow$ the mean of cluster $k$.
+
+</Box>
+
+This is **coordinate descent** on $(c, \mu)$: each step is optimal with the other block fixed, so $J$ never increases, and since there are finitely many partitions the algorithm stops after finitely many steps. But $J$ is not convex and finding its global minimum is NP-hard; Lloyd only guarantees a local optimum, which depends on the starting centres.
+
+**k-means++** eases this with a smarter start. The first centre is chosen uniformly at random; each further centre is drawn from the data with weight $D(x)^2$, where $D(x)$ is the distance from $x$ to the nearest centre chosen so far (derivation exercise 3). Points far from existing centres are more likely, so the centres spread out. In practice it is combined with several restarts (`n_init` in scikit-learn), keeping the best.
+
+**Caveat**: k-means implicitly assumes round clusters of similar size (Euclidean distance, centres only). Elongated, very unequal or non-convex clusters defeat it, and standardizing the features changes the result.
+
+### Hierarchical clustering
+
+To avoid fixing $K$, build a whole tree. **Agglomerative** clustering starts with one cluster per point and repeatedly merges the two closest clusters until one remains; recording the distance of every merge gives a **dendrogram**. A horizontal cut at some height yields the clusters at that granularity.
+
+<Dendrogram client:visible lang="en" />
+
+The distance between clusters (the **linkage**) shapes the tree:
+
+- **Single linkage**: the closest pair of points. It can find elongated clusters but tends to chain distant points in one by one.
+- **Complete linkage**: the farthest pair. Clusters are more compact, with more even diameters.
+- **Average linkage**: the mean over all pairs, in between.
+- **Ward**: the increase in within-cluster sum of squares caused by the merge, consistent with the k-means objective and the most common choice in practice.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Lloyd's algorithm never goes uphill
+
+**Update step.** With the partition fixed, $J$ splits over the centres: $\sum_{i \in C_k}\|x_i - \mu\|^2$. For any $\mu$,
+
+$$
+\sum_{i \in C_k}\|x_i - \mu\|^2 = \sum_{i \in C_k}\|x_i - \bar x_k\|^2 + n_k\|\bar x_k - \mu\|^2,
+$$
+
+where $\bar x_k$ is the cluster mean (the cross term $2\sum_i (x_i - \bar x_k)^\top(\bar x_k - \mu)$ vanishes). The second term is non-negative, so $\mu = \bar x_k$ is the unique optimum, and replacing the old centre by the mean lowers the cost by at least $n_k\|\bar x_k - \mu_k^{\text{old}}\|^2$ (derivation exercise 2).
+
+**Assignment step.** With the centres fixed, $J$ is a sum over points, and moving each point to its nearest centre can only shrink or keep its own term.
+
+Neither step increases $J$, and there are only $K^n$ partitions, so the algorithm converges in finitely many steps.
+
+<Box kind="theorem" title="The k-means++ guarantee (Arthur and Vassilvitskii, 2007)">
+
+Choosing the initial centres by $D^2$ sampling (even without running a single Lloyd step afterwards) gives an expected objective
+
+$$
+\mathbb E[J] \le 8(\ln K + 2)\,J^*,
+$$
+
+where $J^*$ is the optimum. Uniform random seeding has no such guarantee: one can build examples where its expected error is arbitrarily bad.
+
+</Box>
+
+### The link with Gaussian mixtures
+
+Treat each cluster as a spherical Gaussian $\mathcal N(\mu_k, \sigma^2 I)$ with equal weights. The posterior "responsibility" of cluster $k$ for $x_i$ is then
+
+$$
+r_{ik} = \frac{\exp(-\|x_i - \mu_k\|^2/2\sigma^2)}{\sum_j \exp(-\|x_i - \mu_j\|^2/2\sigma^2)}.
+$$
+
+As $\sigma \to 0$ it becomes 0 or 1: the nearest centre takes all the responsibility, which is exactly the k-means assignment step. So **k-means is the hard-assignment limit of EM for a Gaussian mixture**; Chapter 11 starts from here.
+
+### Choosing k and judging a clustering
+
+- **Elbow method**: $J^*(K)$ falls with every $K$ (to 0 at $K = n$); look for the elbow where the decrease suddenly slows.
+- **Silhouette**: for each point, $a$ is its mean distance to the rest of its cluster and $b$ its mean distance to the nearest other cluster; $s = (b - a)/\max(a, b) \in [-1, 1]$ (derivation exercise 4). Average over points; larger is better.
+- **Gap statistic**: compare $\log J^*(K)$ with its value on a structureless reference distribution.
+- **With external labels** (say, diagnoses learned later): the adjusted Rand index (ARI) and normalized mutual information (NMI).
+
+<ChooseK client:visible lang="en" />
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example 1: a bad start
+
+<Box kind="example" title="Six patients, one marker">
+
+Marker values $1, 2, 4, 7, 8, 12$, $K = 2$, with the starting centres deliberately set to $1$ and $2$ (crowded on one side).
+
+| Round | Assignment | New centres | $J$ (after update) |
+|---|---|---|---|
+| Start | $\{1\}, \{2, 4, 7, 8, 12\}$ | $1,\ 2$ | $165$ |
+| 1 | $\{1\}, \{2, 4, 7, 8, 12\}$ | $1,\ 6.6$ | $59.2$ |
+| 2 | $\{1, 2\}, \{4, 7, 8, 12\}$ | $1.5,\ 7.75$ | $33.25$ |
+| 3 | $\{1, 2, 4\}, \{7, 8, 12\}$ | $7/3,\ 9$ | $56/3 \approx 18.67$ |
+
+In round 4 the assignment no longer changes and the algorithm stops. The assignment steps in between lower $J$ as well: $59.2 \to 39.04$ and $33.25 \to 25.4375$. After three rounds the bad start has reached the best partition of these data; on two-dimensional data with several clusters a bad start may never recover (try a few random seeds in the widget).
+
+</Box>
+
+### Worked example 2: two linkages, two trees
+
+<Box kind="example" title="Five points: 1, 2, 4, 7, 11">
+
+- **Single linkage** merges at heights $1, 2, 3, 4$: $\{1,2\}$, then $4$, then $7$, then $11$, each time hanging one more point on the same chain.
+- **Complete linkage** merges at heights $1, 3, 6, 10$: $\{1,2\}$, $\{4,7\}$, $\{1,2,4,7\}$, and finally $11$.
+
+Cutting at height 4: single linkage already has a single cluster; complete linkage gives three clusters $\{1, 2\}, \{4, 7\}, \{11\}$.
+
+</Box>
+
+### Extensions
+
+- **DBSCAN** clusters by density: a cluster is a connected region that is dense enough. It finds clusters of any shape, labels points in sparse regions as noise, and needs no $K$.
+- **Spectral clustering** takes the eigenvectors of the smallest eigenvalues of a similarity graph's Laplacian as new coordinates, then runs k-means; it can separate interleaving half-moons (the matrix-factorization view of Chapter 12).
+- **Gaussian mixtures** give soft assignments and elliptical clusters, and choose $K$ by BIC: Chapter 11.
+- **Representation learning and clustering**: methods such as contrastive learning first learn a good embedding and then cluster in it, the mainstream way to group images and text without labels today.
+
+</Section>

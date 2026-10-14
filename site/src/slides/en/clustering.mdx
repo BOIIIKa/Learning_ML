@@ -1,0 +1,128 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import KMeansSteps from "../../components/chapters/ch10/KMeansSteps";
+import Dendrogram from "../../components/chapters/ch10/Dendrogram";
+import ChooseK from "../../components/chapters/ch10/ChooseK";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 10 · Animated course" title="Clustering" say="No labels at all: let the data split itself into groups.">
+
+k-means · Hierarchical clustering · How many clusters
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Patient subtypes without labels" say="The hospital suspects a disease has several subtypes, but nobody knows who has which.">
+
+<Step drive="click:chip2; s1=0/0.6; s1=100%/5" say="k-means alternates two steps: assign every patient to the nearest centre, then move each centre to its cluster's mean. The objective curve keeps falling.">Assign → update, the objective keeps falling</Step>
+
+<Step drive="click:chip1; click:btn1; s1=0/0.6; s1=100%/4" say="With random seeding, try a few seeds: sometimes two centres crowd into one group and the algorithm stops at a worse local optimum.">Random seeding: may get stuck</Step>
+
+<Step drive="click:chip2; s1=100%/3" say="k-means++ makes points far from the existing centres more likely to be picked, so the centres start spread out.">k-means++: seed by $D(x)^2$ sampling</Step>
+
+<div slot="visual"><KMeansSteps client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions for this chapter" say="Three questions.">
+
+<Step effect="focus" say="What does k-means optimize? Why must it stop, and why can it stop in a bad place?">
+<p class="big-q sm">What does it optimize, and why can it stop badly?</p>
+</Step>
+
+<Step say="What if we don't want to fix the number of clusters in advance?">What if we don't fix $K$?</Step>
+
+<Step say="Without labels, how do we choose k and judge the result?">Without labels, how do we judge?</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="k-means" say="Model, strategy, algorithm.">
+
+<Step say="Model: K centres and a partition.">**Model**: centres $\mu_1, \dots, \mu_K$ + a partition $c(i)$</Step>
+
+<Step say="Strategy: the smallest within-cluster sum of squares.">**Strategy**: $J = \sum_i \|x_i - \mu_{c(i)}\|^2$</Step>
+
+<Step say="Algorithm: assign with the centres fixed, update with the assignment fixed, in turn. That is coordinate descent.">**Algorithm**: Lloyd's alternating minimization = coordinate descent</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Why the update takes the mean" say="Fix one cluster and see how its sum of squares depends on the centre.">
+
+<Morph>
+
+<Step effect="morph" say="One cluster's sum of squares.">
+
+$$
+\sum_{i} \|x_i - \mu\|^2
+$$
+
+</Step>
+
+<Step effect="morph" say="Insert the cluster mean, x bar.">
+
+$$
+\sum_{i} \|x_i - \bar x + \bar x - \mu\|^2
+$$
+
+</Step>
+
+<Step effect="morph" say="The cross terms sum to zero, leaving two parts.">
+
+$$
+\sum_{i} \|x_i - \bar x\|^2 + n\|\bar x - \mu\|^2
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="The second part is non-negative, so the mean is the best centre; the assignment is best for every point too. Neither step raises the objective, partitions are finite, so the algorithm must stop.">Neither step raises $J$ + finitely many partitions ⇒ stops (at a local optimum)</Step>
+
+<Step effect="focus" say="But the objective is not convex: only a local optimum is guaranteed, and the start matters.">
+<p class="big-q sm">Only a local optimum</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Hierarchical clustering: one tree" say="To avoid fixing K, build a whole tree.">
+
+<Step drive="click:chip2; s1=0.9/1.5; s1=0.15/4" say="Start with one cluster per patient and merge the two closest each time. Drag the cut line: merges below it stay, and the number of clusters changes.">Cut height → any granularity</Step>
+
+<Step drive="click:chip1; s1=0.45/2" say="Single linkage looks at the closest pair and easily chains points together.">Single: closest pair, chains</Step>
+
+<Step drive="click:chip2" say="Complete linkage looks at the farthest pair and gives compact clusters. Ward looks at the increase in the sum of squares and is the most common.">Complete: farthest pair, compact · Ward is the default</Step>
+
+<div slot="visual"><Dendrogram client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="How many clusters?" say="Without labels, how do we choose k?">
+
+<Step drive="s1=1/0.6; s1=8/4" say="The within-cluster sum of squares falls with every k, down to zero at k equals n, so we look for an elbow.">Sum of squares always falls: find the "elbow"</Step>
+
+<Step drive="s1=3/2" say="The silhouette compares the mean distance to one's own cluster with that to the nearest other cluster; it peaks at k equals three.">Silhouette $s = (b-a)/\max(a,b)$: peaks at $k = 3$</Step>
+
+<Step say="For equal-variance Gaussians, as the variance goes to zero soft assignments become hard: k-means is the limit of EM for a Gaussian mixture, next chapter.">k-means = hard-assignment limit of GMM-EM (Chapter 11)</Step>
+
+<div slot="visual"><ChooseK client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked example: a bad start" say="One marker with values 1, 2, 4, 7, 8, 12; the two centres deliberately start at 1 and 2.">
+
+<Step say="The objective starts at 165 and falls to 59.2, then 33.25.">$J$: $165 \to 59.2 \to 39.04 \to 33.25 \to \dots$</Step>
+
+<Step say="After three rounds it stops at clusters 1, 2, 4 and 7, 8, 12, with centres seven thirds and nine, objective fifty-six thirds.">End: $\{1,2,4\}, \{7,8,12\}$, centres $7/3, 9$, $J = 56/3$</Step>
+
+<Step say="Another example: 1, 2, 4, 7, 11. Single linkage merges at heights 1, 2, 3, 4; complete linkage at 1, 3, 6, 10.">Single $1,2,3,4$ · complete $1,3,6,10$</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, k-means and k-means++ from scratch, then clustering the wine data with scikit-learn.">
+
+<Step say="After running your code you can replay two centres leaving a bad start while the boundary slides into place.">✎ 4 derivations · ⌨ k-means + k-means++ · ⚙ silhouettes + four linkages</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/clustering/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

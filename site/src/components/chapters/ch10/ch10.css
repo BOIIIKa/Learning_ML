@@ -1,0 +1,21 @@
+/* Chapter 10 widgets. Colours only from the theme variables. */
+.km-svg { margin-top: 0.4rem; }
+.km-pt { stroke: var(--bg); stroke-width: 1; }
+.c0 { fill: var(--accent-2); stroke: var(--accent-2); }
+.c1 { fill: var(--class-pos); stroke: var(--class-pos); }
+.c2 { fill: var(--accent); stroke: var(--accent); }
+.c3 { fill: var(--success); stroke: var(--success); }
+.c4 { fill: var(--accent-3); stroke: var(--accent-3); }
+.c5 { fill: var(--text-muted); stroke: var(--text-muted); }
+.km-pt.c0, .km-pt.c1, .km-pt.c2, .km-pt.c3, .km-pt.c4, .km-pt.c5 { stroke: var(--bg); }
+.km-trail { fill: none; stroke: var(--ink); stroke-width: 1; opacity: 0.5; }
+.km-c path { stroke-width: 3.5; fill: none; }
+.km-c.c0 path { stroke: var(--accent-2); } .km-c.c1 path { stroke: var(--class-pos); } .km-c.c2 path { stroke: var(--accent); }
+.km-c.c3 path { stroke: var(--success); } .km-c.c4 path { stroke: var(--accent-3); } .km-c.c5 path { stroke: var(--text-muted); }
+.km-c { filter: drop-shadow(0 0 2px var(--bg)); }
+.dg-row, .ck-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; margin: 0.4rem 0; }
+.dg-link { fill: none; stroke: var(--text-muted); stroke-width: 1.2; opacity: 0.6; }
+.dg-link.in { stroke: var(--ink); opacity: 1; stroke-width: 1.6; }
+.dg-cut { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
+.ck-cap { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 0.2rem 0.3rem; }
+@media (max-width: 560px) { .dg-row, .ck-row { grid-template-columns: minmax(0, 1fr); } }

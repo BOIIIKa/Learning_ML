@@ -1,0 +1,34 @@
+---
+title: "聚类实战：k 均值、层次聚类与评价"
+summary: "缩放、多次初始化、选 k、该换哪种算法，以及怎样避免把噪声当成结构。"
+chapters: ["10"]
+---
+
+### 常用代码
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+from sklearn.metrics import silhouette_score, adjusted_rand_score
+
+km = make_pipeline(StandardScaler(), KMeans(n_clusters=3, n_init=10, random_state=0)).fit(X)
+labels = km[-1].labels_
+print(silhouette_score(km[0].transform(X), labels))
+hc = AgglomerativeClustering(n_clusters=3, linkage="ward").fit_predict(StandardScaler().fit_transform(X))
+```
+
+### 容易踩的坑
+
+- **先缩放**：单位最大的特征决定一切。葡萄酒数据上，标准化前后 k 均值与真实品种的 ARI 能相差 0.5 以上。
+- **多次初始化**：`n_init` 至少 10；只跑一次可能停在两个中心挤在一起的局部最优。
+- **k 均值的形状假设**：只适合大小相近、近似球形的簇。拉长的簇先做白化或用 GMM；非凸、有噪声的用 DBSCAN 或谱聚类。
+- **大数据**：`MiniBatchKMeans` 快一个数量级；层次聚类是 $O(n^2)$ 内存，几万个点以上要小心。
+- **聚类总会给出答案**：均匀随机的数据也能分成 k 簇。用轮廓系数、稳定性（自助法重复聚类看结果是否一致）和领域知识检验簇是不是真的存在。
+
+### 前沿阅读
+
+- Arthur 与 Vassilvitskii（2007）：k-means++，带理论保证的初始化。
+- Ester 等（1996）：DBSCAN，基于密度的聚类。
+- von Luxburg（2007）：谱聚类教程。
+- Caron 等（2018）：DeepCluster，用聚类伪标签训练视觉表示。
