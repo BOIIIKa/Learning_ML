@@ -28,10 +28,11 @@
 | 03 线性回归与正则化 | ✓ | ✓ | ✓ | 4 | 4 + 2 | 线性模型 |
 | 04 线性分类：感知机、逻辑回归与最大熵 | ✓ | ✓ | ✓ | 4 | 4 + 2 | 逻辑回归 |
 | 05 生成式分类：朴素贝叶斯与判别分析 | ✓ | ✓ | ✓ | 3 | 4 + 2 | 生成式分类 |
+| 06 非参数方法与基函数扩展 | ✓ | ✓ | ✓ | 4 | 4 + 2 | 非参数方法 |
 | 07 支持向量机与核方法 | ✓ | ✓ | ✓ | 5 | 4 + 2 | SVM |
 | 08 决策树与集成学习 | ✓ | ✓ | ✓ | 5 | 4 + 2 | LightGBM |
 
-合计：30 章中完成 8 章，共有 34 个交互组件、334 拍动画（每种语言）、32 道推导题、16 道代码题。测试有 99 项前端单元测试，以及 48 项练习测试（参考答案全部通过，骨架全部不通过）。
+合计：30 章中完成 9 章（第一、二部分全部完成），共有 38 个交互组件、380 拍动画（每种语言）、36 道推导题、18 道代码题。测试有 112 项前端单元测试，以及 54 项练习测试（参考答案全部通过，骨架全部不通过）。
 
 ## 3. 架构一览
 
@@ -80,7 +81,6 @@ site/ (Astro 7 + React 19 + MDX)
 
 ## 5. 后续路线
 
-1. **第 06 章**，补齐经典监督学习部分：非参数方法（kNN、核密度、样条与 GAM）。可以沿用医院初筛和老师的情景。
 2. **第三部分，第 09–13 章**：结构化预测、聚类、EM、矩阵分解、马尔可夫链。第 11 章 EM 的 ELBO 要为第 24 章 VAE 和第 25 章扩散模型埋下伏笔。
 3. **第四、五部分，第 14–21 章**：深度学习。这部分需要一个小型的浏览器内自动微分引擎（放在 `engines/` 里），用于反向传播和优化器的可视化。
 4. **第六至九部分，第 22–29 章**：生成模型、强化学习、大模型综述、实验方法、负责任的机器学习。前沿阅读要每学期更新一次。
@@ -100,12 +100,11 @@ review) and a 3Blue1Brown-style **animated course** that plays itself: manim-lik
 TransformMatchingTex animations, narration subtitles (optionally spoken), and drive scripts that
 operate the interactive figures.
 
-Eight of 30 chapters are done: 00–05, 07 and 08. They contain 34 widgets, 334 animated beats per
-language, 32 derivation drills and 16 in-browser Python exercises, tested by 99 unit tests and 48
-exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
+Nine of 30 chapters are done: 00–08, all of Parts I and II. They contain 38 widgets, 380 animated
+beats per language, 36 derivation drills and 18 in-browser Python exercises, tested by 112 unit tests
+and 54 exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
 `.claude/skills/*` and `templates/chapter/`, and scaffolded by `scripts/new_chapter.py`.
 
 Next steps:
-- Chapter 06 completes Part II.
 - Parts III–IX follow the order in `curriculum/outline.yaml`.
 - Deep learning (chapters 14–21) needs a small in-browser autodiff engine first.

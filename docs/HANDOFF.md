@@ -5,7 +5,7 @@
 
 ## 1. 现状一句话
 
-**完成 8/30 章（00–05、07、08）**。第 05 章起在新的草稿 PR 中，等待用户同意合并；其余已合并到 `main` 并部署到 https://boiiika.github.io/Learning_ML/。用户要求：流程已熟悉，**减少验证次数，先快速填充未完成章节**（每章只做一次：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk）。
+**完成 9/30 章（00–08，第一、二部分全部完成）**。第 05、06 章在草稿 PR BOIIIKa/Learning_ML#6 中，等待用户同意合并；其余已合并到 `main` 并部署到 https://boiiika.github.io/Learning_ML/。用户要求：流程已熟悉，**减少验证次数，先快速填充未完成章节**（每章只做一次：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk）。
 
 - 竖版讲义：工程蓝图风格。
 - 横版动画课程：3Blue1Brown / manim 风格，自动播放。
@@ -34,15 +34,15 @@
 - 章节顺序由我决定。**只有用户明确同意时才合并 PR**；用户会把网站链接发给学生测试。
 - 工作分支：`claude/charming-knuth-ti0cof`。每次 PR 合并后，从 `main` 重新开这个分支，再开新的 PR（草稿）。
 
-## 3. 下一步：第 06 章（非参数方法）
+## 3. 下一步：第三部分（第 09 章起）
 
-第 05 章已完成（GaussianBoundaries、NaiveBayesCounts、GenVsDisc；引擎 `engines/generative-classifiers.ts`）。
+第 06 章已完成（KnnBoundary、KdTreeViz、SplineVsPoly、CurseDim；引擎 `engines/nonparametric.ts`）。下一章按 `curriculum/outline.yaml` 的顺序从第 09 章开始，流程不变：
 
 ```bash
-python3 scripts/new_chapter.py 06 --widget KnnBoundary
+python3 scripts/new_chapter.py 09 --widget <ScenarioWidget>
 ```
 
-按大纲 id "06"：kNN（k 控制偏差–方差）、kd 树、核密度估计（带宽）、样条与 GAM、维数灾难。之后进入第三部分（09 起）。
+可复用的引擎：`linear-classification.ts`（screening 数据、牛顿法）、`generative-classifiers.ts`（高斯采样 `sampleClasses`、`fitGda`）、`nonparametric.ts`（距离、kNN）、`generalization.ts`（学生数据 `sample`、`polyFit`）。
 
 ### 第 04 章中发现并修复的引擎问题（写新章时注意）
 
@@ -79,10 +79,10 @@ node scripts/verify/pages.mjs <slug>
 ## 6. 压缩上下文用的关键词 / Context-compression keywords
 
 Learning_ML · BOIIIKa/Learning_ML · boiiika.github.io/Learning_ML · 看得见的机器学习 / Visible ML · ISL + UDL(Prince) + 李航 · 重写不复制 · 中英双语 · 非商用 CC BY-NC-SA + MIT ·
-8/30 章完成（00–05、07、08）· 下一步 06 非参数 → 第三部分 ·
+9/30 章完成（00–08）· 下一步第三部分（09 起）·
 竖版讲义 = 蓝图风格（不改）· 横版动画课程 = 3B1B / manim 自动播放 · 六段结构（情景 / 方法 / 数学 / 例题拓展 / 课后训练 / 实战手册）+ 一页纸 recap ·
 Astro 7 + React 19 + MDX + KaTeX 0.16.47 + Pyodide 0.29.3 · src/manim（Clock、Write、Morph、Indicate、Circumscribe、createSvg）· drive DSL（s1=11/4、s1=80%、click:chip2、wait:1）· Step effect（write / fade / pop / focus / morph）· `<Morph>` 推导变形 ·
 练习：推导题（mathjs 数值比对）+ implement / library（@blank、双击 Tab 填答案、Trace 回放 classifier2d、field=f(x)−y）·
 skills：new-chapter、course-deck、widget、exercise、verify-site · `scripts/new_chapter.py` + `templates/chapter` + `TODO(scaffold)` 守卫测试 · `site/scripts/verify`（chapter / course walk|film / pages）·
 hydration 规则（f1 取整、r6 数据、SSR 中不写多值 style）· MDX 规则（多行 `$$`、正文用 \lt 不用裸 <）·
-分支 claude/charming-knuth-ti0cof · PR #1 #2 #4 已合并，#5（第 04 章）待合并 · 只在用户同意时合并 · 本地 Pyodide 软链接与 venv 位于 scratchpad
+分支 claude/charming-knuth-ti0cof · PR #1 #2 #4 #5 已合并，#6（第 05–06 章）待合并 · 只在用户同意时合并 · 本地 Pyodide 软链接与 venv 位于 scratchpad

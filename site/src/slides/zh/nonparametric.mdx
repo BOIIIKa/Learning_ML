@@ -1,0 +1,183 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import KnnBoundary from "../../components/chapters/ch06/KnnBoundary";
+import KdTreeViz from "../../components/chapters/ch06/KdTreeViz";
+import SplineVsPoly from "../../components/chapters/ch06/SplineVsPoly";
+import CurseDim from "../../components/chapters/ch06/CurseDim";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 06 章 · 动画课程" title="非参数方法与基函数扩展：kNN、样条与 GAM" say="不先选定模型的形状，让数据自己说话：找最像的邻居，或者用一段段光滑的曲线去拟合。">
+
+问邻居 · kd 树 · 样条 · 维数灾难
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="问问最像的老病人" say="两类病人像两只交错的月牙，任何直线都分不开。">
+
+<Step drive="s1=1/0.6" say="k 等于一：只看最近的一位老病人。边界是锯齿，训练误差为零，却记住了每个噪声点。">$k = 1$：锯齿边界，训练误差 $0$</Step>
+
+<Step drive="s1=25/4" say="k 变大，在更大的邻域里投票，边界变平滑，测试误差下降。">$k$ 增大 → 边界变平滑</Step>
+
+<Step drive="s1=149/3; s1=15/2" say="k 太大，所有人都按多数类处理。测试误差在中间最低：k 就是复杂度旋钮。">$k$ = 复杂度旋钮（有效参数 $\approx n/k$）</Step>
+
+<Step drive="click:chip3; wait:1.5; click:chip1" say="换成 L 无穷距离，邻域变成正方形，边界也跟着变。">距离度量也会改变边界</Step>
+
+<div slot="visual"><KnnBoundary client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="第一，k 和距离怎样决定边界？">
+<p class="big-q sm">k 和距离怎样决定边界？</p>
+</Step>
+
+<Step say="第二，每次预测都要和所有人比一遍，怎样加速？">每次都和所有人比，怎样加速？</Step>
+
+<Step say="第三，回归时怎样得到又灵活又光滑的曲线？为什么这些局部方法到了高维就失效？">光滑的曲线；以及高维为什么失效</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="k 近邻" say="kNN 的三要素。">
+
+<Step say="模型：找最近的 k 个点，分类多数表决，回归取平均。">**模型**：$\hat y(x) = \arg\max_c \sum_{i\in N_k(x)} \mathbb 1[y_i = c]$</Step>
+
+<Step say="三个选择：距离、k、决策规则。">**三个选择**：距离 $\|x - z\|_p$ · $k$ · 表决规则</Step>
+
+<Step say="没有训练过程，所有工作都在预测时完成。千万记得先把特征标准化。">没有训练；**先标准化**</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="kd 树：先切分，再回溯" say="朴素的 kNN 每次都要算 n 个距离。kd 树把平面递归地切开。">
+
+<Step drive="s1=0/0.6; s1=3/3" say="根结点按 x 的中位数切成两半，下一层按 y 切，再按 x，每个结点管一个矩形。">轮换坐标，在中位数处切分</Step>
+
+<Step drive="s2=0/0.6; s2=100%/5" say="搜索先下行到查询点所在的叶子。回溯时，只有圆越过切分线，才去另一侧找；否则整棵子树剪掉。">回溯：球越过切分线才搜另一侧</Step>
+
+<Step drive="click:chip2; s2=100%/4" say="换一个查询点，访问的结点不同。低维时平均只访问对数 n 个结点。">平均访问 $O(\log n)$ 个结点</Step>
+
+<div slot="visual"><KdTreeViz client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="Cover–Hart：最近邻有多好？" say="样本无穷多时，1-NN 的误差能被贝叶斯误差控制住。">
+
+<Morph>
+
+<Step effect="morph" say="最近邻 x 撇和 x 的标签独立，1-NN 犯错当且仅当两者不同。">
+
+$$
+P(Y \ne Y' \mid x) = \eta(1 - \eta') + (1 - \eta)\eta'
+$$
+
+</Step>
+
+<Step effect="morph" say="样本无穷多时，x 撇趋于 x，eta 撇趋于 eta。">
+
+$$
+P(Y \ne Y' \mid x) \to 2\eta(1 - \eta)
+$$
+
+</Step>
+
+<Step effect="morph" say="用贝叶斯错误率 r 星改写。">
+
+$$
+2\eta(1 - \eta) = 2r^*(1 - r^*)
+$$
+
+</Step>
+
+<Step effect="morph" say="取期望，用 Jensen 不等式，得到 Cover–Hart 界。">
+
+$$
+R_{1\text{NN}} \le 2R^*(1 - R^*) \le 2R^*
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="最简单的规则，误差不超过最优分类器的两倍。但这是无穷数据下的结论。">
+<p class="big-q sm">最近邻 ≤ 两倍贝叶斯误差（渐近）</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="维数灾难" say="可是到了高维，最近邻并不近。">
+
+<Step drive="s1=1/0.6" say="二维时，最近的点比最远的点近得多。">$d = 2$：最近 ≪ 最远</Step>
+
+<Step drive="s1=11/5" say="维数上到两百，比值接近一：人人都一样远，局部失去意义。">$d$ 上百：最近 / 最远 $\to 1$</Step>
+
+<Step say="体积几乎全在薄薄的外壳里；要装下百分之十的数据，小立方体的边长接近整条边。">外壳占比 $1 - (1-\varepsilon)^d$；边长 $r^{1/d}$</Step>
+
+<div slot="visual"><CurseDim client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="样条：分段多项式" say="回归时，把 x 展开成一组基函数，再做线性回归。">
+
+<Step drive="s1=0/0.6" say="没有节点时就是一个三次多项式。">$K = 0$：一个三次多项式</Step>
+
+<Step drive="s1=12/5" say="增加节点：样条只在局部调整；同样自由度的单个多项式在两端剧烈摆动。">样条局部调整；多项式两端振荡</Step>
+
+<Step drive="s1=5/2" say="基函数是 x 减 xi 的正部的三次方，每一个只影响节点右边。">基：$1, x, x^2, x^3, (x - \xi_k)^3_+$</Step>
+
+<div slot="visual"><SplineVsPoly client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="三次样条的自由度" say="数一数参数。">
+
+<Morph>
+
+<Step effect="morph" say="K 个节点分出 K 加一段，每段四个参数。">
+
+$$
+\mathrm{df} = 4(K + 1)
+$$
+
+</Step>
+
+<Step effect="morph" say="每个节点要求函数值、一阶、二阶导数连续，三个约束。">
+
+$$
+\mathrm{df} = 4(K + 1) - 3K
+$$
+
+</Step>
+
+<Step effect="morph" say="正好是 K 加四，等于基函数的个数。">
+
+$$
+\mathrm{df} = K + 4
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="平滑样条不选节点，用惩罚二阶导数的平方积分控制光滑度。GAM 则给每个特征一条样条，再加起来。">平滑样条 $\lambda\int f''^2$ · GAM $\beta_0 + \sum_j f_j(x_j)$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：距离与 kd 树" say="两个手算的小例子。">
+
+<Step say="新病人在原点。L2 距离下最近的是二零，需要复查；L 无穷距离下最近的是一点五一点五，不需要复查。">$L_2$：$A = (2, 0)$ 最近；$L_\infty$：$B = (1.5, 1.5)$ 最近</Step>
+
+<Step say="六个点建 kd 树，根是六三。查询二、六点五：先找到一六，距离约一点一二。">查询 $(2, 6.5)$：先得 $(1, 6)$，距离 $\approx 1.118$</Step>
+
+<Step say="回到根时，查询点离切分线四，大于一点一二，整棵右子树被剪掉。六个点只访问了四个。">$|2 - 6| = 4 \gt 1.118$ ⇒ 剪掉右子树：访问 4 / 6</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现 kNN、kd 树搜索和三次样条，再用 scikit-learn 调 kNN、搭一个可加模型。">
+
+<Step say="代码运行后，可以回放 k 从一到一百零一时，边界怎样从锯齿变平滑。">✎ 4 道推导 · ⌨ kNN + kd 树 + 样条 · ⚙ GridSearchCV + GAM</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/nonparametric/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

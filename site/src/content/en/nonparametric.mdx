@@ -1,0 +1,169 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import KnnBoundary from "../../components/chapters/ch06/KnnBoundary";
+import KdTreeViz from "../../components/chapters/ch06/KdTreeViz";
+import SplineVsPoly from "../../components/chapters/ch06/SplineVsPoly";
+import CurseDim from "../../components/chapters/ch06/CurseDim";
+
+<Section lang="en" k="scenario">
+
+The models of the last two chapters fixed a form first: a line, two Gaussians. But if the two groups of patients look like two interleaving half-moons, no line can separate them. The simplest doctor builds no model at all and just leafs through old files: **find the past patients most similar to the new one and see what happened to them**.
+
+<KnnBoundary client:visible lang="en" />
+
+That is k nearest neighbours (kNN). There are no parameters to learn; the model is the data itself. This is what **non-parametric** means: the model's complexity grows with the data instead of being fixed in advance. This chapter answers:
+
+1. How do k and the distance shape the boundary? Why is k a complexity knob?
+2. Comparing every new patient with all past patients is slow. How can we speed it up?
+3. For regression, how do we get curves that are flexible yet smooth (splines and GAMs)? And why do these local methods break down in high dimensions?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### k nearest neighbours
+
+<Box kind="definition" title="k nearest neighbours (kNN)">
+
+**Model**: for a new point $x$, find the $k$ closest training points $N_k(x)$; classify by majority vote, regress by averaging:
+
+$$
+\hat y(x) = \arg\max_c \sum_{i\in N_k(x)} \mathbb 1[y_i = c], \qquad \hat f(x) = \frac1k\sum_{i\in N_k(x)} y_i.
+$$
+
+**Three choices**: the distance ($L_p$ distances $\|x - z\|_p = (\sum_j |x_j - z_j|^p)^{1/p}$, usually $p = 1, 2, \infty$), $k$, and the decision rule (plain majority, or distance-weighted).
+
+**Strategy**: majority voting minimizes the empirical 0-1 risk within the neighbourhood. There is no training: all the work happens at prediction time.
+
+</Box>
+
+- **Small $k$**: the boundary hugs every training point, the training error is 0 (for $k = 1$), the variance is high, and it overfits easily.
+- **Large $k$**: averaging over a large neighbourhood gives a smooth boundary and high bias; at $k = n$ every point gets the majority class.
+- The effective number of parameters is about $n/k$. Choose $k$ by cross-validation.
+- **Standardize first**: distances depend on scale, and the feature with the largest units dominates everything.
+
+### kd-trees
+
+Plain kNN computes $n$ distances per prediction. A **kd-tree** cuts space recursively into rectangles: the root splits at the median of the first coordinate, its children at the median of the second, and so on in turn. Each node stores one point and owns one rectangle.
+
+<KdTreeViz client:visible lang="en" />
+
+Nearest-neighbour search has two phases:
+
+1. **Descend**: like a binary search tree, follow the query's value on each splitting coordinate down to a leaf, which gives a first candidate.
+2. **Backtrack**: return along the path. At each node, if the ball around the query with the best distance so far as radius **crosses** the node's splitting hyperplane, search the subtree on the other side; otherwise prune it entirely.
+
+For random data in low dimension a search visits $O(\log n)$ nodes on average. In high dimension the ball almost always crosses the splitting planes and pruning stops working, the first symptom of the curse of dimensionality (in practice one switches to approximate nearest neighbours).
+
+### Basis expansions and splines
+
+For regression, turn the input $x$ into basis functions $h_1(x), \dots, h_M(x)$ and run a linear regression on them, $f(x) = \sum_m \beta_m h_m(x)$. The model is non-linear in $x$ but still linear in the parameters, so every tool of Chapter 03 applies.
+
+- Global polynomials $1, x, \dots, x^d$: each coefficient affects the whole curve, and high degrees oscillate wildly at the ends (Runge's phenomenon).
+- **Cubic regression splines**: a cubic between consecutive knots $\xi_1 \lt \dots \lt \xi_K$, with the value and the first and second derivatives continuous at every knot. One basis is $1, x, x^2, x^3, (x - \xi_1)^3_+, \dots, (x - \xi_K)^3_+$, with $(u)_+ = \max(u, 0)$.
+
+<SplineVsPoly client:visible lang="en" />
+
+- **Natural splines** also require the function to be linear beyond the boundary knots, which reduces the variance at the edges.
+- **Smoothing splines** choose no knots: among all functions, minimize $\sum_i (y_i - f(x_i))^2 + \lambda\int f''(t)^2\,dt$. The solution turns out to be a natural cubic spline with a knot at every $x_i$; $\lambda$ controls the smoothness.
+- **Generalized additive models (GAMs)**: $f(x) = \beta_0 + \sum_j f_j(x_j)$ with a spline for each $f_j$. Each feature's effect can be drawn as one curve, so they are nearly as interpretable as linear models while capturing non-linearity. They are fitted by **backfitting**: in turn, hold the other $f_j$ fixed and smooth the partial residuals in one dimension.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### 1-NN is at most twice the Bayes error
+
+In a two-class problem write $\eta(x) = P(Y = 1 \mid x)$. The Bayes classifier errs at $x$ with probability $r^*(x) = \min(\eta, 1 - \eta)$, and its total error is $R^* = \mathbb E\,r^*(X)$.
+
+<Box kind="theorem" title="Cover–Hart (1967)">
+
+If $\eta$ is continuous, then as $n \to \infty$ the error of the 1-NN classifier satisfies
+
+$$
+R^* \le R_{1\text{NN}} \le 2R^*(1 - R^*) \le 2R^*.
+$$
+
+</Box>
+
+**Proof idea.** With enough samples the nearest neighbour $x'$ of $x$ is arbitrarily close to $x$, so $\eta(x') \to \eta(x)$. The labels of $x$ and $x'$ are drawn independently, and 1-NN errs exactly when they differ:
+
+$$
+P(Y \ne Y' \mid x) = \eta(1 - \eta') + (1 - \eta)\eta' \to 2\eta(1 - \eta) = 2r^*(1 - r^*)
+$$
+
+(derivation exercise 1). Take expectations and use that $t \mapsto 2t(1 - t)$ is concave (Jensen): $R_{1\text{NN}} = \mathbb E[2r^*(1 - r^*)] \le 2R^*(1 - R^*)$. $\blacksquare$
+
+This is remarkable: with infinite data the simplest possible rule is never worse than twice the optimal classifier. "Half of the classification information is in the nearest neighbour." But it is an **asymptotic** statement; with finite samples, and especially in high dimension, the nearest neighbour is not near (see below). With $k \to \infty$ and $k/n \to 0$, kNN is **consistent**: its error converges to $R^*$.
+
+### Quantifying the curse of dimensionality
+
+**Volume concentrates in the shell.** The volume of a $d$-ball is proportional to $r^d$, so the shell between radius $1 - \varepsilon$ and 1 holds a fraction
+
+$$
+1 - (1 - \varepsilon)^d \xrightarrow{d \to \infty} 1
+$$
+
+of the volume (derivation exercise 2). With $d = 100$ and $\varepsilon = 0.05$ that is over 99%. Uniform samples in high dimension live almost entirely on the "surface".
+
+**Neighbourhoods stop being local.** For uniform data in $[0, 1]^d$, a cube that captures a fraction $r$ of the data has edge $r^{1/d}$ (derivation exercise 4). With $d = 10$ and $r = 0.1$ the edge is about 0.79: "the nearest 10%" spans 79% of the range of every coordinate.
+
+**Distances lose contrast.** Under mild conditions the ratio of the distances to the nearest and farthest neighbours tends to 1 as $d$ grows (Beyer et al., 1999):
+
+<CurseDim client:visible lang="en" />
+
+So methods built on locality (kNN, kernels, kd-trees) need exponentially many samples in high dimension. The way out is a **structural assumption**: additivity (GAMs), a low-dimensional manifold, sparsity (the lasso of Chapter 03), or a learned representation (Part IV, deep learning).
+
+### Degrees of freedom of a cubic spline
+
+$K$ knots cut the line into $K + 1$ pieces, each a cubic with 4 parameters: $4(K + 1)$ in total. Each knot imposes 3 constraints (continuity of the value, first and second derivatives): $3K$ in total. Hence
+
+$$
+\mathrm{df} = 4(K + 1) - 3K = K + 4,
+$$
+
+exactly the number of basis functions $1, x, x^2, x^3, (x - \xi_k)^3_+$ (derivation exercise 3). Each $(x - \xi_k)^3_+$ has zero value, first and second derivatives at $\xi_k$ and only jumps in its third derivative, so adding it never breaks smoothness. A natural spline adds 2 more constraints at each end (zero second and third derivatives), leaving $K$ degrees of freedom for $K$ knots.
+
+For a smoothing spline, the "degrees of freedom" are defined as the trace of the smoother matrix: with fitted values $\hat y = S_\lambda y$, $\mathrm{df}(\lambda) = \mathrm{tr}\,S_\lambda$, the same notion as the effective number of parameters of ridge regression in Chapter 03.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example 1: the distance changes the nearest neighbour
+
+<Box kind="example" title="Three past patients, three distances">
+
+The new patient sits at the origin $q = (0, 0)$. Past patient $A = (2, 0)$ needed a follow-up; $B = (1.5, 1.5)$ and $C = (0, 2.2)$ did not.
+
+| | $L_1$ | $L_2$ | $L_\infty$ |
+|---|---|---|---|
+| $A$ ($+$) | $2$ | $2$ | $2$ |
+| $B$ ($-$) | $3$ | $\approx 2.121$ | $1.5$ |
+| $C$ ($-$) | $2.2$ | $2.2$ | $2.2$ |
+
+1-NN: under $L_1$ and $L_2$ the nearest is $A$, so follow-up; under $L_\infty$ it is $B$, so no follow-up. 3-NN sees $+, -, -$ under every distance: no follow-up. Both the distance and $k$ can change the answer.
+
+</Box>
+
+### Worked example 2: building and searching a kd-tree
+
+<Box kind="example" title="Six points, one pruned search">
+
+Points $(1,6), (3,2), (4,7), (6,3), (7,8), (9,5)$.
+
+- **Build**: sort by $x$ and take the median $(6,3)$ as the root (element $\lfloor n/2 \rfloor$ after sorting). The left side $\{(1,6), (3,2), (4,7)\}$ splits on $y$ at $(1,6)$, with $(3,2)$ ($y \lt 6$) and $(4,7)$ below it; the right side $\{(7,8), (9,5)\}$ splits on $y$ at $(7,8)$, with $(9,5)$ below it.
+- **Query** $q = (2, 6.5)$: visit the root $(6,3)$, distance $\approx 5.32$. Since $2 \lt 6$, go left: $(1,6)$ at distance $\sqrt{1.25} \approx 1.118$ becomes the best. Since $6.5 \ge 6$, go to $(4,7)$, distance $\approx 2.06$, no improvement.
+- **Backtrack**: at $(1,6)$, $|6.5 - 6| = 0.5 \lt 1.118$, so the ball crosses the splitting line and the other side $(3,2)$ must be checked: distance $\approx 4.61$. Back at the root, $|2 - 6| = 4 \gt 1.118$: **the whole right subtree is pruned**.
+- Result: nearest neighbour $(1,6)$, found by visiting 4 of the 6 points.
+
+</Box>
+
+### Extensions
+
+- **Metric learning**: rather than choosing a distance by hand, learn one: a Mahalanobis distance $\sqrt{(x - z)^\top M(x - z)}$, or a neural network that embeds samples where Euclidean distance means something. Nearest-neighbour search in vector databases and retrieval-augmented generation (RAG) is the modern form of this idea.
+- **Approximate nearest neighbours**: in high dimension an exact kd-tree is barely faster than brute force; practitioners use locality-sensitive hashing (LSH), product quantization or graph indexes (HNSW), trading a little accuracy for orders of magnitude of speed.
+- **Kernel density estimation and Nadaraya–Watson regression**: replace "average the k neighbours equally" by "average all points weighted by a kernel $K((x - x_i)/h)$"; the bandwidth $h$ plays the role of $k$.
+- **Splines, kernels and Gaussian processes**: the smoothing spline solves a regularization problem in a reproducing kernel Hilbert space, the same root as Chapter 07's kernel methods and Gaussian-process regression.
+
+</Section>

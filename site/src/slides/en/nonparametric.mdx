@@ -1,0 +1,183 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import KnnBoundary from "../../components/chapters/ch06/KnnBoundary";
+import KdTreeViz from "../../components/chapters/ch06/KdTreeViz";
+import SplineVsPoly from "../../components/chapters/ch06/SplineVsPoly";
+import CurseDim from "../../components/chapters/ch06/CurseDim";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 06 · Animated course" title="Non-parametric Methods and Basis Expansions: kNN, Splines and GAMs" say="Don't fix the shape of the model in advance. Let the data speak: ask the most similar neighbours, or fit smooth curve pieces.">
+
+Ask the neighbours · kd-trees · Splines · The curse of dimensionality
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Ask the most similar past patients" say="The two groups of patients look like two interleaving half-moons; no line can separate them.">
+
+<Step drive="s1=1/0.6" say="k equals one: look only at the single closest past patient. The boundary is jagged, the training error is zero, and every noisy point has been memorized.">$k = 1$: jagged boundary, zero training error</Step>
+
+<Step drive="s1=25/4" say="As k grows the vote covers a larger neighbourhood, the boundary smooths out and the test error drops.">Larger $k$ → smoother boundary</Step>
+
+<Step drive="s1=149/3; s1=15/2" say="With k too large everyone gets the majority class. The test error is lowest in between: k is the complexity knob.">$k$ = complexity knob (about $n/k$ effective parameters)</Step>
+
+<Step drive="click:chip3; wait:1.5; click:chip1" say="Switch to the L-infinity distance: neighbourhoods become squares and the boundary changes with them.">The distance changes the boundary too</Step>
+
+<div slot="visual"><KnnBoundary client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions for this chapter" say="Three questions.">
+
+<Step effect="focus" say="First: how do k and the distance shape the boundary?">
+<p class="big-q sm">How do k and the distance shape the boundary?</p>
+</Step>
+
+<Step say="Second: comparing with everyone at every prediction is slow. How can we speed it up?">Comparing with everyone is slow: how to speed up?</Step>
+
+<Step say="Third: how do we get flexible yet smooth regression curves, and why do these local methods fail in high dimension?">Smooth curves, and why high dimension breaks things</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="k nearest neighbours" say="The three ingredients of kNN.">
+
+<Step say="Model: find the k closest points; classify by majority vote, regress by averaging.">**Model**: $\hat y(x) = \arg\max_c \sum_{i\in N_k(x)} \mathbb 1[y_i = c]$</Step>
+
+<Step say="Three choices: the distance, k, and the decision rule.">**Three choices**: distance $\|x - z\|_p$ · $k$ · voting rule</Step>
+
+<Step say="There is no training; all the work happens at prediction time. And always standardize the features first.">No training; **standardize first**</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="kd-trees: split, then backtrack" say="Plain kNN computes n distances per prediction. A kd-tree cuts the plane recursively.">
+
+<Step drive="s1=0/0.6; s1=3/3" say="The root splits at the median x, the next level at the median y, then x again; each node owns a rectangle.">Cycle the coordinates, split at the median</Step>
+
+<Step drive="s2=0/0.6; s2=100%/5" say="Search first walks down to the query's leaf. On the way back it searches the other side only if the circle crosses the splitting line; otherwise the whole subtree is pruned.">Backtrack: cross the line or prune</Step>
+
+<Step drive="click:chip2; s2=100%/4" say="Another query visits different nodes. In low dimension a search visits about log n nodes on average.">About $O(\log n)$ nodes per search</Step>
+
+<div slot="visual"><KdTreeViz client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Cover–Hart: how good is the nearest neighbour?" say="With infinitely many samples, the 1-NN error is controlled by the Bayes error.">
+
+<Morph>
+
+<Step effect="morph" say="The labels of x and its nearest neighbour x prime are independent, and 1-NN errs exactly when they differ.">
+
+$$
+P(Y \ne Y' \mid x) = \eta(1 - \eta') + (1 - \eta)\eta'
+$$
+
+</Step>
+
+<Step effect="morph" say="With infinitely many samples, x prime tends to x and eta prime to eta.">
+
+$$
+P(Y \ne Y' \mid x) \to 2\eta(1 - \eta)
+$$
+
+</Step>
+
+<Step effect="morph" say="Rewrite it with the Bayes error rate r star.">
+
+$$
+2\eta(1 - \eta) = 2r^*(1 - r^*)
+$$
+
+</Step>
+
+<Step effect="morph" say="Take expectations and apply Jensen's inequality: the Cover–Hart bound.">
+
+$$
+R_{1\text{NN}} \le 2R^*(1 - R^*) \le 2R^*
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="The simplest rule is never worse than twice the optimal classifier. But only with infinite data.">
+<p class="big-q sm">Nearest neighbour ≤ twice the Bayes error (asymptotically)</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The curse of dimensionality" say="In high dimension, though, the nearest neighbour is not near.">
+
+<Step drive="s1=1/0.6" say="In two dimensions the nearest point is much closer than the farthest.">$d = 2$: nearest ≪ farthest</Step>
+
+<Step drive="s1=11/5" say="At two hundred dimensions the ratio approaches one: everyone is equally far, and local loses its meaning.">$d$ in the hundreds: nearest / farthest $\to 1$</Step>
+
+<Step say="Almost all the volume sits in a thin outer shell, and a cube holding ten percent of the data needs an edge nearly as long as the whole cube.">Shell fraction $1 - (1-\varepsilon)^d$; edge $r^{1/d}$</Step>
+
+<div slot="visual"><CurseDim client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Splines: piecewise polynomials" say="For regression, expand x into basis functions, then run a linear regression.">
+
+<Step drive="s1=0/0.6" say="With no knots it is a single cubic.">$K = 0$: one cubic</Step>
+
+<Step drive="s1=12/5" say="Add knots: the spline adjusts locally, while a single polynomial with the same degrees of freedom swings wildly at the ends.">Splines adjust locally; polynomials oscillate</Step>
+
+<Step drive="s1=5/2" say="The basis functions are the positive part of x minus xi, cubed; each one acts only to the right of its knot.">Basis: $1, x, x^2, x^3, (x - \xi_k)^3_+$</Step>
+
+<div slot="visual"><SplineVsPoly client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Degrees of freedom of a cubic spline" say="Count the parameters.">
+
+<Morph>
+
+<Step effect="morph" say="K knots make K plus one pieces, four parameters each.">
+
+$$
+\mathrm{df} = 4(K + 1)
+$$
+
+</Step>
+
+<Step effect="morph" say="Each knot requires continuous value, first and second derivative: three constraints.">
+
+$$
+\mathrm{df} = 4(K + 1) - 3K
+$$
+
+</Step>
+
+<Step effect="morph" say="That is K plus four, exactly the number of basis functions.">
+
+$$
+\mathrm{df} = K + 4
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="A smoothing spline picks no knots and controls smoothness by penalizing the integral of the squared second derivative. A GAM gives every feature its own spline and adds them up.">Smoothing spline $\lambda\int f''^2$ · GAM $\beta_0 + \sum_j f_j(x_j)$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked examples: distances and kd-trees" say="Two small examples by hand.">
+
+<Step say="The new patient is at the origin. Under L2 the nearest is two-zero, a follow-up; under L-infinity it is one-point-five, one-point-five, no follow-up.">$L_2$: $A = (2, 0)$ nearest; $L_\infty$: $B = (1.5, 1.5)$ nearest</Step>
+
+<Step say="Six points build a kd-tree rooted at six-three. Query two, six-point-five: the search first finds one-six at distance about 1.12.">Query $(2, 6.5)$: first $(1, 6)$ at $\approx 1.118$</Step>
+
+<Step say="Back at the root, the query is four away from the splitting line, more than 1.12, so the whole right subtree is pruned. Four of six points visited.">$|2 - 6| = 4 \gt 1.118$ ⇒ prune the right subtree: 4 / 6 visited</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, kNN, kd-tree search and cubic splines from scratch, then a tuned kNN and an additive model in scikit-learn.">
+
+<Step say="After running your code you can replay the boundary going from jagged to smooth as k runs from one to a hundred and one.">✎ 4 derivations · ⌨ kNN + kd-tree + splines · ⚙ GridSearchCV + GAM</Step>
+
+<Step effect="pop" say="Press the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/nonparametric/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

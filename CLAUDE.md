@@ -47,6 +47,6 @@ python3 scripts/new_chapter.py <id>          # scaffold the next chapter
 
 ## Status
 
-Done: chapters 00–05, 07, 08 (notes, course, recap, widgets, exercises, handbook).
-Next in order: 06 nonparametric, then Part III onward (09 …).
+Done: chapters 00–08 (notes, course, recap, widgets, exercises, handbook): Parts I–II complete.
+Next in order: Part III, chapter 09 onward (see curriculum/outline.yaml).
 See `docs/PROJECT_SUMMARY.md` for the full picture and roadmap, and `docs/HANDOFF.md` for the user's preferences, environment notes and the concrete plan for the next chapter.

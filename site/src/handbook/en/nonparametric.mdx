@@ -1,0 +1,44 @@
+---
+title: "Non-parametric methods in practice: kNN, splines and GAMs"
+summary: "kNN needs scaling, how to pick k, when to switch to approximate neighbours, and additive models from spline expansions."
+chapters: ["06"]
+---
+
+### Go-to code
+
+```python
+import numpy as np
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler, SplineTransformer
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import RidgeCV
+from sklearn.model_selection import GridSearchCV
+
+knn = GridSearchCV(make_pipeline(StandardScaler(), KNeighborsClassifier()),
+                   {"kneighborsclassifier__n_neighbors": range(1, 52, 2),
+                    "kneighborsclassifier__weights": ["uniform", "distance"]}, cv=5).fit(X, y)
+gam = make_pipeline(SplineTransformer(n_knots=6, degree=3), RidgeCV(np.logspace(-3, 3, 13))).fit(X, y)
+```
+
+### kNN traps
+
+- **Unscaled distances are meaningless**: the feature with the largest units dominates. Always add a `StandardScaler` (or weight features using domain knowledge).
+- **Categorical features**: Euclidean distance on one-hot columns is awkward; consider Gower's distance or a different model.
+- **`algorithm`**: scikit-learn picks between `kd_tree`, `ball_tree` and `brute`; above roughly 20 dimensions the trees barely help. For large-scale retrieval use approximate-neighbour libraries such as FAISS or HNSW.
+- **Slow predictions, big memory**: kNN stores all the training data and does its work at prediction time. Keep that in mind for online serving.
+- **Pick k by cross-validation**, starting around $\sqrt n$; with imbalanced classes use `weights="distance"` or adjust the decision threshold.
+
+### Splines and GAMs
+
+- `SplineTransformer` expands each feature into B-splines separately; a linear model on top is an additive model. `n_knots` sets the flexibility of each curve, the ridge penalty the overall smoothness.
+- For interactions between features, add `PolynomialFeatures(interaction_only=True)` or switch to trees (Chapter 08).
+- Beware of extrapolation: splines continue as polynomials outside the training range (`extrapolation="linear"` is safer).
+- Dedicated GAM libraries (pyGAM, R's mgcv) choose the smoothness automatically with penalties and REML, and give confidence bands.
+
+### Frontier reading
+
+- Cover and Hart (1967): the asymptotic error bound of the nearest-neighbour rule.
+- Beyer et al. (1999): "When is nearest neighbor meaningful?", on distances losing contrast in high dimension.
+- Malkov and Yashunin (2018): HNSW, the most common approximate-neighbour index in vector databases.
+- Hastie and Tibshirani (1986): generalized additive models; Wood's (2017) textbook covers mgcv in depth.
+- Agarwal et al. (2021): neural additive models (NAMs), bringing GAM interpretability to deep learning.
