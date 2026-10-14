@@ -1,0 +1,1425 @@
+# 课程大纲唯一数据源 / Single source of truth for the curriculum outline.
+#
+# - 每个可读字段都是 {zh, en} 双语对象，前端据此做语言切换。
+#   Every human-readable field is a {zh, en} pair; the frontend switches on it.
+# - 章节只记录“我们自己的”讲解要点与可视化设计；sources 只引用章号，不摘录原文。
+#   Chapters hold our own teaching points and visual designs; `sources` cites
+#   chapter numbers only and never quotes the books.
+# - 修改后运行 `python3 scripts/build_outline.py` 重新生成 OUTLINE.*.md。
+#   After editing, run `python3 scripts/build_outline.py` to regenerate OUTLINE.*.md.
+
+meta:
+  title:
+    zh: "看得见的机器学习：从严谨推导到科研前沿"
+    en: "Visible Machine Learning: From Rigorous Derivations to the Research Frontier"
+  audience:
+    zh: "具备微积分、线性代数、概率论基础，希望快速具备 ML 科研能力的学生"
+    en: "Students comfortable with calculus, linear algebra and probability who want to build ML research ability quickly"
+  license:
+    zh: "内容以 CC BY-NC-SA 4.0 发布，代码以 MIT 发布；不复制原书文字与插图"
+    en: "Content under CC BY-NC-SA 4.0, code under MIT; no text or figures are copied from the source books"
+
+books:
+  ISL:
+    title: "An Introduction to Statistical Learning (2nd ed. / Python ed.)"
+    authors: "James, Witten, Hastie, Tibshirani, Taylor"
+    url: "https://www.statlearning.com/"
+    chapters: 13
+    omitted:
+      "1": {zh: "导论，并入第 01 章", en: "Introduction, folded into Ch. 01"}
+      "11": {zh: "生存分析：偏应用统计，暂不纳入主线", en: "Survival analysis: applied-statistics topic, outside the main line for now"}
+  UDL:
+    title: "Understanding Deep Learning"
+    authors: "Simon J. D. Prince"
+    url: "https://udlbook.github.io/udlbook/"
+    chapters: 21
+    omitted:
+      "1": {zh: "导论，并入第 01 章", en: "Introduction, folded into Ch. 01"}
+  LH:
+    title: "统计学习方法（第 2 版）/ Statistical Learning Methods (2nd ed.)"
+    authors: "李航 / Li Hang"
+    url: "https://book.douban.com/subject/33437381/"
+    chapters: 22
+    omitted:
+      "12": {zh: "监督学习方法总结：由网站的交叉索引视图取代", en: "Summary of supervised methods: replaced by the site's cross-index views"}
+      "22": {zh: "无监督学习方法总结：由网站的交叉索引视图取代", en: "Summary of unsupervised methods: replaced by the site's cross-index views"}
+
+# 交叉索引标签：目录按“部分”排序，同时每章打上任务 / 策略 / 算法标签，
+# 前端可一键切换为“按任务”“按损失”“按优化算法”视图。
+# Cross-index tags: the TOC is ordered by part, and each chapter is tagged by
+# task / strategy / algorithm so the frontend can re-sort into alternative views.
+tags:
+  task:
+    regression: {zh: "回归", en: "Regression"}
+    classification: {zh: "分类", en: "Classification"}
+    sequence: {zh: "序列标注", en: "Sequence labeling"}
+    clustering: {zh: "聚类", en: "Clustering"}
+    dim-reduction: {zh: "降维", en: "Dimensionality reduction"}
+    density: {zh: "密度估计", en: "Density estimation"}
+    generation: {zh: "生成", en: "Generation"}
+    ranking: {zh: "排序", en: "Ranking"}
+    decision: {zh: "序贯决策", en: "Sequential decision-making"}
+    graph: {zh: "图数据", en: "Graph data"}
+  strategy:
+    squared: {zh: "平方损失", en: "Squared loss"}
+    cross-entropy: {zh: "交叉熵 / 对数似然", en: "Cross-entropy / log-likelihood"}
+    perceptron: {zh: "感知机损失", en: "Perceptron loss"}
+    hinge: {zh: "合页损失", en: "Hinge loss"}
+    exponential: {zh: "指数损失", en: "Exponential loss"}
+    impurity: {zh: "不纯度（熵 / 基尼）", en: "Impurity (entropy / Gini)"}
+    max-entropy: {zh: "最大熵", en: "Maximum entropy"}
+    likelihood: {zh: "（边缘）似然", en: "(Marginal) likelihood"}
+    elbo: {zh: "证据下界 ELBO", en: "Evidence lower bound (ELBO)"}
+    reconstruction: {zh: "重构误差", en: "Reconstruction error"}
+    within-cluster: {zh: "簇内平方和", en: "Within-cluster sum of squares"}
+    adversarial: {zh: "对抗损失", en: "Adversarial loss"}
+    denoising: {zh: "去噪 / 得分匹配", en: "Denoising / score matching"}
+    reward: {zh: "期望回报", en: "Expected return"}
+    regularization: {zh: "正则化 / 结构风险", en: "Regularization / structural risk"}
+  algorithm:
+    closed-form: {zh: "闭式解", en: "Closed form"}
+    gd: {zh: "梯度下降", en: "Gradient descent"}
+    sgd: {zh: "随机梯度下降", en: "Stochastic gradient descent"}
+    adam: {zh: "自适应优化（Adam 等）", en: "Adaptive methods (Adam etc.)"}
+    newton: {zh: "牛顿 / 拟牛顿法", en: "Newton / quasi-Newton"}
+    coordinate: {zh: "坐标下降", en: "Coordinate descent"}
+    dual-qp: {zh: "对偶与二次规划（SMO）", en: "Duality & QP (SMO)"}
+    greedy: {zh: "贪心划分", en: "Greedy splitting"}
+    stagewise: {zh: "前向分步加法", en: "Forward stagewise additive"}
+    dp: {zh: "动态规划", en: "Dynamic programming"}
+    em: {zh: "EM 算法", en: "EM algorithm"}
+    lloyd: {zh: "交替最小化（Lloyd）", en: "Alternating minimization (Lloyd)"}
+    eigen: {zh: "特征分解 / SVD", en: "Eigendecomposition / SVD"}
+    mcmc: {zh: "MCMC 采样", en: "MCMC sampling"}
+    power-iteration: {zh: "幂迭代", en: "Power iteration"}
+    backprop: {zh: "反向传播", en: "Backpropagation"}
+    policy-gradient: {zh: "策略梯度", en: "Policy gradient"}
+
+parts:
+  # ───────────────────────────────────────────────────────────────── P0
+  - id: P0
+    title: {zh: "预备：数学工具箱", en: "Prelude: The Mathematical Toolkit"}
+    summary:
+      zh: "只讲后文真正用到的数学，并且全部用几何图像建立直觉。"
+      en: "Only the mathematics the rest of the course uses, each built from a geometric picture."
+    chapters:
+      - id: "00"
+        slug: math-toolkit
+        title: {zh: "线性代数、概率与优化的几何直觉", en: "Geometric Intuition for Linear Algebra, Probability and Optimization"}
+        paradigm: foundation
+        sources: {UDL: ["App. B", "App. C"], LH: ["附录 A–E"]}
+        prereqs: []
+        tags: {task: [], strategy: [], algorithm: [gd, newton]}
+        goals:
+          - zh: "把矩阵看成线性变换，把 SVD 看成“旋转–缩放–旋转”"
+            en: "See matrices as linear maps and the SVD as rotate–scale–rotate"
+          - zh: "掌握 MLE / MAP、KL 散度、Jensen 不等式三件套"
+            en: "Master the trio of MLE / MAP, KL divergence and Jensen's inequality"
+          - zh: "理解凸性、梯度、Hessian 与拉格朗日对偶 / KKT 条件"
+            en: "Understand convexity, gradients, the Hessian, and Lagrangian duality / KKT conditions"
+        derivations:
+          - zh: "多元高斯的 MLE；协方差矩阵的特征分解与等高线椭圆"
+            en: "MLE for the multivariate Gaussian; eigendecomposition of the covariance and its contour ellipses"
+          - zh: "由 Jensen 不等式推出 KL 散度非负"
+            en: "Non-negativity of KL divergence via Jensen's inequality"
+          - zh: "拉格朗日对偶：弱对偶、强对偶与 KKT 的几何含义"
+            en: "Lagrangian duality: weak/strong duality and the geometry of KKT"
+        visuals:
+          - id: viz-linear-map
+            title: {zh: "矩阵是一个变换", en: "A matrix is a transformation"}
+            interaction:
+              zh: "拖动 2×2 矩阵的四个元素，看单位网格与单位圆如何变形，同步显示 SVD 三步分解"
+              en: "Drag the four entries of a 2×2 matrix to warp a unit grid and circle, with the three-step SVD shown alongside"
+          - id: viz-gaussian-mle
+            title: {zh: "高斯拟合与似然曲面", en: "Gaussian fitting and the likelihood surface"}
+            interaction:
+              zh: "在平面上点选数据点，实时更新 MLE 均值与协方差椭圆，并显示对数似然曲面"
+              en: "Click to add points; the MLE mean and covariance ellipse update live next to the log-likelihood surface"
+          - id: viz-kkt
+            title: {zh: "约束优化与 KKT", en: "Constrained optimization and KKT"}
+            interaction:
+              zh: "拖动约束边界，观察最优点在内部 / 边界切换时乘子何时为零（互补松弛）"
+              en: "Drag the constraint boundary and see when the multiplier hits zero as the optimum moves between interior and boundary (complementary slackness)"
+        frontier: []
+
+  # ───────────────────────────────────────────────────────────────── P1
+  - id: P1
+    title: {zh: "第一部分：学习的框架", en: "Part I: The Framework of Learning"}
+    summary:
+      zh: "引入贯穿全书的“模型–策略–算法”三元组，以及泛化这一核心问题。"
+      en: "Introduces the model–strategy–algorithm triad used in every chapter, and generalization as the central question."
+    chapters:
+      - id: "01"
+        slug: learning-triad
+        title: {zh: "学习问题与三要素：模型、策略、算法", en: "The Learning Problem: Model, Strategy, Algorithm"}
+        paradigm: foundation
+        sources: {ISL: ["2"], UDL: ["2"], LH: ["1"]}
+        prereqs: ["00"]
+        tags: {task: [regression, classification], strategy: [squared, regularization], algorithm: [closed-form, gd]}
+        goals:
+          - zh: "区分假设空间、损失 / 风险、优化算法这三个独立选择"
+            en: "Separate the three independent choices: hypothesis space, loss / risk, optimizer"
+          - zh: "理解期望风险、经验风险与结构风险最小化"
+            en: "Understand expected risk, empirical risk and structural risk minimization"
+          - zh: "建立监督 / 无监督 / 强化学习与参数 / 非参数模型的分类坐标"
+            en: "Place methods on two axes: supervised / unsupervised / RL and parametric / non-parametric"
+        triad:
+          model: {zh: "假设空间 $\\mathcal{F}$：函数族或条件分布族", en: "Hypothesis space $\\mathcal{F}$: a family of functions or conditional distributions"}
+          strategy: {zh: "经验风险 + 正则项（结构风险）", en: "Empirical risk + regularizer (structural risk)"}
+          algorithm: {zh: "求解上述最优化问题的数值方法", en: "The numerical method that solves the resulting optimization problem"}
+        derivations:
+          - zh: "平方损失下贝叶斯最优预测为条件期望 $E[Y|X]$"
+            en: "Under squared loss the Bayes-optimal predictor is $E[Y|X]$"
+          - zh: "0-1 损失下贝叶斯分类器与贝叶斯错误率"
+            en: "Under 0-1 loss: the Bayes classifier and the Bayes error rate"
+        visuals:
+          - id: viz-triad-explorer
+            title: {zh: "三要素组合器", en: "Triad composer"}
+            interaction:
+              zh: "从三个下拉菜单分别选模型、损失、优化器，在同一数据集上看训练动画；展示全书所有算法都是这三者的组合"
+              en: "Pick a model, a loss and an optimizer from three menus and watch training on one dataset — every algorithm in the course is one such combination"
+          - id: viz-risk-gap
+            title: {zh: "经验风险 vs 期望风险", en: "Empirical vs expected risk"}
+            interaction:
+              zh: "调节样本量 n，观察经验风险曲线如何逼近真实风险曲线"
+              en: "Change sample size n and watch the empirical risk curve approach the true risk curve"
+        frontier: []
+
+      - id: "02"
+        slug: generalization
+        title: {zh: "泛化、偏差–方差与模型选择", en: "Generalization, Bias–Variance and Model Selection"}
+        paradigm: foundation
+        sources: {ISL: ["2", "5"], UDL: ["8"], LH: ["1"]}
+        prereqs: ["01"]
+        tags: {task: [regression, classification], strategy: [regularization], algorithm: []}
+        goals:
+          - zh: "推导偏差–方差分解并理解经典 U 形曲线"
+            en: "Derive the bias–variance decomposition and the classical U-shaped curve"
+          - zh: "掌握留出法、k 折交叉验证与自助法"
+            en: "Master hold-out, k-fold cross-validation and the bootstrap"
+          - zh: "认识现代“双下降”现象，知道经典理论在哪里失效"
+            en: "Meet modern double descent and see where classical theory breaks down"
+        triad:
+          model: {zh: "一族复杂度递增的模型", en: "A nested family of models of increasing complexity"}
+          strategy: {zh: "用验证误差估计泛化误差", en: "Estimate generalization error with validation error"}
+          algorithm: {zh: "交叉验证 / 自助法", en: "Cross-validation / bootstrap"}
+        derivations:
+          - zh: "平方损失下 期望误差 = 偏差² + 方差 + 噪声"
+            en: "Under squared loss: expected error = bias² + variance + noise"
+          - zh: "有限假设空间的泛化误差上界（Hoeffding + 联合界）"
+            en: "Generalization bound for a finite hypothesis space (Hoeffding + union bound)"
+          - zh: "k 折交叉验证估计量的偏差与方差权衡"
+            en: "The bias–variance trade-off of the k-fold CV estimator itself"
+        visuals:
+          - id: viz-bias-variance
+            title: {zh: "偏差–方差模拟器", en: "Bias–variance simulator"}
+            interaction:
+              zh: "反复重采样训练集并叠加拟合曲线，拖动多项式阶数，实时拆分误差三部分"
+              en: "Resample training sets, overlay the fitted curves, drag polynomial degree, and see the error split into three parts live"
+          - id: viz-double-descent
+            title: {zh: "双下降", en: "Double descent"}
+            interaction:
+              zh: "用随机特征回归扫描参数量越过插值阈值 p = n，观察测试误差先升后降"
+              en: "Sweep the number of random features past the interpolation threshold p = n and watch test error rise then fall again"
+          - id: viz-cv-folds
+            title: {zh: "交叉验证的折", en: "Folds of cross-validation"}
+            interaction:
+              zh: "动画演示 k 折划分；调节 k 观察 CV 估计的均值与方差"
+              en: "Animate k-fold splits; vary k to see the mean and variance of the CV estimate"
+        frontier:
+          - ref: "Belkin, Hsu, Ma, Mandal (2019). Reconciling modern machine-learning practice and the classical bias–variance trade-off. PNAS."
+            note: {zh: "提出双下降曲线", en: "Introduced the double-descent curve"}
+          - ref: "Nakkiran et al. (2020). Deep Double Descent. ICLR."
+            note: {zh: "在深度网络中系统验证双下降（模型 / 样本 / 训练轮数）", en: "Systematic double descent in deep nets across model size, data and epochs"}
+          - ref: "Zhang, Bengio, Hardt, Recht, Vinyals (2017). Understanding deep learning requires rethinking generalization. ICLR."
+            note: {zh: "网络可拟合随机标签：对经典复杂度理论的挑战", en: "Networks fit random labels — a challenge to classical complexity theory"}
+
+  # ───────────────────────────────────────────────────────────────── P2
+  - id: P2
+    title: {zh: "第二部分：监督学习的经典模型", en: "Part II: Classical Supervised Learning"}
+    summary:
+      zh: "以李航的严谨推导为骨架、ISL 的统计视角为血肉，每个模型都拆成三要素讲。"
+      en: "Li Hang's rigorous derivations as the skeleton and ISL's statistical view as the flesh; every model is dissected into the triad."
+    chapters:
+      - id: "03"
+        slug: linear-regression
+        title: {zh: "线性回归与正则化", en: "Linear Regression and Regularization"}
+        paradigm: supervised
+        sources: {ISL: ["3", "6"], UDL: ["2"]}
+        prereqs: ["02"]
+        tags: {task: [regression], strategy: [squared, regularization], algorithm: [closed-form, coordinate, gd]}
+        goals:
+          - zh: "从投影几何与高斯 MLE 两个角度理解最小二乘"
+            en: "Understand least squares both as a projection and as Gaussian MLE"
+          - zh: "理解岭回归与 Lasso 的几何差异以及 Lasso 为何产生稀疏解"
+            en: "See the geometric difference between ridge and lasso, and why lasso gives sparse solutions"
+          - zh: "把正则化解释为先验（MAP）"
+            en: "Interpret regularization as a prior (MAP)"
+        triad:
+          model: {zh: "$f(x)=w^\\top x+b$", en: "$f(x)=w^\\top x+b$"}
+          strategy: {zh: "平方损失 + L2 / L1 惩罚", en: "Squared loss + L2 / L1 penalty"}
+          algorithm: {zh: "正规方程 / 坐标下降（软阈值）/ 梯度下降", en: "Normal equations / coordinate descent (soft thresholding) / gradient descent"}
+        derivations:
+          - zh: "正规方程与帽子矩阵：$\\hat y$ 是 $y$ 在列空间上的正交投影"
+            en: "Normal equations and the hat matrix: $\\hat y$ is the orthogonal projection of $y$ onto the column space"
+          - zh: "岭回归闭式解及其在 SVD 基下的收缩因子 $d_j^2/(d_j^2+\\lambda)$"
+            en: "Ridge closed form and its shrinkage factors $d_j^2/(d_j^2+\\lambda)$ in the SVD basis"
+          - zh: "Lasso 次梯度最优性条件与软阈值算子"
+            en: "Lasso subgradient optimality and the soft-thresholding operator"
+          - zh: "高斯先验 ⇒ 岭回归；拉普拉斯先验 ⇒ Lasso"
+            en: "Gaussian prior ⇒ ridge; Laplace prior ⇒ lasso"
+        visuals:
+          - id: viz-projection-3d
+            title: {zh: "最小二乘即投影", en: "Least squares is projection"}
+            interaction:
+              zh: "3D 视图中拖动向量 y，观察其在列空间平面上的投影与正交残差"
+              en: "In 3D, drag the vector y and watch its projection onto the column-space plane and the orthogonal residual"
+          - id: viz-l1-l2-geometry
+            title: {zh: "L1 与 L2 的几何", en: "Geometry of L1 vs L2"}
+            interaction:
+              zh: "拖动损失等高线中心，观察其与菱形 / 圆形约束域的切点，L1 为何常落在坐标轴上"
+              en: "Drag the centre of the loss contours and see where they touch the diamond / disc — why L1 lands on the axes"
+          - id: viz-reg-path
+            title: {zh: "正则化路径", en: "Regularization path"}
+            interaction:
+              zh: "拖动 λ 滑块，同步更新系数路径图、拟合曲线与交叉验证误差"
+              en: "Slide λ to update the coefficient paths, the fitted curve and CV error together"
+        frontier:
+          - ref: "Tibshirani (1996). Regression Shrinkage and Selection via the Lasso. JRSS-B."
+            note: {zh: "Lasso 原始论文", en: "The original lasso paper"}
+          - ref: "Hastie, Montanari, Rosset, Tibshirani (2022). Surprises in high-dimensional ridgeless least squares interpolation. Annals of Statistics."
+            note: {zh: "高维最小范数插值的精确风险：线性模型里的双下降", en: "Exact risk of minimum-norm interpolation: double descent in linear models"}
+
+      - id: "04"
+        slug: linear-classification
+        title: {zh: "线性分类：感知机、逻辑回归与最大熵", en: "Linear Classification: Perceptron, Logistic Regression and Maximum Entropy"}
+        paradigm: supervised
+        sources: {ISL: ["4"], LH: ["2", "6"]}
+        prereqs: ["03"]
+        tags: {task: [classification], strategy: [perceptron, cross-entropy, max-entropy], algorithm: [sgd, newton]}
+        goals:
+          - zh: "掌握感知机的原始形式、对偶形式与收敛定理"
+            en: "Master the perceptron's primal form, dual form and convergence theorem"
+          - zh: "把逻辑回归同时看作伯努利 MLE 与交叉熵最小化"
+            en: "View logistic regression as both Bernoulli MLE and cross-entropy minimization"
+          - zh: "证明最大熵模型的对偶恰为多项逻辑回归（softmax）"
+            en: "Show that the dual of the maximum-entropy model is multinomial logistic regression (softmax)"
+        triad:
+          model: {zh: "线性决策边界 $\\mathrm{sign}(w^\\top x+b)$ 或 $\\sigma(w^\\top x+b)$", en: "Linear boundary $\\mathrm{sign}(w^\\top x+b)$ or $\\sigma(w^\\top x+b)$"}
+          strategy: {zh: "误分类点到超平面的距离和 / 负对数似然 / 最大熵", en: "Sum of distances of misclassified points / negative log-likelihood / maximum entropy"}
+          algorithm: {zh: "随机梯度下降 / 牛顿法（IRLS）/ 改进的迭代尺度法", en: "SGD / Newton's method (IRLS) / improved iterative scaling"}
+        derivations:
+          - zh: "Novikoff 定理：线性可分时感知机误分类次数 $\\le (R/\\gamma)^2$"
+            en: "Novikoff's theorem: on separable data the perceptron makes at most $(R/\\gamma)^2$ mistakes"
+          - zh: "逻辑回归对数似然的梯度与 Hessian，证明其为凹函数"
+            en: "Gradient and Hessian of the logistic log-likelihood; proof of concavity"
+          - zh: "最大熵的拉格朗日对偶 ⇒ 指数族 / softmax 形式"
+            en: "Lagrangian dual of maximum entropy ⇒ exponential-family / softmax form"
+        visuals:
+          - id: viz-perceptron-steps
+            title: {zh: "感知机逐步更新", en: "Perceptron step by step"}
+            interaction:
+              zh: "逐步播放：高亮当前误分类点，显示 w 的更新向量与超平面旋转；可切换原始 / 对偶形式"
+              en: "Step through: highlight the misclassified point, show the update vector and the rotating hyperplane; toggle primal / dual form"
+          - id: viz-logistic-surface
+            title: {zh: "逻辑回归的概率曲面", en: "The logistic probability surface"}
+            interaction:
+              zh: "拖动 w 与 b，3D 曲面与 2D 决策边界联动，并显示交叉熵损失数值"
+              en: "Drag w and b; the 3D sigmoid surface, 2D boundary and cross-entropy loss update together"
+          - id: viz-loss-zoo
+            title: {zh: "分类损失动物园", en: "Zoo of classification losses"}
+            interaction:
+              zh: "在同一坐标系中对比 0-1、感知机、交叉熵、合页、指数损失关于间隔 $yf(x)$ 的曲线（与第 07、08 章联动）"
+              en: "Plot 0-1, perceptron, cross-entropy, hinge and exponential losses against the margin $yf(x)$ (linked to Ch. 07 and 08)"
+        frontier: []
+
+      - id: "05"
+        slug: generative-classifiers
+        title: {zh: "生成式分类：朴素贝叶斯与判别分析", en: "Generative Classifiers: Naive Bayes and Discriminant Analysis"}
+        paradigm: supervised
+        sources: {ISL: ["4"], LH: ["4"]}
+        prereqs: ["04"]
+        tags: {task: [classification], strategy: [likelihood], algorithm: [closed-form]}
+        goals:
+          - zh: "理解生成式 $p(x,y)$ 与判别式 $p(y|x)$ 建模的根本差异"
+            en: "Grasp the core difference between generative $p(x,y)$ and discriminative $p(y|x)$ modelling"
+          - zh: "推导 LDA / QDA 的决策边界形状"
+            en: "Derive the shape of LDA / QDA decision boundaries"
+          - zh: "理解朴素贝叶斯的条件独立假设与拉普拉斯平滑"
+            en: "Understand the naive Bayes independence assumption and Laplace smoothing"
+        triad:
+          model: {zh: "类先验 $p(y)$ × 类条件密度 $p(x|y)$", en: "Class prior $p(y)$ × class-conditional density $p(x|y)$"}
+          strategy: {zh: "联合似然最大化（后验最大化决策）", en: "Maximize joint likelihood (decide by posterior)"}
+          algorithm: {zh: "计数 / 闭式参数估计", en: "Counting / closed-form parameter estimates"}
+        derivations:
+          - zh: "共享协方差 ⇒ 线性边界（LDA）；不同协方差 ⇒ 二次边界（QDA）"
+            en: "Shared covariance ⇒ linear boundary (LDA); separate covariances ⇒ quadratic boundary (QDA)"
+          - zh: "LDA 的后验恰为逻辑回归形式——同一模型族、不同估计策略"
+            en: "The LDA posterior has logistic form — same model family, different estimation strategy"
+          - zh: "朴素贝叶斯的极大似然与贝叶斯估计（拉普拉斯平滑）"
+            en: "Maximum-likelihood vs Bayesian estimates for naive Bayes (Laplace smoothing)"
+        visuals:
+          - id: viz-lda-qda
+            title: {zh: "从高斯到边界", en: "From Gaussians to boundaries"}
+            interaction:
+              zh: "拖动两类高斯的均值与协方差椭圆，实时显示 LDA / QDA / 逻辑回归三条边界"
+              en: "Drag the means and covariance ellipses of two Gaussians; LDA, QDA and logistic boundaries update live"
+          - id: viz-gen-vs-disc
+            title: {zh: "生成式 vs 判别式的样本效率", en: "Sample efficiency: generative vs discriminative"}
+            interaction:
+              zh: "调节训练样本量，比较朴素贝叶斯与逻辑回归的学习曲线交叉点"
+              en: "Vary training size and compare the crossing learning curves of naive Bayes and logistic regression"
+        frontier:
+          - ref: "Ng & Jordan (2002). On Discriminative vs. Generative Classifiers: A comparison of logistic regression and naive Bayes. NeurIPS."
+            note: {zh: "生成式收敛更快、判别式渐近误差更低", en: "Generative converges faster; discriminative has lower asymptotic error"}
+
+      - id: "06"
+        slug: nonparametric
+        title: {zh: "非参数方法与基函数扩展：kNN、样条与 GAM", en: "Non-parametric Methods and Basis Expansions: kNN, Splines and GAMs"}
+        paradigm: supervised
+        sources: {ISL: ["2", "7"], LH: ["3"]}
+        prereqs: ["02"]
+        tags: {task: [classification, regression], strategy: [squared, regularization], algorithm: [closed-form]}
+        goals:
+          - zh: "理解 kNN 的三要素：距离度量、k 值、决策规则"
+            en: "Understand kNN's three choices: distance metric, k, and decision rule"
+          - zh: "掌握 kd 树的构造与搜索"
+            en: "Master kd-tree construction and search"
+          - zh: "用基函数扩展把线性模型变成非线性模型；理解维数灾难"
+            en: "Turn linear models non-linear via basis expansions; understand the curse of dimensionality"
+        triad:
+          model: {zh: "局部平均 / 基函数线性组合", en: "Local averaging / linear combination of basis functions"}
+          strategy: {zh: "多数表决（0-1 损失）/ 惩罚平方损失", en: "Majority vote (0-1 loss) / penalized squared loss"}
+          algorithm: {zh: "kd 树检索 / 平滑样条闭式解", en: "kd-tree search / closed-form smoothing spline"}
+        derivations:
+          - zh: "1-NN 渐近误差不超过贝叶斯误差的两倍（Cover–Hart）"
+            en: "The asymptotic 1-NN error is at most twice the Bayes error (Cover–Hart)"
+          - zh: "高维球壳体积集中：维数灾难的定量刻画"
+            en: "Volume concentration in high-dimensional shells: quantifying the curse of dimensionality"
+          - zh: "三次样条的自由度与节点数关系"
+            en: "Degrees of freedom of cubic splines as a function of knots"
+        visuals:
+          - id: viz-knn-boundary
+            title: {zh: "k 值与决策边界", en: "k and the decision boundary"}
+            interaction:
+              zh: "拖动 k 滑块，边界从锯齿状逐步变平滑；切换 L1 / L2 / L∞ 距离"
+              en: "Slide k from jagged to smooth boundaries; switch between L1 / L2 / L∞ distances"
+          - id: viz-kdtree
+            title: {zh: "kd 树的构造与最近邻搜索", en: "kd-tree construction and nearest-neighbour search"}
+            interaction:
+              zh: "动画逐层切分平面；点选查询点，回放回溯与剪枝过程"
+              en: "Animate the recursive splits; click a query point to replay backtracking and pruning"
+          - id: viz-curse-dim
+            title: {zh: "维数灾难", en: "The curse of dimensionality"}
+            interaction:
+              zh: "调高维度 d，观察最近邻与最远邻距离之比趋于 1"
+              en: "Raise dimension d and watch the nearest/farthest distance ratio approach 1"
+        frontier: []
+
+      - id: "07"
+        slug: svm-kernels
+        title: {zh: "支持向量机与核方法", en: "Support Vector Machines and Kernel Methods"}
+        paradigm: supervised
+        sources: {ISL: ["9"], LH: ["7"]}
+        prereqs: ["00", "04"]
+        tags: {task: [classification], strategy: [hinge, regularization], algorithm: [dual-qp]}
+        goals:
+          - zh: "从最大间隔原理完整推导硬 / 软间隔 SVM 及其对偶"
+            en: "Fully derive hard / soft-margin SVMs and their duals from the max-margin principle"
+          - zh: "理解核技巧、正定核与再生核希尔伯特空间的直觉"
+            en: "Understand the kernel trick, positive-definite kernels and the intuition of an RKHS"
+          - zh: "掌握 SMO 算法的两变量子问题"
+            en: "Master SMO's two-variable subproblem"
+        triad:
+          model: {zh: "分离超平面（可经核映射到高维）", en: "Separating hyperplane (possibly in a kernel feature space)"}
+          strategy: {zh: "间隔最大化 ⇔ 合页损失 + L2 正则", en: "Margin maximization ⇔ hinge loss + L2 regularization"}
+          algorithm: {zh: "拉格朗日对偶 + SMO", en: "Lagrangian dual + SMO"}
+        derivations:
+          - zh: "几何间隔 → 凸二次规划原问题 → KKT → 对偶问题"
+            en: "Geometric margin → convex QP primal → KKT → dual problem"
+          - zh: "软间隔 SVM 等价于合页损失 + L2 正则的无约束问题"
+            en: "Soft-margin SVM is equivalent to unconstrained hinge loss + L2 regularization"
+          - zh: "Mercer 条件；常用核（多项式、RBF）对应的特征空间"
+            en: "Mercer's condition; feature spaces of common kernels (polynomial, RBF)"
+          - zh: "SMO：两变量解析更新与裁剪"
+            en: "SMO: closed-form two-variable update and clipping"
+        visuals:
+          - id: viz-svm-margin
+            title: {zh: "可拖拽的最大间隔", en: "Draggable maximum margin"}
+            interaction:
+              zh: "拖动数据点，实时重解 SVM；支持向量高亮，非支持向量移动时边界不变"
+              en: "Drag points and re-solve the SVM live; support vectors light up, and moving non-support vectors leaves the boundary unchanged"
+          - id: viz-kernel-lift
+            title: {zh: "核映射：从 2D 升到 3D", en: "Kernel lifting: 2D to 3D"}
+            interaction:
+              zh: "同心圆数据经 $\\phi(x)=(x_1,x_2,x_1^2+x_2^2)$ 升维后被平面分开；调 RBF 带宽观察边界变化"
+              en: "Concentric circles become separable after lifting by $\\phi(x)=(x_1,x_2,x_1^2+x_2^2)$; tune RBF bandwidth to reshape the boundary"
+          - id: viz-smo
+            title: {zh: "SMO 迭代回放", en: "SMO iteration replay"}
+            interaction:
+              zh: "逐步展示每次选中的一对 α 与其在约束盒中的更新轨迹"
+              en: "Step through each chosen pair of α and its update path inside the box constraint"
+        frontier:
+          - ref: "Rahimi & Recht (2007). Random Features for Large-Scale Kernel Machines. NeurIPS."
+            note: {zh: "随机特征近似核方法，连接核与两层网络", en: "Random features approximate kernels, bridging kernels and two-layer networks"}
+          - ref: "Jacot, Gabriel, Hongler (2018). Neural Tangent Kernel. NeurIPS."
+            note: {zh: "无限宽网络的训练等价于核回归（与第 18 章联动）", en: "Training infinitely wide networks equals kernel regression (links to Ch. 18)"}
+
+      - id: "08"
+        slug: trees-ensembles
+        title: {zh: "决策树与集成学习", en: "Decision Trees and Ensemble Learning"}
+        paradigm: supervised
+        sources: {ISL: ["8"], LH: ["5", "8"]}
+        prereqs: ["02", "04"]
+        tags: {task: [classification, regression], strategy: [impurity, exponential, squared], algorithm: [greedy, stagewise]}
+        goals:
+          - zh: "掌握 ID3 / C4.5 / CART 的划分准则与剪枝"
+            en: "Master the splitting criteria and pruning of ID3 / C4.5 / CART"
+          - zh: "理解 Bagging / 随机森林如何降低方差"
+            en: "Understand how bagging / random forests reduce variance"
+          - zh: "把 AdaBoost 推导为指数损失下的前向分步加法模型，并推广到梯度提升"
+            en: "Derive AdaBoost as forward stagewise additive modelling under exponential loss, then generalize to gradient boosting"
+        triad:
+          model: {zh: "轴对齐的分段常数函数 / 基学习器的加权和", en: "Axis-aligned piecewise-constant functions / weighted sums of base learners"}
+          strategy: {zh: "信息增益 / 基尼指数 / 指数损失 / 任意可微损失", en: "Information gain / Gini / exponential loss / any differentiable loss"}
+          algorithm: {zh: "贪心递归划分 + 代价复杂度剪枝 / 前向分步", en: "Greedy recursive splitting + cost-complexity pruning / forward stagewise"}
+        derivations:
+          - zh: "信息增益、信息增益比与基尼指数"
+            en: "Information gain, gain ratio and the Gini index"
+          - zh: "AdaBoost 训练误差指数下降的上界"
+            en: "Exponentially decreasing upper bound on AdaBoost training error"
+          - zh: "前向分步 + 指数损失 ⇒ AdaBoost 的权重与系数公式"
+            en: "Forward stagewise + exponential loss ⇒ AdaBoost's weight and coefficient formulas"
+          - zh: "梯度提升：在函数空间中做梯度下降"
+            en: "Gradient boosting: gradient descent in function space"
+        visuals:
+          - id: viz-tree-grow
+            title: {zh: "长一棵树", en: "Growing a tree"}
+            interaction:
+              zh: "每一步展示候选划分的增益柱状图，选中后平面被切分、树结构同步生长；可调剪枝参数 α"
+              en: "Each step shows a bar chart of candidate split gains; the chosen split cuts the plane and the tree grows in sync; tune pruning α"
+          - id: viz-adaboost-weights
+            title: {zh: "AdaBoost 的样本权重", en: "AdaBoost sample weights"}
+            interaction:
+              zh: "点的大小代表权重，逐轮播放弱分类器与权重变化，同时绘制训练误差与上界"
+              en: "Point size encodes weight; play rounds of weak learners and reweighting while plotting training error and its bound"
+          - id: viz-bagging-variance
+            title: {zh: "集成降低方差", en: "Ensembles reduce variance"}
+            interaction:
+              zh: "调节树的数量与特征采样比例，比较单棵树与随机森林边界的抖动程度"
+              en: "Vary the number of trees and feature subsampling; compare the jitter of a single tree versus a forest"
+        frontier:
+          - ref: "Friedman (2001). Greedy Function Approximation: A Gradient Boosting Machine. Annals of Statistics."
+            note: {zh: "梯度提升的奠基论文", en: "The founding gradient boosting paper"}
+          - ref: "Chen & Guestrin (2016). XGBoost: A Scalable Tree Boosting System. KDD."
+            note: {zh: "二阶近似 + 工程优化，工业标准", en: "Second-order approximation plus systems engineering; an industry standard"}
+          - ref: "Grinsztajn, Oyallon, Varoquaux (2022). Why do tree-based models still outperform deep learning on typical tabular data? NeurIPS Datasets & Benchmarks."
+            note: {zh: "表格数据上树模型仍占优的原因分析", en: "Why trees still win on tabular data"}
+
+      - id: "09"
+        slug: structured-prediction
+        title: {zh: "结构化预测：隐马尔可夫模型与条件随机场", en: "Structured Prediction: Hidden Markov Models and Conditional Random Fields"}
+        paradigm: supervised
+        sources: {LH: ["10", "11"]}
+        prereqs: ["05"]
+        tags: {task: [sequence], strategy: [likelihood, cross-entropy], algorithm: [dp, em, newton]}
+        goals:
+          - zh: "掌握 HMM 的三个基本问题：概率计算、学习、预测"
+            en: "Master the three HMM problems: evaluation, learning, decoding"
+          - zh: "理解 HMM（生成式）与线性链 CRF（判别式）的对应关系"
+            en: "Relate HMMs (generative) to linear-chain CRFs (discriminative)"
+          - zh: "看清前向–后向与维特比都是网格图上的动态规划"
+            en: "See forward–backward and Viterbi as dynamic programming on a trellis"
+        triad:
+          model: {zh: "链式概率图模型", en: "Chain-structured probabilistic graphical models"}
+          strategy: {zh: "（条件）对数似然最大化", en: "Maximize (conditional) log-likelihood"}
+          algorithm: {zh: "前向–后向、Baum–Welch（EM）、维特比、拟牛顿法", en: "Forward–backward, Baum–Welch (EM), Viterbi, quasi-Newton"}
+        derivations:
+          - zh: "前向 / 后向变量的递推及其 $O(TN^2)$ 复杂度"
+            en: "Forward / backward recursions and their $O(TN^2)$ cost"
+          - zh: "Baum–Welch 作为 EM 的特例（与第 11 章联动）"
+            en: "Baum–Welch as a special case of EM (links to Ch. 11)"
+          - zh: "线性链 CRF 的参数化形式与规范化因子的计算"
+            en: "Parametric form of the linear-chain CRF and computing its partition function"
+        visuals:
+          - id: viz-trellis
+            title: {zh: "网格图上的动态规划", en: "Dynamic programming on the trellis"}
+            interaction:
+              zh: "逐列点亮前向概率；切换为维特比时显示 max 与回溯指针，最终高亮最优路径"
+              en: "Light up forward probabilities column by column; switch to Viterbi to show max operations, back-pointers and the final best path"
+          - id: viz-hmm-vs-crf
+            title: {zh: "HMM 与 CRF 的图结构", en: "Graph structure of HMM vs CRF"}
+            interaction:
+              zh: "并排显示有向图与无向图，悬停因子查看其参数化形式"
+              en: "Directed vs undirected graphs side by side; hover a factor to see its parametrization"
+        frontier:
+          - ref: "Lafferty, McCallum, Pereira (2001). Conditional Random Fields. ICML."
+            note: {zh: "CRF 原始论文", en: "The original CRF paper"}
+          - ref: "Gu & Dao (2023). Mamba: Linear-Time Sequence Modeling with Selective State Spaces. arXiv."
+            note: {zh: "现代状态空间模型：线性递推 + 并行扫描，可与 HMM 对照理解", en: "Modern state-space models — linear recurrences plus parallel scans, comparable with HMMs"}
+
+  # ───────────────────────────────────────────────────────────────── P3
+  - id: P3
+    title: {zh: "第三部分：无监督学习与潜变量", en: "Part III: Unsupervised Learning and Latent Variables"}
+    summary:
+      zh: "没有标签时学什么？聚类、潜变量、低秩结构与采样——它们是后文生成模型的直接前身。"
+      en: "What to learn without labels: clusters, latent variables, low-rank structure and sampling — the direct ancestors of modern generative models."
+    chapters:
+      - id: "10"
+        slug: clustering
+        title: {zh: "聚类", en: "Clustering"}
+        paradigm: unsupervised
+        sources: {ISL: ["12"], LH: ["13", "14"]}
+        prereqs: ["01"]
+        tags: {task: [clustering], strategy: [within-cluster], algorithm: [lloyd, greedy]}
+        goals:
+          - zh: "掌握 k 均值与层次聚类"
+            en: "Master k-means and hierarchical clustering"
+          - zh: "理解 k 均值是坐标下降、只保证局部最优"
+            en: "See k-means as coordinate descent with only local optimality guarantees"
+          - zh: "学会选择 k 与评价聚类"
+            en: "Learn to choose k and evaluate clusterings"
+        triad:
+          model: {zh: "数据划分 / 簇中心", en: "A partition / set of centroids"}
+          strategy: {zh: "簇内平方和最小 / 链接准则", en: "Minimize within-cluster sum of squares / linkage criterion"}
+          algorithm: {zh: "Lloyd 交替最小化 / 凝聚式合并", en: "Lloyd's alternating minimization / agglomerative merging"}
+        derivations:
+          - zh: "Lloyd 算法每一步目标单调不增的证明"
+            en: "Proof that each Lloyd step does not increase the objective"
+          - zh: "k-means++ 初始化的期望近似比 $O(\\log k)$"
+            en: "Expected $O(\\log k)$ approximation ratio of k-means++ seeding"
+        visuals:
+          - id: viz-kmeans
+            title: {zh: "k 均值迭代", en: "k-means iterations"}
+            interaction:
+              zh: "逐步播放分配 / 更新两步，同时绘制目标函数下降曲线；对比随机与 k-means++ 初始化"
+              en: "Step through assign / update with a live objective curve; compare random vs k-means++ seeding"
+          - id: viz-dendrogram
+            title: {zh: "树状图切割", en: "Cutting a dendrogram"}
+            interaction:
+              zh: "拖动水平切割线，散点图中的簇同步变化；切换单 / 全 / 平均链接"
+              en: "Drag the cut line and watch clusters change in the scatter plot; switch single / complete / average linkage"
+        frontier:
+          - ref: "Arthur & Vassilvitskii (2007). k-means++: The Advantages of Careful Seeding. SODA."
+            note: {zh: "带理论保证的初始化", en: "Seeding with a provable guarantee"}
+
+      - id: "11"
+        slug: em-mixtures
+        title: {zh: "EM 算法与混合模型", en: "The EM Algorithm and Mixture Models"}
+        paradigm: unsupervised
+        sources: {LH: ["9"]}
+        prereqs: ["00", "10"]
+        tags: {task: [clustering, density], strategy: [likelihood, elbo], algorithm: [em]}
+        goals:
+          - zh: "从 ELBO 视角推导 EM 并证明似然单调上升"
+            en: "Derive EM from the ELBO and prove monotone likelihood increase"
+          - zh: "推导高斯混合模型的 E 步与 M 步"
+            en: "Derive the E-step and M-step for Gaussian mixtures"
+          - zh: "理解 k 均值是 GMM 的硬分配极限"
+            en: "See k-means as the hard-assignment limit of a GMM"
+        triad:
+          model: {zh: "含潜变量的概率模型 $p(x,z|\\theta)$", en: "Latent-variable model $p(x,z|\\theta)$"}
+          strategy: {zh: "边缘似然最大化（通过下界）", en: "Maximize marginal likelihood (via a lower bound)"}
+          algorithm: {zh: "EM：坐标上升最大化 ELBO", en: "EM: coordinate ascent on the ELBO"}
+        derivations:
+          - zh: "$\\log p(x) = \\mathrm{ELBO}(q,\\theta) + \\mathrm{KL}(q\\,\\|\\,p(z|x))$"
+            en: "$\\log p(x) = \\mathrm{ELBO}(q,\\theta) + \\mathrm{KL}(q\\,\\|\\,p(z|x))$"
+          - zh: "E 步令 KL 为零、M 步提升下界 ⇒ 单调性"
+            en: "E-step zeroes the KL, M-step raises the bound ⇒ monotonicity"
+          - zh: "GEM 与 F 函数的极大–极大算法（为 VAE 铺垫）"
+            en: "Generalized EM and the maximization–maximization view (setting up VAEs)"
+        visuals:
+          - id: viz-gmm-em
+            title: {zh: "GMM 的 EM 迭代", en: "EM for a GMM"}
+            interaction:
+              zh: "点的颜色表示软分配责任度，椭圆逐步收敛；同步绘制对数似然曲线"
+              en: "Point colour shows soft responsibilities, ellipses converge step by step, log-likelihood plotted alongside"
+          - id: viz-elbo-bound
+            title: {zh: "下界的贴合与上推", en: "Touching and pushing the lower bound"}
+            interaction:
+              zh: "一维参数下画出 $\\log p(x|\\theta)$ 与每一步的 ELBO 曲线，动画展示“贴合–上推”"
+              en: "For a 1-D parameter, draw $\\log p(x|\\theta)$ and each step's ELBO, animating the touch-then-push cycle"
+        frontier:
+          - ref: "Dempster, Laird, Rubin (1977). Maximum Likelihood from Incomplete Data via the EM Algorithm. JRSS-B."
+            note: {zh: "EM 原始论文", en: "The original EM paper"}
+          - ref: "Kingma & Welling (2014). Auto-Encoding Variational Bayes. ICLR."
+            note: {zh: "把 E 步换成神经网络摊销推断 ⇒ VAE（第 24 章）", en: "Replace the E-step with amortized neural inference ⇒ VAE (Ch. 24)"}
+
+      - id: "12"
+        slug: matrix-factorization
+        title: {zh: "矩阵分解与降维：SVD、PCA 与潜在语义分析", en: "Matrix Factorization and Dimensionality Reduction: SVD, PCA and LSA"}
+        paradigm: unsupervised
+        sources: {ISL: ["12"], LH: ["15", "16", "17"]}
+        prereqs: ["00"]
+        tags: {task: [dim-reduction], strategy: [reconstruction], algorithm: [eigen]}
+        goals:
+          - zh: "证明 PCA 的“最大方差”与“最小重构误差”两种定义等价"
+            en: "Prove the max-variance and min-reconstruction-error definitions of PCA coincide"
+          - zh: "掌握 Eckart–Young 定理与截断 SVD"
+            en: "Master the Eckart–Young theorem and truncated SVD"
+          - zh: "用 LSA 理解词–文档矩阵的低秩结构"
+            en: "Understand the low-rank structure of term–document matrices through LSA"
+        triad:
+          model: {zh: "低秩线性子空间", en: "Low-rank linear subspace"}
+          strategy: {zh: "方差最大 / 重构误差最小", en: "Maximize variance / minimize reconstruction error"}
+          algorithm: {zh: "特征分解 / SVD / 非负矩阵分解", en: "Eigendecomposition / SVD / non-negative matrix factorization"}
+        derivations:
+          - zh: "PCA：拉格朗日乘子法得到协方差矩阵特征方程"
+            en: "PCA via Lagrange multipliers yields the covariance eigen-equation"
+          - zh: "Eckart–Young：截断 SVD 是 Frobenius 范数下最优秩 k 近似"
+            en: "Eckart–Young: truncated SVD is the best rank-k approximation in Frobenius norm"
+          - zh: "NMF 的乘法更新规则"
+            en: "Multiplicative update rules for NMF"
+        visuals:
+          - id: viz-pca-rotate
+            title: {zh: "寻找主方向", en: "Finding the principal direction"}
+            interaction:
+              zh: "旋转投影方向，同时显示投影方差与重构误差之和恒定；松手后吸附到最优方向"
+              en: "Rotate the projection axis while projected variance and reconstruction error sum to a constant; release to snap to the optimum"
+          - id: viz-lowrank-image
+            title: {zh: "低秩图像近似", en: "Low-rank image approximation"}
+            interaction:
+              zh: "拖动秩 k，图像与奇异值谱同步变化，显示压缩率"
+              en: "Slide rank k to update the image and singular-value spectrum together, with the compression ratio"
+          - id: viz-scree
+            title: {zh: "碎石图与解释方差", en: "Scree plot and explained variance"}
+            interaction:
+              zh: "在真实数据集上选择主成分数，查看累计解释方差与二维投影散点"
+              en: "Pick the number of components on a real dataset and see cumulative explained variance and the 2-D projection"
+        frontier:
+          - ref: "Halko, Martinsson, Tropp (2011). Finding Structure with Randomness. SIAM Review."
+            note: {zh: "随机化 SVD：大规模低秩近似", en: "Randomized SVD for large-scale low-rank approximation"}
+          - ref: "Hu et al. (2022). LoRA: Low-Rank Adaptation of Large Language Models. ICLR."
+            note: {zh: "低秩分解在大模型微调中的应用", en: "Low-rank factorization for fine-tuning large models"}
+
+      - id: "13"
+        slug: markov-chains
+        title: {zh: "马尔可夫链方法：MCMC、PageRank 与主题模型", en: "Markov Chain Methods: MCMC, PageRank and Topic Models"}
+        paradigm: unsupervised
+        sources: {LH: ["18", "19", "20", "21"]}
+        prereqs: ["11", "12"]
+        tags: {task: [density, ranking, clustering], strategy: [likelihood], algorithm: [mcmc, power-iteration, em]}
+        goals:
+          - zh: "掌握马尔可夫链的平稳分布与细致平衡条件"
+            en: "Master stationary distributions and detailed balance"
+          - zh: "把 PageRank 看作随机游走的平稳分布、把 MCMC 看作“设计一条以目标分布为平稳分布的链”"
+            en: "See PageRank as a random walk's stationary distribution, and MCMC as designing a chain whose stationary distribution is the target"
+          - zh: "理解 PLSA 与 LDA 主题模型及其吉布斯采样"
+            en: "Understand PLSA and LDA topic models and their Gibbs sampler"
+        triad:
+          model: {zh: "马尔可夫链 / 层次贝叶斯主题模型", en: "Markov chains / hierarchical Bayesian topic models"}
+          strategy: {zh: "平稳分布 / 后验推断", en: "Stationary distribution / posterior inference"}
+          algorithm: {zh: "幂迭代 / Metropolis–Hastings / 吉布斯采样 / 变分 EM", en: "Power iteration / Metropolis–Hastings / Gibbs sampling / variational EM"}
+        derivations:
+          - zh: "细致平衡 ⇒ 平稳；M–H 接受率的推导"
+            en: "Detailed balance ⇒ stationarity; deriving the M–H acceptance ratio"
+          - zh: "PageRank：带阻尼的转移矩阵与 Perron–Frobenius 定理"
+            en: "PageRank: the damped transition matrix and Perron–Frobenius"
+          - zh: "LDA 的折叠吉布斯采样条件分布"
+            en: "Collapsed Gibbs conditionals for LDA"
+        visuals:
+          - id: viz-mh-sampler
+            title: {zh: "Metropolis–Hastings 采样器", en: "Metropolis–Hastings sampler"}
+            interaction:
+              zh: "在二维目标密度上观察链的轨迹，调节提议步长看接受率与混合速度的权衡"
+              en: "Watch the chain wander over a 2-D target; tune proposal step size to trade acceptance rate against mixing"
+          - id: viz-pagerank-surfer
+            title: {zh: "随机冲浪者", en: "The random surfer"}
+            interaction:
+              zh: "在可编辑的小型网页图上播放随机游走，节点大小收敛到 PageRank 值；调节阻尼系数"
+              en: "Play a random walk on an editable web graph; node sizes converge to PageRank; tune the damping factor"
+          - id: viz-lda-topics
+            title: {zh: "主题的涌现", en: "Topics emerging"}
+            interaction:
+              zh: "在小语料上逐轮吉布斯采样，观察词–主题分配从随机到成形"
+              en: "Run Gibbs sweeps on a small corpus and watch word–topic assignments go from random to structured"
+        frontier:
+          - ref: "Blei, Ng, Jordan (2003). Latent Dirichlet Allocation. JMLR."
+            note: {zh: "LDA 原始论文", en: "The original LDA paper"}
+          - ref: "Welling & Teh (2011). Bayesian Learning via Stochastic Gradient Langevin Dynamics. ICML."
+            note: {zh: "朗之万动力学采样：通往得分模型与扩散模型（第 25 章）", en: "Langevin sampling — the road to score-based and diffusion models (Ch. 25)"}
+
+  # ───────────────────────────────────────────────────────────────── P4
+  - id: P4
+    title: {zh: "第四部分：深度学习基础", en: "Part IV: Foundations of Deep Learning"}
+    summary:
+      zh: "以 UDL 为主线：网络是什么函数、用什么损失、如何优化、为何能泛化。"
+      en: "Following UDL: what functions networks compute, which losses, how they are optimized, and why they generalize."
+    chapters:
+      - id: "14"
+        slug: neural-networks
+        title: {zh: "从浅层到深层网络", en: "From Shallow to Deep Networks"}
+        paradigm: deep
+        sources: {ISL: ["10"], UDL: ["3", "4"]}
+        prereqs: ["03", "04"]
+        tags: {task: [regression, classification], strategy: [], algorithm: []}
+        goals:
+          - zh: "把 ReLU 网络理解为分段线性函数，并计数其线性区域"
+            en: "Understand ReLU networks as piecewise-linear functions and count their linear regions"
+          - zh: "理解万能逼近定理的含义与局限"
+            en: "Understand what the universal approximation theorem does and does not say"
+          - zh: "从“折叠”角度理解深度带来的表达效率"
+            en: "Understand the expressive efficiency of depth through “folding”"
+        triad:
+          model: {zh: "仿射变换与逐元素非线性的复合", en: "Compositions of affine maps and element-wise non-linearities"}
+          strategy: {zh: "（见第 15 章）", en: "(see Ch. 15)"}
+          algorithm: {zh: "（见第 16、17 章）", en: "(see Ch. 16 and 17)"}
+        derivations:
+          - zh: "单隐层 ReLU 网络：$D$ 个隐单元在一维输入上至多 $D+1$ 个线性段"
+            en: "Single-hidden-layer ReLU nets: at most $D+1$ linear pieces on 1-D input with $D$ hidden units"
+          - zh: "深度网络线性区域数随层数指数增长的构造"
+            en: "A construction where linear regions grow exponentially with depth"
+        visuals:
+          - id: viz-relu-regions
+            title: {zh: "ReLU 网络的线性区域", en: "Linear regions of a ReLU network"}
+            interaction:
+              zh: "调整隐单元数与权重，二维输入空间被分成多边形区域，按区域着色并显示输出曲面"
+              en: "Tune hidden units and weights; the 2-D input space splits into polygons, coloured by region, with the output surface"
+          - id: viz-depth-folding
+            title: {zh: "深度即折叠", en: "Depth as folding"}
+            interaction:
+              zh: "逐层动画展示输入空间被“折叠”，同等参数下对比宽浅与窄深网络的区域数"
+              en: "Animate layer-by-layer folding of input space; compare region counts of wide-shallow and narrow-deep nets at equal parameters"
+        frontier:
+          - ref: "Montúfar, Pascanu, Cho, Bengio (2014). On the Number of Linear Regions of Deep Neural Networks. NeurIPS."
+            note: {zh: "深度网络线性区域数的理论分析", en: "Theory of linear-region counts in deep nets"}
+
+      - id: "15"
+        slug: losses-as-likelihood
+        title: {zh: "损失函数即最大似然", en: "Loss Functions as Maximum Likelihood"}
+        paradigm: deep
+        sources: {UDL: ["5"]}
+        prereqs: ["00", "14"]
+        tags: {task: [regression, classification], strategy: [squared, cross-entropy, likelihood], algorithm: []}
+        goals:
+          - zh: "掌握“选择输出分布 → 写出负对数似然 → 得到损失”的通用配方"
+            en: "Master the recipe: choose an output distribution → write its negative log-likelihood → obtain the loss"
+          - zh: "把第二、三部分的损失统一到这一框架下"
+            en: "Unify the losses of Parts II and III under this recipe"
+        triad:
+          model: {zh: "网络输出某个分布的参数", en: "The network outputs parameters of a distribution"}
+          strategy: {zh: "负对数似然", en: "Negative log-likelihood"}
+          algorithm: {zh: "（见第 16 章）", en: "(see Ch. 16)"}
+        derivations:
+          - zh: "高斯 ⇒ 平方损失；伯努利 ⇒ 二元交叉熵；分类分布 ⇒ softmax 交叉熵"
+            en: "Gaussian ⇒ squared loss; Bernoulli ⇒ binary cross-entropy; categorical ⇒ softmax cross-entropy"
+          - zh: "异方差回归：同时预测均值与方差"
+            en: "Heteroscedastic regression: predicting mean and variance together"
+          - zh: "交叉熵与 KL 散度的关系"
+            en: "Relation between cross-entropy and KL divergence"
+        visuals:
+          - id: viz-loss-recipe
+            title: {zh: "损失配方机", en: "The loss recipe machine"}
+            interaction:
+              zh: "选择输出分布，自动推导并显示损失公式、曲线与对应的经典模型（回链到前面章节）"
+              en: "Pick an output distribution; the loss formula, its curve and the matching classical model (linked back to earlier chapters) appear"
+          - id: viz-heteroscedastic
+            title: {zh: "预测不确定性", en: "Predicting uncertainty"}
+            interaction:
+              zh: "对比同方差与异方差模型在噪声随 x 变化的数据上的拟合带"
+              en: "Compare homoscedastic and heteroscedastic fits on data whose noise varies with x"
+        frontier: []
+
+      - id: "16"
+        slug: optimization
+        title: {zh: "优化：从梯度下降到 Adam", en: "Optimization: From Gradient Descent to Adam"}
+        paradigm: deep
+        sources: {UDL: ["6"], LH: ["附录 A", "附录 B"]}
+        prereqs: ["00", "15"]
+        tags: {task: [], strategy: [], algorithm: [gd, sgd, adam, newton]}
+        goals:
+          - zh: "理解步长、条件数与收敛速度的关系"
+            en: "Relate step size, condition number and convergence rate"
+          - zh: "掌握 SGD、动量、Nesterov、Adam / AdamW 的更新规则"
+            en: "Master the update rules of SGD, momentum, Nesterov and Adam / AdamW"
+          - zh: "认识非凸地形中的鞍点、平坦区与学习率调度"
+            en: "Recognize saddle points, plateaus and learning-rate schedules on non-convex landscapes"
+        triad:
+          model: {zh: "任意可微参数化模型", en: "Any differentiable parametrized model"}
+          strategy: {zh: "任意可微损失", en: "Any differentiable loss"}
+          algorithm: {zh: "一阶 / 二阶迭代优化", en: "First- and second-order iterative optimization"}
+        derivations:
+          - zh: "强凸光滑函数上梯度下降的线性收敛率 $(1-\\mu/L)^t$"
+            en: "Linear convergence $(1-\\mu/L)^t$ of gradient descent on strongly convex smooth functions"
+          - zh: "动量作为带阻尼的“重球”方程"
+            en: "Momentum as a damped heavy-ball ODE"
+          - zh: "Adam 的偏差修正项推导；AdamW 的解耦权重衰减"
+            en: "Deriving Adam's bias correction; AdamW's decoupled weight decay"
+        visuals:
+          - id: viz-optimizer-race
+            title: {zh: "优化器赛跑", en: "Optimizer race"}
+            interaction:
+              zh: "在 Rosenbrock、鞍点、病态二次型等曲面上同时运行多个优化器，可调学习率与起点"
+              en: "Run several optimizers at once on Rosenbrock, saddle and ill-conditioned quadratic surfaces with adjustable learning rate and start"
+          - id: viz-condition-number
+            title: {zh: "条件数与之字形", en: "Condition number and zig-zags"}
+            interaction:
+              zh: "拉伸二次碗的条件数，观察梯度下降之字形轨迹与收敛步数"
+              en: "Stretch a quadratic bowl's condition number and watch GD zig-zag and its step count"
+          - id: viz-lr-schedule
+            title: {zh: "学习率调度", en: "Learning-rate schedules"}
+            interaction:
+              zh: "比较常数、阶梯、余弦与预热调度下的训练曲线"
+              en: "Compare training curves under constant, step, cosine and warm-up schedules"
+        frontier:
+          - ref: "Kingma & Ba (2015). Adam: A Method for Stochastic Optimization. ICLR."
+            note: {zh: "Adam 原始论文", en: "The original Adam paper"}
+          - ref: "Loshchilov & Hutter (2019). Decoupled Weight Decay Regularization. ICLR."
+            note: {zh: "AdamW", en: "AdamW"}
+          - ref: "Cohen et al. (2021). Gradient Descent on Neural Networks Typically Occurs at the Edge of Stability. ICLR."
+            note: {zh: "大学习率下的“稳定性边缘”现象", en: "The edge-of-stability phenomenon at large learning rates"}
+
+      - id: "17"
+        slug: backprop-init
+        title: {zh: "反向传播与初始化", en: "Backpropagation and Initialization"}
+        paradigm: deep
+        sources: {UDL: ["7"]}
+        prereqs: ["14", "16"]
+        tags: {task: [], strategy: [], algorithm: [backprop]}
+        goals:
+          - zh: "在计算图上推导反向传播，理解其为反向模式自动微分"
+            en: "Derive backprop on a computational graph as reverse-mode automatic differentiation"
+          - zh: "理解梯度消失 / 爆炸，并推导 He / Xavier 初始化"
+            en: "Understand vanishing / exploding gradients and derive He / Xavier initialization"
+        triad:
+          model: {zh: "计算图", en: "Computational graph"}
+          strategy: {zh: "—", en: "—"}
+          algorithm: {zh: "链式法则 + 动态规划（反向模式）", en: "Chain rule + dynamic programming (reverse mode)"}
+        derivations:
+          - zh: "多层感知机的逐层梯度递推公式"
+            en: "Layer-wise gradient recursion for an MLP"
+          - zh: "前向激活方差保持 ⇒ $\\mathrm{Var}(w)=2/n_{in}$（He 初始化）"
+            en: "Preserving forward activation variance ⇒ $\\mathrm{Var}(w)=2/n_{in}$ (He initialization)"
+          - zh: "前向模式 vs 反向模式自动微分的复杂度比较"
+            en: "Cost of forward- vs reverse-mode autodiff"
+        visuals:
+          - id: viz-backprop-graph
+            title: {zh: "计算图上的前向与反向", en: "Forward and backward on a computational graph"}
+            interaction:
+              zh: "可编辑的小型表达式图，先播放前向值流动，再播放梯度反向流动，节点显示局部导数"
+              en: "An editable expression graph: play the forward value flow, then the backward gradient flow, with local derivatives on nodes"
+          - id: viz-init-variance
+            title: {zh: "初始化与激活方差", en: "Initialization and activation variance"}
+            interaction:
+              zh: "调节初始化尺度与深度，绘制各层激活 / 梯度的直方图，观察消失与爆炸"
+              en: "Tune init scale and depth, plot per-layer activation / gradient histograms, and watch them vanish or explode"
+        frontier:
+          - ref: "He, Zhang, Ren, Sun (2015). Delving Deep into Rectifiers. ICCV."
+            note: {zh: "He 初始化", en: "He initialization"}
+
+      - id: "18"
+        slug: dl-generalization
+        title: {zh: "深度网络的正则化与泛化之谜", en: "Regularization and the Generalization Puzzle in Deep Networks"}
+        paradigm: deep
+        sources: {UDL: ["8", "9", "20"]}
+        prereqs: ["02", "16", "17"]
+        tags: {task: [], strategy: [regularization], algorithm: [sgd]}
+        goals:
+          - zh: "掌握显式正则（权重衰减、Dropout、数据增强、早停）"
+            en: "Master explicit regularizers: weight decay, dropout, augmentation, early stopping"
+          - zh: "理解隐式正则：SGD 噪声、平坦极小、过参数化"
+            en: "Understand implicit regularization: SGD noise, flat minima, over-parametrization"
+          - zh: "梳理“深度学习为何有效”的开放问题清单"
+            en: "Map out the open questions of why deep learning works"
+        triad:
+          model: {zh: "过参数化网络", en: "Over-parametrized networks"}
+          strategy: {zh: "经验风险 + 显式 / 隐式正则", en: "Empirical risk + explicit / implicit regularization"}
+          algorithm: {zh: "SGD 及其变体", en: "SGD and variants"}
+        derivations:
+          - zh: "线性模型中早停近似等价于 L2 正则"
+            en: "In linear models early stopping approximates L2 regularization"
+          - zh: "Dropout 作为集成 / 自适应正则的推导"
+            en: "Dropout as an ensemble / adaptive regularizer"
+          - zh: "梯度下降在欠定线性回归中收敛到最小范数解"
+            en: "Gradient descent converges to the minimum-norm solution in underdetermined linear regression"
+        visuals:
+          - id: viz-loss-landscape
+            title: {zh: "损失地形切片", en: "Loss landscape slices"}
+            interaction:
+              zh: "沿两个随机方向切出损失曲面，对比有 / 无残差连接、大 / 小批量得到的极小点平坦度"
+              en: "Slice the loss along two random directions; compare minima flatness with / without skip connections and with large / small batches"
+          - id: viz-grokking
+            title: {zh: "顿悟现象", en: "Grokking"}
+            interaction:
+              zh: "在模运算任务上回放训练与测试准确率曲线，调节权重衰减观察泛化何时突然出现"
+              en: "Replay train / test accuracy on modular arithmetic; tune weight decay to see when generalization suddenly appears"
+        frontier:
+          - ref: "Li, Xu, Taylor, Studer, Goldstein (2018). Visualizing the Loss Landscape of Neural Nets. NeurIPS."
+            note: {zh: "损失地形可视化方法", en: "Loss-landscape visualization method"}
+          - ref: "Frankle & Carbin (2019). The Lottery Ticket Hypothesis. ICLR."
+            note: {zh: "稀疏可训练子网络", en: "Sparse trainable subnetworks"}
+          - ref: "Power, Burda, Edwards, Babuschkin, Misra (2022). Grokking: Generalization Beyond Overfitting on Small Algorithmic Datasets. arXiv."
+            note: {zh: "延迟泛化现象", en: "Delayed generalization"}
+
+  # ───────────────────────────────────────────────────────────────── P5
+  - id: P5
+    title: {zh: "第五部分：网络架构与归纳偏置", en: "Part V: Architectures and Inductive Biases"}
+    summary:
+      zh: "架构就是“模型”要素的设计：把数据的对称性写进网络。"
+      en: "Architecture is design of the model element: building the data's symmetries into the network."
+    chapters:
+      - id: "19"
+        slug: cnn-resnet
+        title: {zh: "卷积网络与残差网络", en: "Convolutional and Residual Networks"}
+        paradigm: deep
+        sources: {UDL: ["10", "11"]}
+        prereqs: ["17"]
+        tags: {task: [classification], strategy: [cross-entropy], algorithm: [backprop, sgd]}
+        goals:
+          - zh: "从平移等变性推出卷积；理解感受野随深度增长"
+            en: "Derive convolution from translation equivariance; understand receptive-field growth"
+          - zh: "理解残差连接与归一化层为何使深层网络可训练"
+            en: "Understand why residual connections and normalization make deep nets trainable"
+        triad:
+          model: {zh: "权值共享的局部算子 + 残差结构", en: "Weight-shared local operators + residual structure"}
+          strategy: {zh: "交叉熵", en: "Cross-entropy"}
+          algorithm: {zh: "SGD + 批归一化", en: "SGD + batch normalization"}
+        derivations:
+          - zh: "卷积 = 与平移交换的线性算子"
+            en: "Convolution = linear operators that commute with translation"
+          - zh: "残差网络的梯度路径展开与“浅网络集成”视角"
+            en: "Unrolling gradient paths in ResNets; the ensemble-of-shallow-nets view"
+        visuals:
+          - id: viz-conv-slide
+            title: {zh: "卷积核滑动", en: "Sliding a kernel"}
+            interaction:
+              zh: "在图像上拖动卷积核，可编辑核值，实时显示特征图；调节步长、填充、空洞"
+              en: "Drag an editable kernel over an image to see the feature map; tune stride, padding and dilation"
+          - id: viz-receptive-field
+            title: {zh: "感受野生长", en: "Receptive-field growth"}
+            interaction:
+              zh: "点选深层某个单元，高亮其在输入上的感受野"
+              en: "Click a deep unit to highlight its receptive field on the input"
+        frontier:
+          - ref: "He, Zhang, Ren, Sun (2016). Deep Residual Learning for Image Recognition. CVPR."
+            note: {zh: "ResNet", en: "ResNet"}
+          - ref: "Dosovitskiy et al. (2021). An Image is Worth 16x16 Words. ICLR."
+            note: {zh: "ViT：用 Transformer 替代卷积（与第 20 章联动）", en: "ViT replaces convolution with a Transformer (links to Ch. 20)"}
+
+      - id: "20"
+        slug: transformers
+        title: {zh: "Transformer 与注意力机制", en: "Transformers and Attention"}
+        paradigm: deep
+        sources: {UDL: ["12"]}
+        prereqs: ["17", "19"]
+        tags: {task: [sequence, generation], strategy: [cross-entropy], algorithm: [backprop, adam]}
+        goals:
+          - zh: "从“可微分的软查找”推出缩放点积注意力"
+            en: "Derive scaled dot-product attention as a differentiable soft lookup"
+          - zh: "理解多头、位置编码、层归一化与残差在 Transformer 块中的角色"
+            en: "Understand multi-head attention, positional encodings, layer norm and residuals in a Transformer block"
+          - zh: "区分编码器、解码器与因果掩码"
+            en: "Distinguish encoders, decoders and causal masking"
+        triad:
+          model: {zh: "自注意力 + 前馈网络的堆叠（置换等变）", en: "Stacks of self-attention + MLP (permutation-equivariant)"}
+          strategy: {zh: "下一个词元预测的交叉熵 / 掩码语言模型", en: "Next-token cross-entropy / masked language modelling"}
+          algorithm: {zh: "AdamW + 预热 + 余弦调度", en: "AdamW + warm-up + cosine schedule"}
+        derivations:
+          - zh: "为何除以 $\\sqrt{d_k}$：点积方差分析"
+            en: "Why divide by $\\sqrt{d_k}$: variance of dot products"
+          - zh: "自注意力的置换等变性与位置编码的必要性；RoPE 的旋转构造"
+            en: "Permutation equivariance of self-attention, why positions are needed; the rotation construction of RoPE"
+          - zh: "注意力的 $O(n^2)$ 复杂度"
+            en: "The $O(n^2)$ cost of attention"
+        visuals:
+          - id: viz-attention-matrix
+            title: {zh: "交互式注意力矩阵", en: "Interactive attention matrix"}
+            interaction:
+              zh: "输入一句话，悬停词元查看各头注意力权重；切换因果掩码"
+              en: "Type a sentence and hover tokens to see per-head attention weights; toggle the causal mask"
+          - id: viz-qkv-geometry
+            title: {zh: "Q、K、V 的几何", en: "Geometry of Q, K, V"}
+            interaction:
+              zh: "在二维中拖动查询向量，观察与各键的点积、softmax 权重与输出向量（值的凸组合）"
+              en: "Drag a query in 2-D to see dot products with keys, softmax weights and the output as a convex combination of values"
+          - id: viz-transformer-block
+            title: {zh: "一个 Transformer 块的数据流", en: "Data flow through a Transformer block"}
+            interaction:
+              zh: "逐步展开张量形状变化：嵌入 → 多头注意力 → 残差与归一化 → 前馈"
+              en: "Step through tensor shapes: embedding → multi-head attention → residual & norm → MLP"
+        frontier:
+          - ref: "Vaswani et al. (2017). Attention Is All You Need. NeurIPS."
+            note: {zh: "Transformer 原始论文", en: "The original Transformer paper"}
+          - ref: "Su et al. (2021). RoFormer: Enhanced Transformer with Rotary Position Embedding. arXiv."
+            note: {zh: "旋转位置编码 RoPE", en: "Rotary position embedding (RoPE)"}
+          - ref: "Dao, Fu, Ermon, Rudra, Ré (2022). FlashAttention. NeurIPS."
+            note: {zh: "IO 感知的精确注意力", en: "IO-aware exact attention"}
+          - ref: "Elhage et al. (2021). A Mathematical Framework for Transformer Circuits. Transformer Circuits Thread."
+            note: {zh: "机制可解释性入门", en: "An entry point to mechanistic interpretability"}
+
+      - id: "21"
+        slug: gnn
+        title: {zh: "图神经网络", en: "Graph Neural Networks"}
+        paradigm: deep
+        sources: {UDL: ["13"]}
+        prereqs: ["13", "20"]
+        tags: {task: [graph, classification], strategy: [cross-entropy], algorithm: [backprop]}
+        goals:
+          - zh: "从置换不变 / 等变性推出消息传递框架"
+            en: "Derive message passing from permutation invariance / equivariance"
+          - zh: "理解 GCN 与图拉普拉斯谱的联系，以及过平滑问题"
+            en: "Connect GCNs to the graph Laplacian spectrum and understand over-smoothing"
+        triad:
+          model: {zh: "邻域聚合 + 更新函数", en: "Neighbourhood aggregation + update function"}
+          strategy: {zh: "节点 / 边 / 图级交叉熵", en: "Node / edge / graph-level cross-entropy"}
+          algorithm: {zh: "全图或采样小批量训练", en: "Full-graph or sampled mini-batch training"}
+        derivations:
+          - zh: "GCN 传播规则 $\\tilde D^{-1/2}\\tilde A\\tilde D^{-1/2}HW$ 的来源"
+            en: "Where the GCN rule $\\tilde D^{-1/2}\\tilde A\\tilde D^{-1/2}HW$ comes from"
+          - zh: "多层聚合等价于低通滤波 ⇒ 过平滑"
+            en: "Repeated aggregation is low-pass filtering ⇒ over-smoothing"
+        visuals:
+          - id: viz-message-passing
+            title: {zh: "消息传递", en: "Message passing"}
+            interaction:
+              zh: "在可编辑图上逐层播放邻居特征聚合，节点颜色表示特征；层数增加时观察过平滑"
+              en: "Play layer-by-layer neighbour aggregation on an editable graph, colours as features; watch over-smoothing as depth grows"
+        frontier:
+          - ref: "Kipf & Welling (2017). Semi-Supervised Classification with Graph Convolutional Networks. ICLR."
+            note: {zh: "GCN", en: "GCN"}
+          - ref: "Veličković et al. (2018). Graph Attention Networks. ICLR."
+            note: {zh: "GAT：图上的注意力", en: "GAT: attention on graphs"}
+
+  # ───────────────────────────────────────────────────────────────── P6
+  - id: P6
+    title: {zh: "第六部分：生成模型", en: "Part VI: Generative Models"}
+    summary:
+      zh: "把第三部分的密度估计与潜变量思想，用深度网络推到极致。"
+      en: "Pushing Part III's ideas of density estimation and latent variables to their limit with deep networks."
+    chapters:
+      - id: "22"
+        slug: generative-gan
+        title: {zh: "生成模型总览与生成对抗网络", en: "A Map of Generative Models, and GANs"}
+        paradigm: generative
+        sources: {UDL: ["14", "15"]}
+        prereqs: ["16", "19"]
+        tags: {task: [generation], strategy: [adversarial], algorithm: [sgd, adam]}
+        goals:
+          - zh: "用“似然是否可算、是否有潜变量、采样是否高效”三问给生成模型分类"
+            en: "Classify generative models by three questions: tractable likelihood? latent variables? fast sampling?"
+          - zh: "推导 GAN 的极小极大目标与 JS 散度的关系"
+            en: "Derive the GAN minimax objective and its link to the JS divergence"
+          - zh: "理解模式崩塌与 Wasserstein GAN"
+            en: "Understand mode collapse and the Wasserstein GAN"
+        triad:
+          model: {zh: "生成器 $G(z)$ + 判别器 $D(x)$", en: "Generator $G(z)$ + discriminator $D(x)$"}
+          strategy: {zh: "极小极大博弈", en: "Minimax game"}
+          algorithm: {zh: "交替梯度下降 / 上升", en: "Alternating gradient descent / ascent"}
+        derivations:
+          - zh: "最优判别器 $D^*=p_{data}/(p_{data}+p_g)$ ⇒ 目标化为 JS 散度"
+            en: "Optimal discriminator $D^*=p_{data}/(p_{data}+p_g)$ ⇒ objective becomes the JS divergence"
+          - zh: "Wasserstein 距离的 Kantorovich–Rubinstein 对偶"
+            en: "Kantorovich–Rubinstein duality for the Wasserstein distance"
+        visuals:
+          - id: viz-generative-map
+            title: {zh: "生成模型地图", en: "Map of generative models"}
+            interaction:
+              zh: "可点击的分类图：GAN / 流 / VAE / 扩散 / 自回归，按三问着色并链接各章"
+              en: "A clickable taxonomy of GAN / flow / VAE / diffusion / autoregressive models, coloured by the three questions and linked to chapters"
+          - id: viz-gan-1d
+            title: {zh: "一维 GAN 训练", en: "1-D GAN training"}
+            interaction:
+              zh: "实时显示真实密度、生成密度与判别器曲线的博弈；可复现模式崩塌"
+              en: "Watch real density, generated density and discriminator curve compete live; reproduce mode collapse"
+        frontier:
+          - ref: "Goodfellow et al. (2014). Generative Adversarial Nets. NeurIPS."
+            note: {zh: "GAN 原始论文", en: "The original GAN paper"}
+          - ref: "Arjovsky, Chintala, Bottou (2017). Wasserstein GAN. ICML."
+            note: {zh: "WGAN", en: "WGAN"}
+          - ref: "Karras, Laine, Aila (2019). A Style-Based Generator Architecture for GANs. CVPR."
+            note: {zh: "StyleGAN", en: "StyleGAN"}
+
+      - id: "23"
+        slug: normalizing-flows
+        title: {zh: "归一化流", en: "Normalizing Flows"}
+        paradigm: generative
+        sources: {UDL: ["16"]}
+        prereqs: ["00", "22"]
+        tags: {task: [generation, density], strategy: [likelihood], algorithm: [adam]}
+        goals:
+          - zh: "用变量替换公式写出精确似然"
+            en: "Write the exact likelihood with the change-of-variables formula"
+          - zh: "理解耦合层如何同时保证可逆与雅可比行列式易算"
+            en: "Understand how coupling layers keep invertibility and a cheap Jacobian determinant"
+        triad:
+          model: {zh: "可逆变换序列 $x=f_K\\circ\\cdots\\circ f_1(z)$", en: "Sequence of invertible maps $x=f_K\\circ\\cdots\\circ f_1(z)$"}
+          strategy: {zh: "精确负对数似然", en: "Exact negative log-likelihood"}
+          algorithm: {zh: "梯度下降", en: "Gradient descent"}
+        derivations:
+          - zh: "$\\log p(x)=\\log p(z)-\\sum_k\\log|\\det J_{f_k}|$"
+            en: "$\\log p(x)=\\log p(z)-\\sum_k\\log|\\det J_{f_k}|$"
+          - zh: "仿射耦合层的三角雅可比"
+            en: "The triangular Jacobian of affine coupling layers"
+        visuals:
+          - id: viz-flow-warp
+            title: {zh: "把高斯揉成月牙", en: "Kneading a Gaussian into moons"}
+            interaction:
+              zh: "逐层动画展示简单分布网格如何被变形为目标分布，显示局部面积缩放（行列式）"
+              en: "Animate a base-distribution grid warping layer by layer into the target, with local area scaling (the determinant)"
+        frontier:
+          - ref: "Dinh, Sohl-Dickstein, Bengio (2017). Density Estimation using Real NVP. ICLR."
+            note: {zh: "仿射耦合层", en: "Affine coupling layers"}
+          - ref: "Lipman, Chen, Ben-Hamu, Nickel, Le (2023). Flow Matching for Generative Modeling. ICLR."
+            note: {zh: "连续流的免模拟训练，连接流与扩散（第 25 章）", en: "Simulation-free training of continuous flows, bridging flows and diffusion (Ch. 25)"}
+
+      - id: "24"
+        slug: vae
+        title: {zh: "变分自编码器", en: "Variational Autoencoders"}
+        paradigm: generative
+        sources: {UDL: ["17"]}
+        prereqs: ["11", "22"]
+        tags: {task: [generation, dim-reduction], strategy: [elbo], algorithm: [adam]}
+        goals:
+          - zh: "把 VAE 理解为“用神经网络做 E 步”的 EM（回链第 11 章）"
+            en: "See the VAE as EM with a neural E-step (back to Ch. 11)"
+          - zh: "掌握重参数化技巧"
+            en: "Master the reparameterization trick"
+          - zh: "理解重构项与 KL 项的权衡、后验坍塌"
+            en: "Understand the reconstruction–KL trade-off and posterior collapse"
+        triad:
+          model: {zh: "解码器 $p_\\theta(x|z)$ + 编码器 $q_\\phi(z|x)$", en: "Decoder $p_\\theta(x|z)$ + encoder $q_\\phi(z|x)$"}
+          strategy: {zh: "最大化 ELBO", en: "Maximize the ELBO"}
+          algorithm: {zh: "重参数化 + 随机梯度", en: "Reparameterization + stochastic gradients"}
+        derivations:
+          - zh: "ELBO = 重构项 − KL 项；高斯情形下 KL 的闭式"
+            en: "ELBO = reconstruction − KL; the closed-form Gaussian KL"
+          - zh: "重参数化梯度 vs 得分函数（REINFORCE）梯度的方差"
+            en: "Variance of reparameterization vs score-function (REINFORCE) gradients"
+        visuals:
+          - id: viz-latent-space
+            title: {zh: "可漫游的潜空间", en: "A walkable latent space"}
+            interaction:
+              zh: "在二维潜空间中拖动光标，实时解码生成样本；显示各数据点编码分布的椭圆"
+              en: "Drag a cursor through a 2-D latent space to decode samples live; encoder posteriors drawn as ellipses"
+          - id: viz-beta-tradeoff
+            title: {zh: "β 的权衡", en: "The β trade-off"}
+            interaction:
+              zh: "调节 KL 权重 β，观察重构质量与潜空间规整度的此消彼长"
+              en: "Tune the KL weight β to trade reconstruction quality against latent-space regularity"
+        frontier:
+          - ref: "Kingma & Welling (2014). Auto-Encoding Variational Bayes. ICLR."
+            note: {zh: "VAE 原始论文", en: "The original VAE paper"}
+          - ref: "van den Oord, Vinyals, Kavukcuoglu (2017). Neural Discrete Representation Learning. NeurIPS."
+            note: {zh: "VQ-VAE：离散潜变量，现代图像 / 音频分词器的基础", en: "VQ-VAE: discrete latents, the basis of modern image / audio tokenizers"}
+
+      - id: "25"
+        slug: diffusion
+        title: {zh: "扩散模型", en: "Diffusion Models"}
+        paradigm: generative
+        sources: {UDL: ["18"]}
+        prereqs: ["13", "24"]
+        tags: {task: [generation], strategy: [denoising, elbo], algorithm: [adam, mcmc]}
+        goals:
+          - zh: "把扩散模型理解为层次化 VAE：固定的加噪编码器 + 学习的去噪解码器"
+            en: "See diffusion as a hierarchical VAE: a fixed noising encoder plus a learned denoising decoder"
+          - zh: "推导 ELBO 化简为噪声预测的均方误差"
+            en: "Derive how the ELBO reduces to a noise-prediction MSE"
+          - zh: "理解得分函数、朗之万采样与 SDE 视角，以及无分类器引导"
+            en: "Understand score functions, Langevin sampling, the SDE view, and classifier-free guidance"
+        triad:
+          model: {zh: "去噪网络 $\\epsilon_\\theta(x_t,t)$", en: "Denoising network $\\epsilon_\\theta(x_t,t)$"}
+          strategy: {zh: "去噪得分匹配（加权 ELBO）", en: "Denoising score matching (weighted ELBO)"}
+          algorithm: {zh: "随机梯度训练 + 迭代采样（祖先采样 / ODE 求解器）", en: "Stochastic-gradient training + iterative sampling (ancestral / ODE solvers)"}
+        derivations:
+          - zh: "前向过程闭式 $q(x_t|x_0)$ 与后验 $q(x_{t-1}|x_t,x_0)$"
+            en: "Closed-form forward marginal $q(x_t|x_0)$ and posterior $q(x_{t-1}|x_t,x_0)$"
+          - zh: "ELBO 分解 ⇒ 简化损失 $\\|\\epsilon-\\epsilon_\\theta(x_t,t)\\|^2$"
+            en: "ELBO decomposition ⇒ simplified loss $\\|\\epsilon-\\epsilon_\\theta(x_t,t)\\|^2$"
+          - zh: "Tweedie 公式：去噪器即得分函数"
+            en: "Tweedie's formula: the denoiser is the score"
+        visuals:
+          - id: viz-diffusion-2d
+            title: {zh: "二维玩具扩散", en: "2-D toy diffusion"}
+            interaction:
+              zh: "拖动时间轴 t，粒子云在数据分布与高斯之间来回演化，叠加学到的得分向量场"
+              en: "Scrub time t to morph a particle cloud between data and Gaussian, overlaid with the learned score field"
+          - id: viz-sampler-compare
+            title: {zh: "采样器对比", en: "Sampler comparison"}
+            interaction:
+              zh: "对比随机（SDE）与确定性（ODE / DDIM）采样的轨迹与步数–质量曲线"
+              en: "Compare stochastic (SDE) and deterministic (ODE / DDIM) sampling trajectories and step–quality curves"
+          - id: viz-cfg
+            title: {zh: "无分类器引导", en: "Classifier-free guidance"}
+            interaction:
+              zh: "调节引导强度 w，观察多样性与保真度的权衡"
+              en: "Tune guidance scale w to trade diversity against fidelity"
+        frontier:
+          - ref: "Ho, Jain, Abbeel (2020). Denoising Diffusion Probabilistic Models. NeurIPS."
+            note: {zh: "DDPM", en: "DDPM"}
+          - ref: "Song et al. (2021). Score-Based Generative Modeling through Stochastic Differential Equations. ICLR."
+            note: {zh: "SDE 统一视角", en: "The unifying SDE view"}
+          - ref: "Ho & Salimans (2022). Classifier-Free Diffusion Guidance. arXiv."
+            note: {zh: "无分类器引导", en: "Classifier-free guidance"}
+          - ref: "Rombach et al. (2022). High-Resolution Image Synthesis with Latent Diffusion Models. CVPR."
+            note: {zh: "潜空间扩散（Stable Diffusion）", en: "Latent diffusion (Stable Diffusion)"}
+          - ref: "Peebles & Xie (2023). Scalable Diffusion Models with Transformers. ICCV."
+            note: {zh: "DiT：扩散 + Transformer", en: "DiT: diffusion + Transformers"}
+
+  # ───────────────────────────────────────────────────────────────── P7
+  - id: P7
+    title: {zh: "第七部分：决策与大模型", en: "Part VII: Decision-Making and Large Models"}
+    summary:
+      zh: "强化学习，以及把全书拼起来的大语言模型。"
+      en: "Reinforcement learning, and large language models as the synthesis of the whole course."
+    chapters:
+      - id: "26"
+        slug: reinforcement-learning
+        title: {zh: "强化学习", en: "Reinforcement Learning"}
+        paradigm: rl
+        sources: {UDL: ["19"]}
+        prereqs: ["13", "16"]
+        tags: {task: [decision], strategy: [reward], algorithm: [dp, policy-gradient, sgd]}
+        goals:
+          - zh: "掌握 MDP、贝尔曼方程、价值迭代与策略迭代"
+            en: "Master MDPs, the Bellman equations, value iteration and policy iteration"
+          - zh: "理解 Q 学习 / DQN 与策略梯度 / PPO 两条路线"
+            en: "Understand the two routes: Q-learning / DQN and policy gradients / PPO"
+        triad:
+          model: {zh: "策略 $\\pi_\\theta(a|s)$ 与 / 或价值函数", en: "Policy $\\pi_\\theta(a|s)$ and / or value function"}
+          strategy: {zh: "最大化期望累计回报", en: "Maximize expected cumulative return"}
+          algorithm: {zh: "动态规划 / 时序差分 / 策略梯度", en: "Dynamic programming / temporal difference / policy gradient"}
+        derivations:
+          - zh: "贝尔曼最优算子是 γ-压缩映射 ⇒ 价值迭代收敛"
+            en: "The Bellman optimality operator is a γ-contraction ⇒ value iteration converges"
+          - zh: "策略梯度定理与基线减方差"
+            en: "The policy gradient theorem and variance reduction with baselines"
+          - zh: "PPO 截断目标的动机"
+            en: "Motivation for PPO's clipped objective"
+        visuals:
+          - id: viz-gridworld
+            title: {zh: "网格世界", en: "Gridworld"}
+            interaction:
+              zh: "可编辑墙壁与奖励，逐步播放价值迭代，格子着色为 V(s)，箭头为贪心策略；调节 γ"
+              en: "Edit walls and rewards, step through value iteration with cells coloured by V(s) and arrows for the greedy policy; tune γ"
+          - id: viz-policy-gradient
+            title: {zh: "策略梯度的方差", en: "Variance of policy gradients"}
+            interaction:
+              zh: "在多臂老虎机上比较有 / 无基线的梯度估计分布与学习曲线"
+              en: "On a bandit, compare gradient-estimate distributions and learning curves with / without a baseline"
+        frontier:
+          - ref: "Mnih et al. (2015). Human-level control through deep reinforcement learning. Nature."
+            note: {zh: "DQN", en: "DQN"}
+          - ref: "Schulman, Wolski, Dhariwal, Radford, Klimov (2017). Proximal Policy Optimization Algorithms. arXiv."
+            note: {zh: "PPO", en: "PPO"}
+          - ref: "Shao et al. (2024). DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models. arXiv."
+            note: {zh: "提出 GRPO：无价值网络的组相对策略优化", en: "Introduces GRPO: group-relative policy optimization without a value network"}
+
+      - id: "27"
+        slug: llm-synthesis
+        title: {zh: "大语言模型：把全书拼起来", en: "Large Language Models: Putting the Course Together"}
+        paradigm: frontier
+        sources: {}
+        prereqs: ["15", "16", "20", "26"]
+        tags: {task: [generation, sequence], strategy: [cross-entropy, reward], algorithm: [adam, policy-gradient]}
+        goals:
+          - zh: "用三要素重新审视大模型的预训练、微调与对齐"
+            en: "Revisit LLM pre-training, fine-tuning and alignment through the triad"
+          - zh: "理解缩放定律与计算最优训练"
+            en: "Understand scaling laws and compute-optimal training"
+          - zh: "理解 RLHF 与 DPO 的推导关系"
+            en: "Understand how DPO is derived from the RLHF objective"
+        triad:
+          model: {zh: "仅解码器 Transformer（第 20 章）", en: "Decoder-only Transformer (Ch. 20)"}
+          strategy: {zh: "预训练：下一词元交叉熵（第 15 章）；对齐：带 KL 约束的奖励最大化（第 26 章）", en: "Pre-training: next-token cross-entropy (Ch. 15); alignment: KL-regularized reward maximization (Ch. 26)"}
+          algorithm: {zh: "AdamW（第 16 章）+ PPO / DPO / GRPO", en: "AdamW (Ch. 16) + PPO / DPO / GRPO"}
+        derivations:
+          - zh: "幂律缩放与给定计算量下参数量–数据量的最优分配"
+            en: "Power-law scaling and the compute-optimal split between parameters and data"
+          - zh: "KL 约束奖励最大化的闭式最优策略 ⇒ DPO 损失"
+            en: "Closed-form optimal policy of KL-regularized reward maximization ⇒ the DPO loss"
+        visuals:
+          - id: viz-scaling-laws
+            title: {zh: "缩放定律计算器", en: "Scaling-law calculator"}
+            interaction:
+              zh: "输入计算预算，在损失–参数量–数据量的等高线图上找到计算最优点"
+              en: "Enter a compute budget and locate the compute-optimal point on loss contours over parameters and data"
+          - id: viz-next-token
+            title: {zh: "下一词元分布", en: "Next-token distribution"}
+            interaction:
+              zh: "展示一个小模型的下一词元概率，调节温度、top-k、top-p 观察采样变化"
+              en: "Show a small model's next-token probabilities; tune temperature, top-k and top-p to see sampling change"
+        frontier:
+          - ref: "Kaplan et al. (2020). Scaling Laws for Neural Language Models. arXiv."
+            note: {zh: "缩放定律", en: "Scaling laws"}
+          - ref: "Hoffmann et al. (2022). Training Compute-Optimal Large Language Models. NeurIPS."
+            note: {zh: "Chinchilla：计算最优训练", en: "Chinchilla: compute-optimal training"}
+          - ref: "Ouyang et al. (2022). Training language models to follow instructions with human feedback. NeurIPS."
+            note: {zh: "InstructGPT / RLHF", en: "InstructGPT / RLHF"}
+          - ref: "Rafailov et al. (2023). Direct Preference Optimization. NeurIPS."
+            note: {zh: "DPO", en: "DPO"}
+
+  # ───────────────────────────────────────────────────────────────── P8
+  - id: P8
+    title: {zh: "第八部分：科研方法", en: "Part VIII: Doing Research"}
+    summary:
+      zh: "从会用到会做研究：可靠的实验、诚实的结论、负责任的影响。"
+      en: "From using ML to researching it: reliable experiments, honest conclusions, responsible impact."
+    chapters:
+      - id: "28"
+        slug: experiments-evaluation
+        title: {zh: "实验设计、评估与多重检验", en: "Experimental Design, Evaluation and Multiple Testing"}
+        paradigm: meta
+        sources: {ISL: ["5", "13"], UDL: ["8"]}
+        prereqs: ["02"]
+        tags: {task: [], strategy: [], algorithm: []}
+        goals:
+          - zh: "掌握基线、消融、随机种子方差与置信区间的报告规范"
+            en: "Master reporting baselines, ablations, seed variance and confidence intervals"
+          - zh: "理解多重检验、FWER 与 FDR 控制，避免“刷榜式”假阳性"
+            en: "Understand multiple testing, FWER and FDR control, and avoid leaderboard false positives"
+          - zh: "学会阅读与复现一篇论文的工作流"
+            en: "Learn a workflow for reading and reproducing a paper"
+        triad:
+          model: {zh: "—", en: "—"}
+          strategy: {zh: "—", en: "—"}
+          algorithm: {zh: "Bonferroni / Holm / Benjamini–Hochberg / 置换检验", en: "Bonferroni / Holm / Benjamini–Hochberg / permutation tests"}
+        derivations:
+          - zh: "Bonferroni 控制 FWER 的证明"
+            en: "Proof that Bonferroni controls the FWER"
+          - zh: "Benjamini–Hochberg 过程与 FDR"
+            en: "The Benjamini–Hochberg procedure and the FDR"
+        visuals:
+          - id: viz-p-hacking
+            title: {zh: "p 值黑客模拟器", en: "p-hacking simulator"}
+            interaction:
+              zh: "在全为零假设的数据上尝试多种“技巧”，看假阳性率如何膨胀；开启 BH 校正对比"
+              en: "Try many “tricks” on pure-null data, watch false positives inflate, then turn on BH correction"
+          - id: viz-seed-variance
+            title: {zh: "种子方差", en: "Seed variance"}
+            interaction:
+              zh: "同一配置跑多个随机种子，展示结果分布与“单次运行”的误导性"
+              en: "Run one configuration over many seeds and show how misleading a single run can be"
+        frontier:
+          - ref: "Benjamini & Hochberg (1995). Controlling the False Discovery Rate. JRSS-B."
+            note: {zh: "FDR 控制", en: "FDR control"}
+          - ref: "Bouthillier et al. (2021). Accounting for Variance in Machine Learning Benchmarks. MLSys."
+            note: {zh: "基准评测中的方差来源", en: "Sources of variance in ML benchmarks"}
+
+      - id: "29"
+        slug: responsible-ml
+        title: {zh: "负责任的机器学习", en: "Responsible Machine Learning"}
+        paradigm: meta
+        sources: {UDL: ["21"]}
+        prereqs: []
+        tags: {task: [], strategy: [], algorithm: []}
+        goals:
+          - zh: "认识偏见、公平性定义之间的不可兼得、隐私与可解释性"
+            en: "Recognize bias, the incompatibility of fairness definitions, privacy and explainability"
+          - zh: "建立研究者对自身工作影响的反思习惯"
+            en: "Build the habit of reflecting on the impact of one's own research"
+        triad:
+          model: {zh: "—", en: "—"}
+          strategy: {zh: "带公平性 / 隐私约束的风险", en: "Risk with fairness / privacy constraints"}
+          algorithm: {zh: "—", en: "—"}
+        derivations:
+          - zh: "基础率不同时，校准与等错误率不可同时满足"
+            en: "With unequal base rates, calibration and equal error rates cannot both hold"
+        visuals:
+          - id: viz-fairness-tradeoff
+            title: {zh: "公平性权衡", en: "Fairness trade-offs"}
+            interaction:
+              zh: "为两个群体分别拖动阈值，实时显示各项公平性指标，体会不可兼得"
+              en: "Drag per-group thresholds and watch fairness metrics update live, experiencing their incompatibility"
+        frontier:
+          - ref: "Kleinberg, Mullainathan, Raghavan (2017). Inherent Trade-Offs in the Fair Determination of Risk Scores. ITCS."
+            note: {zh: "公平性不可能定理", en: "An impossibility theorem for fairness"}
