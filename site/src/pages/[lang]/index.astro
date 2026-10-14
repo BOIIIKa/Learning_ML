@@ -23,6 +23,22 @@ const PILLARS = {
     ["⌁", "Research frontier", "Every chapter links to where the field is today, with papers worth reading."],
   ],
 }[lang];
+const MODES = {
+  zh: {
+    title: "两种学习方式",
+    items: [
+      ["▶", "横版动画课程 · 初学推荐", "像看一节课：一屏一个想法，公式与图形逐步出现，配字幕和可选朗读，可自动播放。方向键翻页，F 全屏。"],
+      ["📄", "竖版讲义 · 复习推荐", "完整推导、全部交互图、课后训练与实战手册都在一页里；顶部的“本章一页纸”适合考前快速回顾。"],
+    ],
+  },
+  en: {
+    title: "Two ways to learn",
+    items: [
+      ["▶", "Animated course · best for first-timers", "Like watching a lecture: one idea per screen, formulas and figures appear step by step, with subtitles, optional read-aloud and autoplay. Arrow keys to move, F for fullscreen."],
+      ["📄", "Vertical notes · best for review", "Full derivations, every interactive figure, practice and the handbook on one page; the one-page recap at the top is ideal for a quick refresher."],
+    ],
+  },
+}[lang];
 ---
 <Base lang={lang} title={`${t(lang, "siteName")} — ${t(lang, "tagline")}`} description={pick(outline.meta.audience, lang)} path="">
   <section class="hero">
@@ -47,6 +63,19 @@ const PILLARS = {
         <p class="muted">{text}</p>
       </div>
     ))}
+  </section>
+
+  <section class="container modes">
+    <h2 class="reveal">{MODES.title}</h2>
+    <div class="mode-grid">
+      {MODES.items.map(([icon, title, text], i) => (
+        <div class="mode card reveal" style={`transition-delay:${i * 120}ms`}>
+          <span class="mode-icon">{icon}</span>
+          <h3>{title}</h3>
+          <p class="muted">{text}</p>
+        </div>
+      ))}
+    </div>
   </section>
 
   <section id="contents" class="container contents">

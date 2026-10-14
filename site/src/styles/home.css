@@ -17,3 +17,11 @@
 .pillar-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; font-size: 1.3rem; font-weight: 800; color: #061018; background: linear-gradient(135deg, var(--accent), var(--accent-3) 60%, var(--accent-2)); box-shadow: 0 8px 24px -8px var(--accent-3); }
 .contents { margin-top: 4rem; }
 .contents h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+
+.modes { margin-top: 4rem; }
+.modes h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+.mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.mode { padding: 1.3rem 1.4rem; }
+.mode h3 { margin: 0.6rem 0 0.3rem; }
+.mode p { margin: 0; font-size: 0.93rem; }
+.mode-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; font-size: 1.2rem; background: var(--surface-2); border: 1px solid var(--border); }
