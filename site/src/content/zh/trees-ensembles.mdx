@@ -1,0 +1,214 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import ManualSplit from "../../components/chapters/ch08/ManualSplit";
+import TreeGrow from "../../components/chapters/ch08/TreeGrow";
+import ForestPlayground from "../../components/chapters/ch08/ForestPlayground";
+import AdaBoostReplay from "../../components/chapters/ch08/AdaBoostReplay";
+import ResidualBoost from "../../components/chapters/ch08/ResidualBoost";
+
+<Section lang="zh" k="scenario">
+
+上一章的 SVM 在乳腺癌数据上的准确率超过 95%。可是把它交给医生时，医生问了一个很实在的问题：**“它为什么判这位病人是恶性？”**
+
+核 SVM 的回答是“几十个支持向量与这位病人的核函数值的加权和为正”，这句话写不进诊疗指南。医生习惯的推理方式更像问诊：**问一连串是/否问题**。肿块半径大于某个值吗？如果是，再看边缘纹理是否不规则……每个问题只看一个指标、一个阈值，整个推理过程一目了然。
+
+先体验一下“问一个问题”有多大作用：选一个特征，拖动阈值，把数据切成两半。
+
+<ManualSplit client:visible lang="zh" />
+
+一刀通常不够，两边还混着另一类。自然的想法是**对每一半再切一刀，一直切下去**，这就是决策树。本章要回答三个问题：
+
+1. 怎样自动找到“最好的一刀”？要先定义什么叫“纯”。
+2. 切多深合适？切得太细会把噪声也记住。
+3. 一棵树对数据很敏感，能不能让许多树合作，既稳又准？
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 决策树：递归地问是/否问题
+
+决策树把特征空间递归地切成一个个**轴对齐的矩形**，每个矩形（叶结点）给出一个固定的预测。用三要素来看：
+
+- **模型**：分段常数函数 $f(x) = \sum_{m} c_m\, \mathbb{1}[x \in R_m]$，其中 $R_m$ 是互不相交的矩形；
+- **策略**：每次切分让子结点的**不纯度**下降最多（下一部分给出熵与基尼指数的定义）；
+- **算法**：从根结点开始**贪心**地递归切分，直到结点足够纯、样本太少或达到最大深度，再**剪枝**。
+
+为什么用贪心？在所有可能的树里找全局最优是 NP 难的，而每一步只看一刀的局部最优，计算量只有 $O(d\, n \log n)$（$d$ 个特征，每个特征排序后线性扫描所有阈值）。
+
+<TreeGrow client:visible lang="zh" />
+
+<Box kind="insight" title="树的两面">
+
+**优点**：规则可解释；对特征的单调变换不敏感，不需要标准化；能自然处理类别特征和缺失值。**缺点**：训练数据稍有变化，第一刀就可能换个位置，整棵树随之改变。用统计学语言说，单棵深树的**方差很高**。
+
+</Box>
+
+### 集成：让许多树一起投票
+
+既然单棵树方差高，就训练很多棵再取平均。实现这个想法有两条思路。
+
+**Bagging 与随机森林（并行）**：从训练集**有放回地**抽出 $B$ 个自助样本，每个样本训练一棵深树，预测时取平均（分类时投票）。随机森林还在每次切分时**只随机看一部分特征**，让各棵树更“不像”，平均的效果因此更好。
+
+<ForestPlayground client:visible lang="zh" />
+
+**Boosting（串行）**：后一个学习器专门修正前面的错误。AdaBoost 提高被分错样本的权重；梯度提升让新树去拟合当前模型的残差。两者都用很浅的树，比如只切一刀的“树桩”，一步步把**偏差**降下来。第 3 部分会证明，AdaBoost 实际上是在最小化指数损失。
+
+| | Bagging / 随机森林 | Boosting |
+|---|---|---|
+| 训练方式 | 并行、互相独立 | 串行、依次修正 |
+| 基学习器 | 深树（低偏差、高方差） | 浅树（高偏差、低方差） |
+| 主要降低 | 方差 | 偏差 |
+| 代表 | Random Forest | AdaBoost、GBDT、XGBoost、LightGBM |
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 工具一：熵、信息增益与基尼指数
+
+设结点 $D$ 中第 $k$ 类的比例为 $p_k$。
+
+<Box kind="definition" title="三种不纯度">
+
+- **熵**：$H(D) = -\sum_k p_k \log_2 p_k$。全是一类时为 0；各类均匀时最大。
+- **信息增益**（ID3）：按特征 $a$ 切成 $D_1,\dots,D_V$ 后，熵减少了多少：
+$$
+g(D,a) = H(D) - \sum_{v=1}^V \frac{|D_v|}{|D|} H(D_v).
+$$
+- **基尼指数**（CART）：$\mathrm{Gini}(D) = 1 - \sum_k p_k^2$。它等于“随机抽一个样本，再按 $p$ 随机给它一个标签，标签出错”的概率。
+
+</Box>
+
+信息增益偏爱取值很多的特征。极端情况下，按“病历号”切分，每个子结点只有一个样本，熵全部为零，增益最大，但这毫无意义。C4.5 因此改用**信息增益比**：$g_R(D,a) = g(D,a)/H_a(D)$，其中 $H_a(D) = -\sum_v \frac{|D_v|}{|D|}\log_2\frac{|D_v|}{|D|}$ 是特征 $a$ 本身取值分布的熵，取值越多它越大。
+
+二分类时 $\mathrm{Gini} = 2p(1-p)$（课后推导第 1 题），可以看作熵的二次近似，计算更便宜，所以 CART 默认用它。
+
+### 工具二：代价复杂度剪枝
+
+深树会过拟合。剪枝要在“拟合训练数据”和“树的大小”之间权衡。对一棵树 $T$，定义
+
+$$
+C_\alpha(T) = \sum_{t \in \text{leaves}(T)} N_t\, Q_t(T) + \alpha\, |T|,
+$$
+
+其中 $N_t$ 是叶结点 $t$ 的样本数，$Q_t$ 是它的不纯度，$|T|$ 是叶结点个数。$\alpha = 0$ 时保留整棵树；$\alpha \to \infty$ 时只剩根结点。
+
+对每个内部结点 $t$，比较“剪成一个叶结点”和“保留以 $t$ 为根的子树 $T_t$”。两者代价相等的临界值是
+
+$$
+g(t) = \frac{C(t) - C(T_t)}{|T_t| - 1}.
+$$
+
+**最弱连接剪枝**：每次剪掉 $g(t)$ 最小的结点，得到一串越来越小的子树 $T_0 \supset T_1 \supset \dots \supset \{\text{root}\}$，分别对应一个 $\alpha$ 区间。最后用交叉验证从中选一棵。
+
+### 为什么平均能降低方差
+
+设 $B$ 棵树的预测 $f_b(x)$ 同分布，方差为 $\sigma^2$，两两相关系数为 $\rho$。那么
+
+$$
+\mathrm{Var}\Big(\frac1B\sum_b f_b\Big) = \frac{1}{B^2}\Big(B\sigma^2 + B(B-1)\rho\sigma^2\Big) = \rho\sigma^2 + \frac{1-\rho}{B}\sigma^2.
+$$
+
+$B \to \infty$ 时第二项消失，但第一项 $\rho\sigma^2$ 降不下去，所以**降低树之间的相关性 $\rho$** 才是关键。这正是随机森林每次只看部分特征的原因：牺牲一点单棵树的精度，换来更低的相关性。
+
+### AdaBoost = 前向分步加法模型 + 指数损失
+
+把集成写成**加法模型** $F(x) = \sum_{m=1}^M \alpha_m G_m(x)$，其中 $G_m(x)\in\{-1,+1\}$。一次性优化所有 $(\alpha_m, G_m)$ 太难，于是**前向分步**：每一轮只加一项，前面的保持不变。在指数损失 $L(y, F) = e^{-yF}$ 下，第 $m$ 轮要解
+
+$$
+(\alpha_m, G_m) = \arg\min_{\alpha, G} \sum_i \underbrace{e^{-y_i F_{m-1}(x_i)}}_{w_{mi}}\, e^{-\alpha y_i G(x_i)}.
+$$
+
+前面轮次的效果全部折进了样本权重 $w_{mi}$。把求和按分对、分错拆开（权重已归一化，$e_m$ 是加权误差）：
+
+$$
+\sum_i w_{mi}\, e^{-\alpha y_i G(x_i)} = e^{-\alpha}(1 - e_m) + e^{\alpha} e_m.
+$$
+
+1. **对 $G$**：$\alpha > 0$ 时，这个式子随 $e_m$ 增大而增大，所以 $G_m$ 就是**加权误差最小的分类器**；
+2. **对 $\alpha$**：求导令其为零，得 $\alpha_m = \tfrac12 \ln\dfrac{1 - e_m}{e_m}$（课后推导第 2 题）；
+3. **权重更新**：$w_{m+1,i} \propto w_{mi}\, e^{-\alpha_m y_i G_m(x_i)}$，再除以规范化因子 $Z_m$。分错的样本乘以 $e^{\alpha_m}$，分对的乘以 $e^{-\alpha_m}$。
+
+这三条正是 AdaBoost 算法本身。原本只是一个启发式的“重加权”技巧，原来是在指数损失上做坐标下降。
+
+<AdaBoostReplay client:visible lang="zh" />
+
+<Box kind="theorem" title="训练误差指数下降">
+
+因为 $\mathbb{1}[\mathrm{sign}F(x_i) \ne y_i] \le e^{-y_iF(x_i)}$，所以
+
+$$
+\frac1N\sum_i \mathbb{1}[\mathrm{sign}F(x_i) \ne y_i] \le \frac1N \sum_i e^{-y_iF(x_i)} = \prod_{m=1}^M Z_m,\qquad Z_m = 2\sqrt{e_m(1-e_m)}.
+$$
+
+记 $e_m = \tfrac12 - \gamma_m$，有 $Z_m = \sqrt{1 - 4\gamma_m^2} \le e^{-2\gamma_m^2}$。只要每一轮比随机猜好一点（$\gamma_m \ge \gamma > 0$），训练误差就以 $e^{-2M\gamma^2}$ 的速度下降。
+
+</Box>
+
+### 梯度提升：函数空间里的梯度下降
+
+把上面的思路推广到**任意可微损失** $L$：第 $m$ 轮先算每个样本处的负梯度
+
+$$
+r_{mi} = -\left.\frac{\partial L(y_i, F)}{\partial F}\right|_{F = F_{m-1}(x_i)},
+$$
+
+再用一棵回归树 $h_m$ 去拟合 $(x_i, r_{mi})$，然后更新 $F_m = F_{m-1} + \nu h_m$，学习率 $\nu \in (0, 1]$。对平方损失，$r_{mi} = y_i - F_{m-1}(x_i)$ 就是**残差**（课后推导第 4 题）；对二分类的对数损失，$r_{mi} = y_i - p_i$。
+
+<ResidualBoost client:visible lang="zh" />
+
+XGBoost 和 LightGBM 更进一步，对损失做**二阶泰勒展开**。记 $g_i$、$h_i$ 为一阶、二阶导，对叶结点权重 $w_j$ 加 L2 正则 $\tfrac{\lambda}{2}\sum_j w_j^2$，则落在叶结点 $j$ 的样本贡献
+
+$$
+\sum_{i \in I_j}\Big(g_i w_j + \tfrac12 h_i w_j^2\Big) + \tfrac{\lambda}{2}w_j^2 \ \Rightarrow\ w_j^* = -\frac{G_j}{H_j + \lambda},
+$$
+
+其中 $G_j = \sum_{i\in I_j} g_i$，$H_j = \sum_{i\in I_j} h_i$。最优目标值 $-\tfrac12 G_j^2/(H_j+\lambda)$ 直接成为切分打分，这就是它们比经典 GBDT 更快更准的核心原因之一。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题：八个点的 AdaBoost
+
+<Box kind="example" title="三轮把训练误差降到 0">
+
+一维数据 $x = 1,2,\dots,8$，标签依次为 $+,+,-,-,+,+,-,-$。弱分类器是树桩“$x \le t$ 时预测 $s$，否则预测 $-s$”。初始权重都是 $\tfrac18$。
+
+**第 1 轮**：最好的树桩是 $t = 2.5,\ s = +$，分错 $x_5, x_6$，所以 $e_1 = \tfrac28 = \tfrac14$，$\alpha_1 = \tfrac12\ln 3 \approx 0.549$。更新后，分对的 6 个点权重都变成 $\tfrac1{12}$，分错的 2 个变成 $\tfrac14$。**分错样本的总权重恰好变成 $\tfrac12$**：刚加入的树桩在新权重下正好等于随机猜，下一轮必然要选一个不同的树桩。
+
+**第 2 轮**：$t = 6.5,\ s = +$，分错 $x_3, x_4$，$e_2 = \tfrac2{12} = \tfrac16$，$\alpha_2 = \tfrac12\ln 5 \approx 0.805$。新权重为：$x_{1,2}$ 是 $\tfrac1{20}$，$x_{3,4}$ 是 $\tfrac14$，$x_{5,6}$ 是 $\tfrac3{20}$，$x_{7,8}$ 是 $\tfrac1{20}$。
+
+**第 3 轮**：$t = 4.5,\ s = -$，分错 $x_1, x_2, x_7, x_8$，$e_3 = \tfrac4{20} = \tfrac15$，$\alpha_3 = \tfrac12\ln 4 = \ln 2 \approx 0.693$。
+
+**组合**：$F = 0.549\,G_1 + 0.805\,G_2 + 0.693\,G_3$，在四段上的取值为
+
+| $x$ | $G_1$ | $G_2$ | $G_3$ | $F(x)$ | 标签 |
+|---|---|---|---|---|---|
+| 1, 2 | $+$ | $+$ | $-$ | $+0.661$ | $+$ ✓ |
+| 3, 4 | $-$ | $+$ | $-$ | $-0.438$ | $-$ ✓ |
+| 5, 6 | $-$ | $+$ | $+$ | $+0.949$ | $+$ ✓ |
+| 7, 8 | $-$ | $-$ | $+$ | $-0.661$ | $-$ ✓ |
+
+三个都只会“切一刀”的树桩，组合出了一个需要切三刀的分类器，训练误差为 0。验证上界：$Z_1Z_2Z_3 = \tfrac{\sqrt3}{2}\cdot\tfrac{\sqrt5}{3}\cdot\tfrac45 \approx 0.52$，确实不小于训练误差 0 ✓。
+
+</Box>
+
+### 回到诊断室：可解释性与准确率
+
+在真实的乳腺癌数据上：
+
+- 一棵**深度为 3** 的树只有 8 条规则，医生可以逐条检查，例如“最差周长大于约 106、且最差凹点值大于约 0.14 → 恶性”，在几种不同的训练/测试划分下，测试准确率约 92–95%；
+- **LightGBM** 把上百棵树加起来，测试准确率约 94–97%，但已不能逐条阅读。这时可以借助**特征重要性**，或基于博弈论的 SHAP 值，来解释单个预测。
+
+在可解释性和准确率之间怎么取舍，取决于场景。课后的“组装库训练”题会让你搭一个 LightGBM，并逐棵树回放它的边界怎样形成，可以与手写的 AdaBoost 对照。
+
+### 拓展
+
+- **回归树**：叶结点输出样本均值，切分准则改为平方误差的下降。梯度提升里拟合残差用的就是回归树。
+- **袋外估计（OOB）**：每个自助样本大约漏掉 $(1-1/n)^n \approx 36.8\%$ 的数据，可以用这些数据免费估计泛化误差。
+- **XGBoost、LightGBM、CatBoost 的差别**：XGBoost 使用二阶近似和正则；LightGBM 使用直方图分桶、叶子优先生长和单边梯度采样，速度很快；CatBoost 用有序目标编码处理类别特征。
+- **表格数据**：在中等规模的表格数据上，树集成至今仍常常胜过深度网络。原因之一是树对无关特征、不规则的目标函数更稳健（见本章前沿阅读）。
+
+</Section>

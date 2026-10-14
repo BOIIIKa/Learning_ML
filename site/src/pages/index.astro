@@ -1,0 +1,17 @@
+---
+import { href } from "../i18n/ui";
+---
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`0; url=${href("zh/")}`} />
+    <script is:inline define:vars={{ zh: href("zh/"), en: href("en/") }}>
+      let lang = null;
+      try { lang = localStorage.getItem("learnml:lang"); } catch {}
+      if (!lang) lang = (navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en";
+      location.replace(lang === "en" ? en : zh);
+    </script>
+  </head>
+  <body></body>
+</html>

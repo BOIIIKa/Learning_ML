@@ -1,0 +1,223 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import ScenarioLines from "../../components/chapters/ch07/ScenarioLines";
+import SvmPlayground from "../../components/chapters/ch07/SvmPlayground";
+import SmoReplay from "../../components/chapters/ch07/SmoReplay";
+import KernelPlayground from "../../components/chapters/ch07/KernelPlayground";
+import FivePoints from "../../components/chapters/ch07/FivePoints";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 07 · Animated course" title="Support Vector Machines & Kernels" say="In this chapter we start from a hospital's screening problem, derive the support vector machine, and then use kernels to bend its boundary. Press the right arrow or space to continue, or P to autoplay.">
+
+From "which line can we trust?" to maximum margins, duality and the kernel trick
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="A hospital's screening problem" say="A hospital wants a first-pass tumour screen from two imaging measurements: the size of the mass and the irregularity of its edge. Past cases have been confirmed by pathology.">
+
+<Step say="Blue is benign and orange is malignant. On this training data, one straight line can separate the two classes.">Blue = benign, orange = malignant</Step>
+
+<Step say="But infinitely many lines separate the training data. Two of them are drawn on the right, and both make zero training mistakes.">**Infinitely many** lines separate the data</Step>
+
+<Step say="Now press the 'new patients' button a few times and watch which line makes the first mistake.">Press the button to bring in new patients →</Step>
+
+<div slot="visual"><ScenarioLines client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" say="Lines that hug one class soon start misclassifying newcomers.">
+
+<Step effect="focus" say="The intuition: new patients come from the same distribution as the old ones and land near the old data.">
+<p class="big-q">The line that stays farthest from both classes is the most robust.</p>
+</Step>
+
+<Step say="So this chapter asks: how do we turn 'stay as far as possible from both classes' into a mathematical problem we can solve exactly?">
+<p><span class="callout">Our question: how do we turn "stay far from both classes" into a problem we can solve exactly?</span></p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Measuring the safety buffer: the margin" say="First, define how far a point is from a hyperplane.">
+
+<Step say="A hyperplane $w^\top x+b=0$ splits space in two. We predict with $\mathrm{sign}(w^\top x+b)$ and use labels plus or minus one.">Hyperplane $w^\top x + b = 0$, prediction $\mathrm{sign}(w^\top x + b)$</Step>
+
+<Step effect="draw" say="The geometric margin of a point: its distance to the hyperplane when correctly classified, negative when misclassified.">
+
+$$
+\gamma_i = \frac{y_i\,(w^\top x_i + b)}{\|w\|}
+$$
+
+</Step>
+
+<Step say="The dataset's margin is the smallest of these. The maximum-margin principle: among all separating hyperplanes, choose the one with the largest margin.">Maximum margin: $\displaystyle\max_{w,b}\ \min_i \gamma_i$</Step>
+
+<div slot="visual">
+<Step effect="pop" say="The key step: scaling w and b together leaves the hyperplane unchanged, so we may fix the closest points at $y_i(w^\top x_i+b)=1$.">
+<Box kind="insight" title="Scale invariance">
+
+$(w,b) \to (cw, cb)$ leaves the hyperplane unchanged, so we may fix the closest points at $y_i(w^\top x_i+b)=1$. The margin is then $1/\|w\|$.
+
+</Box>
+</Step>
+<Step effect="pop" say="Maximizing one over the norm of w is the same as minimizing half its square. That gives the hard-margin SVM, a convex quadratic program.">
+<Box kind="theorem" title="Hard-margin SVM">
+
+$$
+\min_{w,b}\ \tfrac12\|w\|^2\quad \text{s.t.}\quad y_i(w^\top x_i+b)\ge 1
+$$
+
+</Box>
+</Step>
+</div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Soft margin: allowing a few mistakes" say="Real data is rarely perfectly separable.">
+
+<Step say="Give each sample a slack variable $\xi_i$ that lets it enter the margin, at a cost of $C\xi_i$.">
+
+$$
+\min\ \tfrac12\|w\|^2 + C\sum_i \xi_i,\quad y_if(x_i)\ge 1-\xi_i,\ \xi_i\ge0
+$$
+
+</Step>
+
+<Step say="At the optimum, $\xi_i$ equals $\max(0, 1-y_if(x_i))$. That is the hinge loss.">$\xi_i = \max(0,\,1-y_if(x_i))$ ← **hinge loss**</Step>
+
+<Step say="So the soft-margin SVM is hinge loss plus L2 regularization. Model, strategy and algorithm are all in plain view.">Soft-margin SVM = hinge loss + L2 regularization</Step>
+
+<Step say="On the right you can drag the points or tune C. A small C gives a wide, tolerant margin; a large C approaches the hard margin.">Drag points and tune $C$ to see the margin change →</Step>
+
+<div slot="visual"><SvmPlayground client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" say="You may already have noticed something in that experiment.">
+
+<Step effect="focus" say="Drag a point far from the boundary and the hyperplane does not move. Drag a ringed point and the hyperplane follows at once.">
+<p class="big-q">Only a few points on the boundary have a say.</p>
+</Step>
+
+<Step say="These points are called support vectors. In the next part we prove this rigorously with the KKT conditions.">They are the **support vectors**; the next part proves it with the KKT conditions.</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Tool: Lagrangian duality and KKT" say="First, recall a tool from Chapter zero: the KKT conditions of convex optimization.">
+
+<Step say="For a convex problem, introduce multipliers $\alpha_i\ge 0$ and form the Lagrangian.">$L = f + \sum_i \alpha_i g_i,\quad \alpha_i \ge 0$</Step>
+
+<Step say="Under Slater's condition strong duality holds, and a point is optimal exactly when four conditions hold. First, stationarity.">① Stationarity: $\nabla_\theta L = 0$</Step>
+
+<Step say="Second, primal feasibility.">② Primal feasibility: $g_i(\theta^*) \le 0$</Step>
+
+<Step say="Third, dual feasibility.">③ Dual feasibility: $\alpha_i^* \ge 0$</Step>
+
+<Step say="Fourth, and most important: complementary slackness. For each constraint, either the multiplier or the constraint itself is zero.">④ **Complementary slackness**: $\alpha_i^*\, g_i(\theta^*) = 0$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Deriving the dual" say="Now differentiate the soft-margin Lagrangian with respect to each primal variable.">
+
+<Step say="Differentiating in w shows that w is a weighted combination of the samples.">$\partial_w L = 0 \Rightarrow w = \sum_i \alpha_i y_i x_i$</Step>
+
+<Step say="Differentiating in b gives an equality constraint.">$\partial_b L = 0 \Rightarrow \sum_i \alpha_i y_i = 0$</Step>
+
+<Step say="Differentiating in the slack variables gives the upper bound C on each multiplier.">$\partial_{\xi_i} L = 0 \Rightarrow 0 \le \alpha_i \le C$</Step>
+
+<div slot="visual">
+<Step effect="pop" say="Substituting everything back, the primal variables disappear and only $\alpha$ remains. Notice that the data appears only through inner products. That sets up the kernel trick.">
+<Box kind="theorem" title="The SVM dual">
+
+$$
+\max_{\alpha}\ \sum_i \alpha_i - \tfrac12\sum_{i,j} \alpha_i\alpha_j y_i y_j\, \boxed{x_i^\top x_j}
+$$
+
+$$
+\text{s.t.}\ \ 0 \le \alpha_i \le C,\ \ \sum_i \alpha_i y_i = 0
+$$
+
+</Box>
+</Step>
+</div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Complementary slackness ⇒ support vectors" say="Complementary slackness sorts every sample into one of three cases.">
+
+<Step say="Zero multiplier: the point is outside the margin and contributes nothing to w.">$\alpha_i = 0$: outside the margin, **contributes nothing to $w$**</Step>
+
+<Step say="Multiplier strictly between zero and C: the point is exactly on the margin boundary. It is a free support vector, and b can be computed from it.">$0<\alpha_i<C$: exactly on the margin (gives $b$)</Step>
+
+<Step say="Multiplier equal to C: the point is inside the margin, or even misclassified.">$\alpha_i = C$: inside the margin or misclassified</Step>
+
+<Step effect="focus" say="Since w only sums over points with positive multipliers, the solution depends only on the support vectors. That is exactly what the dragging experiment showed.">
+<p class="big-q sm">$w=\sum_{\alpha_i>0}\alpha_iy_ix_i$ ⇒ only support vectors matter</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="SMO: two variables at a time" say="How do we solve the dual? SMO's idea is very neat.">
+
+<Step say="The equality constraint pins down any single variable, so at least two must change together.">The equality constraint ⇒ change **two** $\alpha$'s at a time</Step>
+
+<Step say="Pick the $\alpha_i$ that violates KKT the most, then the $\alpha_j$ that maximizes the difference in errors.">Pick the worst KKT violator $\alpha_i$, and the $\alpha_j$ maximizing $|E_i-E_j|$</Step>
+
+<Step say="With every other variable frozen, the objective is a one-dimensional quadratic, so the update has a closed form.">$\alpha_j \leftarrow \alpha_j + y_j(E_i-E_j)/\eta$, then clip into $[L,H]$</Step>
+
+<Step say="On the right is an SMO replay: the yellow rings mark the chosen pair, and the curve below is the dual objective rising monotonically.">Right: step-by-step replay; the dual objective only goes up →</Step>
+
+<div slot="visual"><SmoReplay client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: an SVM by hand" say="Let's solve an example completely by hand: three positive points and two negative ones.">
+
+<Step say="Step one: guess the support vectors. The closest to the other class are $x_1$, $x_2$ and the origin $x_4$. Put them exactly on the margin.">① Guess SVs $x_1,x_2,x_4$: $2w_1+b=1,\ 2w_2+b=1,\ -b=1$</Step>
+
+<Step say="That gives w equals one, one and b equals minus one.">⇒ $w=(1,1),\ b=-1$</Step>
+
+<Step say="Step two: check that the other two points satisfy their constraints.">② $x_3$: $3\ge1$ ✓; $x_5$: $2\ge1$ ✓</Step>
+
+<Step say="Step three: from $w=\sum\alpha_iy_ix_i$ and the equality constraint, the multipliers are one half, one half and one. All non-negative.">③ $\alpha_1=\alpha_2=\tfrac12,\ \alpha_4=1$, all $\ge 0$ ✓</Step>
+
+<Step say="Every KKT condition holds and the problem is convex, so this is the global optimum. Curiously, the origin contributes nothing to w, yet it has the largest multiplier.">④ Global optimum: $x_1+x_2=1$, margin width $\sqrt2$</Step>
+
+<div slot="visual"><FivePoints client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Extension: change the kernel" say="What if the data is not linearly separable at all?">
+
+<Step say="Recall the dual: the data appears only through inner products.">The dual only uses inner products $x_i^\top x_j$</Step>
+
+<Step say="Replacing the inner product with a kernel is like mapping into a high-dimensional space and finding the max-margin hyperplane there, without ever computing the map.">Swap in $K(x_i,x_j)=\phi(x_i)^\top\phi(x_j)$; SMO does not change a line</Step>
+
+<Step say="Try the linear, polynomial and RBF kernels on the right. The larger the RBF gamma, the more the boundary bends, and the easier it is to overfit.">Try the RBF $\gamma$: more bend, more overfitting →</Step>
+
+<div slot="visual"><KernelPlayground client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="More scenarios" say="The same ideas apply in many other places.">
+
+<Step say="Multi-class: one-versus-rest or one-versus-one.">**Multi-class**: one-vs-rest / one-vs-one</Step>
+
+<Step say="Regression: swap the hinge loss for the epsilon-insensitive loss and you get support vector regression.">**Regression (SVR)**: the $\varepsilon$-insensitive loss</Step>
+
+<Step say="Anomaly detection: train on normal samples only with a one-class SVM.">**Anomaly detection**: one-class SVM</Step>
+
+<Step say="With millions of samples, run stochastic gradient descent directly on hinge loss plus L2.">**At scale**: SGD or coordinate descent on hinge + L2</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="That's the end of the animated lesson. The practice is on the notes page: four derivation exercises and two coding exercises that run right in your browser.">
+
+<Step say="Write SMO by hand, check it against libsvm, and replay your hyperplane moving step by step.">✎ 4 derivations · ⌨ hand-written SMO vs libsvm · ⚙ tune an RBF-SVM</Step>
+
+<Step say="If you get stuck, press Tab twice inside a blank to see the reference answer.">Stuck? Press <kbd>Tab</kbd> twice inside a blank for the reference answer</Step>
+
+<Step effect="pop" say="Use the button below to start practising.">
+<a class="btn btn-primary btn-xl" href="../../chapters/svm-kernels/#s-practice">Start practising →</a>
+</Step>
+
+</Slide>

@@ -1,0 +1,174 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import ManualSplit from "../../components/chapters/ch08/ManualSplit";
+import TreeGrow from "../../components/chapters/ch08/TreeGrow";
+import ForestPlayground from "../../components/chapters/ch08/ForestPlayground";
+import AdaBoostReplay from "../../components/chapters/ch08/AdaBoostReplay";
+import ResidualBoost from "../../components/chapters/ch08/ResidualBoost";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 08 章 · 动画课程" title="决策树与集成学习" say="这一章，我们从医生的一个问题出发：模型为什么这样判断？答案是一串是非问题——决策树。再让许多棵树合作，得到今天表格数据上最强的模型之一。">
+
+从“问一连串问题”到随机森林、AdaBoost 与梯度提升
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="医生的追问" say="上一章的 SVM 准确率很高，但医生问：它为什么判这位病人是恶性？">
+
+<Step say="核 SVM 的回答是一堆核函数值的加权和——没法写进诊疗指南。">SVM 的理由：几十个核函数值的加权和 ✗</Step>
+
+<Step say="医生习惯的是问诊式的推理：一连串只看一个指标的是非问题。">医生想要：一串是/否问题，每次只看一个指标 ✓</Step>
+
+<Step say="右边，选一个特征，拖动阈值，亲手切第一刀。下方曲线扫描了所有阈值。">亲手切第一刀，看不纯度下降多少 →</Step>
+
+<Step say="再点‘让算法找最佳一刀’：算法做的，就是取这条曲线的最高点。">算法 = 取曲线的最高点</Step>
+
+<div slot="visual"><ManualSplit client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" say="一刀通常不够，两边还混着另一类。那就对每一半再切，一直切下去。">
+
+<Step effect="focus" say="这就是决策树。本章要回答三个问题。">
+<p class="big-q">一刀不够？那就对每一半继续切。</p>
+</Step>
+
+<Step say="第一，什么是最好的一刀？第二，切多深？第三，一棵树太敏感怎么办？">① 什么是“最好的一刀”？　② 切多深？　③ 一棵树太敏感怎么办？</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="决策树 = 分段常数函数" say="先用三要素来看决策树。">
+
+<Step say="模型：把空间切成轴对齐的矩形，每个矩形给一个常数预测。">**模型**：$f(x)=\sum_m c_m\,\mathbb{1}[x\in R_m]$</Step>
+
+<Step say="策略：每一刀让不纯度下降最多。">**策略**：每一刀让不纯度下降最多</Step>
+
+<Step say="算法：从根开始贪心地递归切分，再剪枝。全局最优是 NP 难的，贪心每一步只要 n log n。">**算法**：贪心递归 + 剪枝（全局最优是 NP 难）</Step>
+
+<Step say="右边拖动最大深度：训练准确率一路上升，测试准确率却先升后降——过拟合。">拖动深度：训练 ↑，测试先 ↑ 后 ↓ →</Step>
+
+<div slot="visual"><TreeGrow client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="一棵树太敏感，就种一片森林" say="单棵深树的方差很高：数据稍有变化，第一刀就可能换个位置。">
+
+<Step say="Bagging：有放回地抽很多份训练集，每份训练一棵深树，再取平均。">**Bagging**：自助采样 → 多棵深树 → 平均</Step>
+
+<Step say="随机森林：每次切分只看随机挑选的一部分特征，让树之间更不相关。">**随机森林**：再加上随机特征，降低树之间的相关性</Step>
+
+<Step say="右边反复点‘换一批训练数据’：单棵树的边界剧烈跳动，森林几乎不动。">反复换数据：单棵树乱跳，森林很稳 →</Step>
+
+<div slot="visual"><ForestPlayground client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="两种集成思路" say="集成有两条路线。">
+
+<Step say="并行的 Bagging：深树、互相独立，主要降低方差。">**Bagging / 随机森林**：并行 · 深树 · 降**方差**</Step>
+
+<Step say="串行的 Boosting：浅树、后一个修正前一个的错误，主要降低偏差。">**Boosting**：串行 · 浅树 · 降**偏差**</Step>
+
+<Step say="下一部分我们会证明：看似启发式的 AdaBoost，其实是在最小化指数损失。">下一部分：AdaBoost 其实在最小化**指数损失**</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="工具：熵与基尼指数" say="先定义什么叫纯。">
+
+<Step say="熵：全是一类时为零，均匀时最大。">熵 $H(D) = -\sum_k p_k\log_2 p_k$</Step>
+
+<Step say="信息增益：切分前后熵减少了多少。">信息增益 $g = H(D) - \sum_v \frac{|D_v|}{|D|}H(D_v)$</Step>
+
+<Step say="但它偏爱取值多的特征，比如病历号。所以 C4.5 改用信息增益比。">偏爱多值特征（如病历号）⇒ 信息增益比</Step>
+
+<Step say="基尼指数：二分类时就是 2p 乘以 1 减 p，是熵的便宜近似，CART 默认用它。">基尼 $1-\sum p_k^2 = 2p(1-p)$（二分类）</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="为什么平均能降方差" say="设每棵树方差为 σ 平方，两两相关系数为 ρ。">
+
+<Step effect="draw" say="B 棵树平均后的方差，第二项随 B 增大而消失，但第一项 ρσ² 降不下去。">
+
+$$
+\mathrm{Var}\Big(\frac1B\sum_b f_b\Big) = \rho\sigma^2 + \frac{1-\rho}{B}\sigma^2
+$$
+
+</Step>
+
+<Step effect="focus" say="所以关键是降低树之间的相关性——这正是随机森林随机挑特征的原因。">
+<p class="big-q sm">关键是降低相关性 $\rho$ ⇒ 随机挑特征</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="AdaBoost 的真面目" say="把集成写成加法模型，每一轮只加一项，在指数损失下优化。">
+
+<Step say="前面轮次的效果全部折进样本权重。">
+
+$$
+\min_{\alpha,G}\sum_i w_{mi}\,e^{-\alpha y_iG(x_i)},\quad w_{mi}=e^{-y_iF_{m-1}(x_i)}
+$$
+
+</Step>
+
+<Step say="按分对、分错拆开，变成关于加权误差 e 的简单函数。">$= e^{-\alpha}(1-e_m) + e^{\alpha}e_m$</Step>
+
+<Step say="对 G：选加权误差最小的分类器。对 α：求导得到二分之一倍的对数几率。">⇒ $G_m$ 选加权误差最小者，$\alpha_m = \tfrac12\ln\frac{1-e_m}{e_m}$</Step>
+
+<Step say="右边是 AdaBoost 的回放：被分错的点逐轮变大，训练误差始终在理论上界之下。">右侧：被分错的点变大；误差始终低于上界 →</Step>
+
+<div slot="visual"><AdaBoostReplay client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="梯度提升：拟合负梯度" say="把这个思路推广到任意可微损失。">
+
+<Step say="每一轮算出负梯度，用一棵回归树去拟合它，再乘学习率加到模型上。">$r_{mi} = -\partial L/\partial F$，$F_m = F_{m-1} + \nu h_m$</Step>
+
+<Step say="平方损失的负梯度正是残差，所以就是一轮一轮拟合残差。">平方损失：$r = y - F$，即**残差**</Step>
+
+<Step say="XGBoost 和 LightGBM 再加上二阶导，叶结点最优权重有闭式解。">二阶展开 ⇒ $w^* = -G/(H+\lambda)$</Step>
+
+<Step say="右边看梯度提升怎样一轮轮把残差吃掉。">右侧：残差逐轮被“吃掉” →</Step>
+
+<div slot="visual"><ResidualBoost client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="例题：八个点，三个树桩" say="来手算一个 AdaBoost。八个点，标签是 正正负负正正负负。">
+
+<Step say="第一轮：在 2.5 处切，错两个，误差四分之一，α 等于二分之一 ln 3。">① $t=2.5$：$e_1=\tfrac14$，$\alpha_1=\tfrac12\ln3$</Step>
+
+<Step say="更新后，分错样本的总权重恰好是二分之一：刚用过的树桩，在新权重下等于随机猜。">分错样本的总权重 → $\tfrac12$</Step>
+
+<Step say="第二轮：在 6.5 处切，误差六分之一，α 等于二分之一 ln 5。">② $t=6.5$：$e_2=\tfrac16$，$\alpha_2=\tfrac12\ln5$</Step>
+
+<Step say="第三轮：在 4.5 处反向切，误差五分之一，α 等于 ln 2。">③ $t=4.5$（反向）：$e_3=\tfrac15$，$\alpha_3=\ln2$</Step>
+
+<Step effect="focus" say="三个只会切一刀的树桩，组合出一个需要切三刀的分类器，训练误差为零。">
+<p class="big-q sm">三个树桩 ⇒ 三刀分类器，训练误差 0</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="回到诊断室" say="在真实的乳腺癌数据上，看看可解释性和准确率怎样取舍。">
+
+<Step say="一棵深度为 3 的树只有 8 条规则，医生能逐条检查，准确率大约 92 到 95%。">深度 3 的树：8 条规则，可逐条检查，约 92–95%</Step>
+
+<Step say="LightGBM 把上百棵树加起来，准确率大约 94 到 97%，但只能借助特征重要性或 SHAP 来解释。">LightGBM：约 94–97%，用特征重要性 / SHAP 解释</Step>
+
+<Step say="在表格数据上，树集成至今仍常常胜过深度网络。">表格数据上，树集成仍是强基线</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，再手写 AdaBoost，用 LightGBM 组装梯度提升树。">
+
+<Step say="两道代码题都能回放：你的 AdaBoost 和 LightGBM 的边界怎样一轮轮形成。">✎ 4 道推导 · ⌨ 手写 AdaBoost · ⚙ 组装 LightGBM 并回放</Step>
+
+<Step say="卡住时，在空里连按两次 Tab。">卡住了？连按两次 <kbd>Tab</kbd></Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/trees-ensembles/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

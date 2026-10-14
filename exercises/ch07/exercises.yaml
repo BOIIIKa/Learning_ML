@@ -1,0 +1,71 @@
+# 第 07 章 支持向量机与核方法 —— 课后练习 / Chapter 07 exercises
+#
+# derivation: 推导理解。学生输入表达式，在随机取值上与 answer 做数值比对。
+#             Students type an expression; it is compared with `answer` numerically at random points.
+# code:       训练实战。implement = 补全算法；library = 组装库训练。
+#             Hands-on training. implement = complete the algorithm; library = assemble a library.
+
+derivation:
+  - id: margin
+    title: {zh: "点到超平面的距离", en: "Distance from a point to a hyperplane"}
+    prompt:
+      zh: "二维中超平面为 $w_1x_1 + w_2x_2 + b = 0$。写出点 $(x_1, x_2)$ 到它的（几何）距离。可用变量：`w1, w2, b, x1, x2`。"
+      en: "In 2-D the hyperplane is $w_1x_1 + w_2x_2 + b = 0$. Write the (geometric) distance from the point $(x_1, x_2)$ to it. Variables: `w1, w2, b, x1, x2`."
+    answer: "abs(w1*x1 + w2*x2 + b) / sqrt(w1^2 + w2^2)"
+    vars: {w1: [-2, 2], w2: [-2, 2], b: [-1, 1], x1: [-3, 3], x2: [-3, 3]}
+    solution:
+      zh: "法向量 $w$ 垂直于超平面。从平面上任一点 $x_0$ 指向 $x$ 的向量在单位法向 $w/\\|w\\|$ 上的投影长度就是距离：$\\dfrac{|w^\\top(x-x_0)|}{\\|w\\|} = \\dfrac{|w^\\top x + b|}{\\|w\\|}$，因为 $w^\\top x_0 = -b$。对正确分类的点，$|w^\\top x+b| = y(w^\\top x+b)$，这就是几何间隔。"
+      en: "The normal $w$ is perpendicular to the hyperplane. Project the vector from any point $x_0$ on the plane to $x$ onto the unit normal $w/\\|w\\|$: $\\dfrac{|w^\\top(x-x_0)|}{\\|w\\|} = \\dfrac{|w^\\top x + b|}{\\|w\\|}$, since $w^\\top x_0 = -b$. For a correctly classified point $|w^\\top x+b| = y(w^\\top x+b)$, which is the geometric margin."
+
+  - id: hinge
+    title: {zh: "松弛变量就是合页损失", en: "Slack variables are the hinge loss"}
+    prompt:
+      zh: "软间隔 SVM 约束为 $y_i f(x_i) \\ge 1 - \\xi_i,\\ \\xi_i \\ge 0$，目标中含 $C\\sum_i \\xi_i$。在最优解处，用 $y$ 与 $f$（即 $y_i$、$f(x_i)$）写出 $\\xi_i$。可用变量：`y, f`。"
+      en: "The soft-margin SVM has constraints $y_i f(x_i) \\ge 1 - \\xi_i,\\ \\xi_i \\ge 0$ and the term $C\\sum_i \\xi_i$ in its objective. At the optimum, write $\\xi_i$ in terms of $y$ and $f$ (i.e. $y_i$, $f(x_i)$). Variables: `y, f`."
+    answer: "max(0, 1 - y*f)"
+    vars: {y: [-1, 1], f: [-3, 3]}
+    solution:
+      zh: "目标要最小化 $\\xi_i$，而两条约束给出下界 $\\xi_i \\ge 1 - y_if(x_i)$ 与 $\\xi_i \\ge 0$，所以最优时取二者较大者：$\\xi_i = \\max(0,\\,1 - y_if(x_i))$。代回目标即得无约束形式 $\\sum_i \\max(0, 1-y_if(x_i)) + \\frac{1}{2C}\\|w\\|^2$（差一个常数倍）——合页损失加 L2 正则。"
+      en: "The objective pushes each $\\xi_i$ down, while the constraints give the lower bounds $\\xi_i \\ge 1 - y_if(x_i)$ and $\\xi_i \\ge 0$, so at the optimum $\\xi_i = \\max(0,\\,1 - y_if(x_i))$. Substituting back gives the unconstrained form $\\sum_i \\max(0, 1-y_if(x_i)) + \\frac{1}{2C}\\|w\\|^2$ (up to a constant factor): hinge loss plus L2 regularization."
+
+  - id: smo-update
+    title: {zh: "SMO 的两变量解析解", en: "SMO's closed-form two-variable update"}
+    prompt:
+      zh: "固定其余 $\\alpha$，沿约束直线把对偶目标写成 $\\alpha_2$ 的一元二次函数，其二次项系数为 $-\\tfrac{1}{2}\\eta$，$\\eta = K_{11}+K_{22}-2K_{12}$。令导数为零，写出未剪辑的新 $\\alpha_2$。可用变量：`a2, y2, E1, E2, K11, K22, K12`（$E_k = f(x_k) - y_k$）。"
+      en: "Fix all other $\\alpha$'s. Along the constraint line the dual objective is a quadratic in $\\alpha_2$ with leading coefficient $-\\tfrac{1}{2}\\eta$, where $\\eta = K_{11}+K_{22}-2K_{12}$. Set the derivative to zero and write the unclipped new $\\alpha_2$. Variables: `a2, y2, E1, E2, K11, K22, K12` (with $E_k = f(x_k) - y_k$)."
+    answer: "a2 + y2*(E1 - E2) / (K11 + K22 - 2*K12)"
+    vars: {a2: [0, 1], y2: [-1, 1], E1: [-2, 2], E2: [-2, 2], K11: [2, 4], K22: [2, 4], K12: [-1, 1]}
+    solution:
+      zh: "由 $\\alpha_1y_1+\\alpha_2y_2=\\zeta$ 消去 $\\alpha_1$，目标只剩 $\\alpha_2$。对它求导并利用 $E_k$ 的定义整理，驻点满足 $\\eta\\,\\alpha_2^{new} = \\eta\\,\\alpha_2^{old} + y_2(E_1 - E_2)$，即 $\\alpha_2^{new,unc} = \\alpha_2^{old} + \\dfrac{y_2(E_1-E_2)}{\\eta}$。$\\eta>0$ 保证这是最大值点；随后再裁剪到可行区间 $[L,H]$。"
+      en: "Eliminate $\\alpha_1$ via $\\alpha_1y_1+\\alpha_2y_2=\\zeta$, leaving a function of $\\alpha_2$ alone. Differentiating and simplifying with the definition of $E_k$, the stationary point satisfies $\\eta\\,\\alpha_2^{new} = \\eta\\,\\alpha_2^{old} + y_2(E_1 - E_2)$, so $\\alpha_2^{new,unc} = \\alpha_2^{old} + \\dfrac{y_2(E_1-E_2)}{\\eta}$. $\\eta>0$ makes it a maximum; it is then clipped into the feasible interval $[L,H]$."
+
+  - id: poly-kernel
+    title: {zh: "多项式核对应的特征映射", en: "The feature map behind a polynomial kernel"}
+    prompt:
+      zh: "设 $\\phi(x) = (x_1^2,\\ \\sqrt{2}x_1x_2,\\ x_2^2)$。把内积 $\\phi(x)^\\top\\phi(z)$ 化简为只含原始坐标的紧凑形式。可用变量：`x1, x2, z1, z2`。"
+      en: "Let $\\phi(x) = (x_1^2,\\ \\sqrt{2}x_1x_2,\\ x_2^2)$. Simplify the inner product $\\phi(x)^\\top\\phi(z)$ into a compact form in the original coordinates. Variables: `x1, x2, z1, z2`."
+    answer: "(x1*z1 + x2*z2)^2"
+    vars: {x1: [-2, 2], x2: [-2, 2], z1: [-2, 2], z2: [-2, 2]}
+    solution:
+      zh: "$\\phi(x)^\\top\\phi(z) = x_1^2z_1^2 + 2x_1x_2z_1z_2 + x_2^2z_2^2 = (x_1z_1 + x_2z_2)^2 = (x^\\top z)^2$。核函数只用一次二维内积就算出了三维特征空间里的内积——这就是核技巧：从不显式构造 $\\phi$。"
+      en: "$\\phi(x)^\\top\\phi(z) = x_1^2z_1^2 + 2x_1x_2z_1z_2 + x_2^2z_2^2 = (x_1z_1 + x_2z_2)^2 = (x^\\top z)^2$. The kernel computes an inner product in the 3-D feature space with a single 2-D inner product — the kernel trick: $\\phi$ is never built explicitly."
+
+code:
+  - id: smo
+    kind: implement
+    file: smo.py
+    packages: [numpy, scikit-learn]
+    metrics:
+      - {key: dual, label: {zh: "对偶目标", en: "Dual objective"}}
+    title: {zh: "手写 SMO，与 libsvm 对拍", en: "Hand-written SMO, checked against libsvm"}
+    intro:
+      zh: "补全两变量子问题的五个空。运行后，你的 SMO 每一次更新都会被记录下来，可以逐步回放超平面的移动，并与 scikit-learn（底层 libsvm）的最终解并排比较。"
+      en: "Fill in the five blanks of the two-variable subproblem. When you run it, every update of your SMO is recorded so you can replay the hyperplane moving step by step, side by side with the final solution from scikit-learn (libsvm underneath)."
+  - id: svm-library
+    kind: library
+    file: svm_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "组装 RBF 核 SVM 并调参", en: "Assemble and tune an RBF-kernel SVM"}
+    intro:
+      zh: "用 scikit-learn 组装“标准化 + RBF 核 SVM”流水线，在乳腺癌数据集上做交叉验证网格搜索。运行后可以在双月牙数据上逐个查看不同 C、γ 组合下的决策边界。"
+      en: "Assemble a standardize + RBF-SVM pipeline with scikit-learn and grid-search it with cross-validation on the breast-cancer data. Afterwards, flip through the decision boundaries for different (C, γ) on the two-moons data."

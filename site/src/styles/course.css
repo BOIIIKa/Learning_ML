@@ -1,0 +1,113 @@
+/* ---------- frame ---------- */
+.course-body { overflow: hidden; height: 100vh; height: 100dvh; }
+.course { display: grid; grid-template-rows: auto 1fr auto auto auto; height: 100vh; height: 100dvh; background: var(--bg); --part-c: var(--accent); }
+.course[data-part="method"] { --part-c: var(--accent-3); }
+.course[data-part="math"] { --part-c: var(--accent-2); }
+.course[data-part="cases"] { --part-c: var(--success); }
+.course[data-part="practice"] { --part-c: var(--warning); }
+.course[data-part="recap"] { --part-c: var(--accent-3); }
+
+.course-bar { display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+.course-bar .brand-mark { width: 28px; height: 28px; }
+.course-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stage-counter { margin-left: auto; font-family: var(--mono); color: var(--text-muted); font-size: 0.82rem; }
+.course-link { font-size: 0.8rem; padding: 0.25em 0.8em; }
+
+.stage-fit { position: relative; overflow: hidden; display: grid; place-items: center; min-height: 0; }
+.stage { position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px; margin: -360px 0 0 -640px; transform-origin: center; }
+
+/* ---------- slides ---------- */
+.slide { position: absolute; inset: 0; display: none; flex-direction: column; padding: 46px 64px 40px; border-radius: 22px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); }
+.slide.active { display: flex; animation: slide-in 0.65s cubic-bezier(.2,.8,.2,1) both; }
+.slide.active.from-left { animation-name: slide-in-left; }
+@keyframes slide-in { from { opacity: 0; transform: translateX(60px) scale(0.98); filter: blur(10px); } }
+@keyframes slide-in-left { from { opacity: 0; transform: translateX(-60px) scale(0.98); filter: blur(10px); } }
+
+.slide-bg { position: absolute; inset: -20%; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(40% 40% at 85% 15%, color-mix(in srgb, var(--part-c) 16%, transparent), transparent 70%),
+    radial-gradient(35% 35% at 10% 95%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 70%);
+  animation: bg-drift 18s ease-in-out infinite alternate; }
+@keyframes bg-drift { to { transform: translate(-4%, 3%) rotate(3deg); } }
+.slide > *:not(.slide-bg) { position: relative; z-index: 1; }
+
+.slide-head { margin-bottom: 18px; }
+.slide-part { font-family: var(--mono); font-size: 15px; font-weight: 700; letter-spacing: 0.06em; color: var(--part-c); }
+.slide-h2 { margin: 6px 0 0; font-size: 40px; letter-spacing: -0.02em; }
+.slide-body { flex: 1; min-height: 0; display: grid; gap: 40px; font-size: 25px; line-height: 1.6; }
+.layout-split .slide-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: center; }
+.layout-center .slide-body { align-content: center; justify-items: center; text-align: center; }
+.layout-center .slide-main { max-width: 980px; }
+.slide-main { min-width: 0; }
+.slide-main p, .slide-main li { margin: 0.35em 0; }
+.slide-main ul, .slide-main ol { padding-left: 1.2em; }
+.slide-main .katex-display { margin: 0.4em 0; }
+.slide-visual { min-width: 0; max-height: 100%; overflow: auto; }
+
+/* Title card */
+.layout-title { justify-content: center; align-items: flex-start; padding: 80px 100px; }
+.slide-title-card { display: grid; gap: 14px; }
+.slide-kicker { margin: 0; font-family: var(--mono); font-size: 20px; letter-spacing: 0.12em; color: var(--part-c); }
+.slide-h1 { margin: 0; font-size: 84px; line-height: 1.05; letter-spacing: -0.03em; }
+.slide-title-card p { font-size: 28px; color: var(--text-muted); margin: 0; max-width: 900px; }
+.slide.active .slide-h1 { animation: title-in 0.9s 0.1s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes title-in { from { opacity: 0; transform: translateY(40px); letter-spacing: 0.08em; filter: blur(12px); } }
+
+/* Widgets inside slides: compact, no captions (the narration explains). */
+.slide .widget { margin: 0; padding: 14px; font-size: 16px; line-height: 1.5; }
+.slide .widget-caption { display: none; }
+.slide .plot2d { max-height: 400px; }
+.slide .w-stats { gap: 8px; }
+.slide .w-stat-value { font-size: 18px; }
+.slide .metric-chart svg { max-height: 120px; }
+
+/* ---------- steps ---------- */
+.slide .step { opacity: 0; transition: opacity 0.5s ease, transform 0.6s cubic-bezier(.2,.8,.2,1), filter 0.5s ease, background-color 0.6s ease, box-shadow 0.6s ease; }
+.slide .step.fx-up { transform: translateY(18px); filter: blur(4px); }
+.slide .step.fx-pop { transform: scale(0.85); }
+.slide .step.fx-focus { transform: scale(1.04); filter: blur(6px); }
+.slide .step.shown { opacity: 1; transform: none; filter: none; }
+.slide span.step { display: inline-block; }
+.slide .step.fx-draw { opacity: 1; clip-path: inset(0 100% 0 0); transition: clip-path 0.9s cubic-bezier(.6,0,.2,1); }
+.slide .step.fx-draw.shown { clip-path: inset(0 0 0 0); }
+/* The newest step glows briefly. */
+.slide .step.current { border-radius: 10px; animation: step-glow 1.6s ease-out; }
+@keyframes step-glow { 0% { background-color: color-mix(in srgb, var(--part-c) 22%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--part-c) 22%, transparent); } 100% { background-color: transparent; box-shadow: 0 0 0 6px transparent; } }
+
+.slide .box { font-size: 22px; margin: 0.4em 0; }
+.slide .big-q { font-size: 44px; font-weight: 800; line-height: 1.3; }
+.slide .callout { display: inline-block; padding: 0.2em 0.6em; border-radius: 10px; background: color-mix(in srgb, var(--part-c) 14%, transparent); color: var(--text); }
+
+/* ---------- subtitle ---------- */
+.subtitle { min-height: 3.6em; display: grid; place-items: center; padding: 0.4rem 1.5rem; }
+.subtitle-text { max-width: 980px; text-align: center; font-size: clamp(0.95rem, 1.6vw, 1.15rem); line-height: 1.6; padding: 0.35em 1em; border-radius: 12px; background: color-mix(in srgb, var(--surface) 85%, transparent); border: 1px solid var(--border); }
+.subtitle-text.empty { visibility: hidden; }
+.subtitle-text.in { animation: sub-in 0.5s ease both; }
+@keyframes sub-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---------- controls ---------- */
+.course-controls { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem 0.2rem; }
+.ctl { width: 2.4rem; height: 2.4rem; padding: 0; justify-content: center; font-size: 1rem; }
+.ctl-play { color: #061018; background: linear-gradient(135deg, var(--accent), var(--accent-3)); border: none; }
+.playing .ctl-play { box-shadow: 0 0 0 0 var(--accent); animation: ring 1.6s ease-out infinite; }
+@keyframes ring { to { box-shadow: 0 0 0 12px transparent; } }
+.ctl.on { border-color: var(--accent); box-shadow: 0 0 12px -3px var(--accent); }
+.segments { flex: 1; display: flex; gap: 6px; min-width: 0; }
+.seg { flex-basis: 0; min-width: 0; display: grid; gap: 3px; font: inherit; background: none; border: none; padding: 0; cursor: pointer; color: var(--text-muted); text-align: left; }
+.seg-track { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.seg-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-3)); transform-origin: 0 50%; transform: scaleX(0); transition: transform 0.5s cubic-bezier(.2,.8,.2,1); }
+.seg-label { font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg.on .seg-label { color: var(--text); font-weight: 700; }
+.course-hint { margin: 0; padding: 0 1rem 0.5rem; text-align: center; font-size: 0.72rem; color: var(--text-muted); }
+
+.recap { text-align: left; font-size: 21px; line-height: 1.55; }
+.recap ul { margin: 0; padding-left: 1.1em; columns: 2; column-gap: 48px; }
+.recap li { break-inside: avoid; margin: 0 0 0.5em; }
+
+@media (max-width: 700px) {
+  .course-hint, .course-title { display: none; }
+}
+.slide .big-q.sm { font-size: 34px; }
+.slide .btn-xl { font-size: 24px; padding: 0.5em 1.4em; }
+/* Notes-page scroll reveals do not apply on slides; steps handle entrances here. */
+.slide .reveal { opacity: 1; transform: none; filter: none; }

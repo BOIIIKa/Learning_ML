@@ -1,0 +1,7 @@
+- **Decision trees**: recursive axis-aligned splits with constant leaf predictions; each cut greedily picks the feature and threshold with the largest impurity decrease.
+- **Impurity**: entropy $-\sum p_k\log p_k$, information gain (biased toward many-valued features), gain ratio, and the Gini index $1-\sum p_k^2$ ($2p(1-p)$ for two classes).
+- **Pruning**: $C_\alpha(T) = \sum_t N_tQ_t + \alpha|T|$; repeatedly collapse the node with the smallest $g(t)$, then choose $\alpha$ by cross-validation.
+- **Bagging / random forests**: an average has variance $\rho\sigma^2 + (1-\rho)\sigma^2/B$; picking features at random lowers the correlation $\rho$ between trees.
+- **AdaBoost**: forward stagewise additive modelling + exponential loss ⇒ $\alpha_m = \tfrac12\ln\frac{1-e_m}{e_m}$ and weights updated by $e^{-\alpha_m y_iG_m(x_i)}$; training error $\le \prod_m 2\sqrt{e_m(1-e_m)}$.
+- **Gradient boosting**: each round fits a tree to the negative gradient (the residual, for squared loss); XGBoost/LightGBM use a second-order expansion with optimal leaf weight $w^* = -G/(H+\lambda)$.
+- **Trade-off**: shallow trees are interpretable, ensembles are more accurate; on tabular data tree ensembles remain a strong baseline.

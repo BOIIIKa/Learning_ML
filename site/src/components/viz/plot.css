@@ -1,0 +1,36 @@
+.plot2d { width: 100%; max-width: 560px; margin: 0 auto; height: auto; display: block; border-radius: 12px; touch-action: none; user-select: none; }
+.plot-bg { fill: var(--surface-2); }
+.plot-griddot { fill: var(--border); }
+
+.field-pos { fill: var(--class-pos); fill-opacity: 0.13; }
+.field-neg { fill: var(--class-neg); fill-opacity: 0.13; }
+.field-zero { fill: none; stroke: var(--text); stroke-width: 2; stroke-opacity: 0.9; }
+
+.sep-line { stroke: var(--text); stroke-width: 2.6; fill: none; }
+.margin-line { stroke-width: 1.6; stroke-dasharray: 6 5; fill: none; }
+.margin-line.pos { stroke: var(--class-pos); }
+.margin-line.neg { stroke: var(--class-neg); }
+.extra-line { stroke-width: 2; fill: none; opacity: 0.85; }
+.extra-line.dashed { stroke-dasharray: 5 5; }
+
+.pt { stroke: var(--bg); stroke-width: 1.5; transition: r 0.45s cubic-bezier(.2,.8,.2,1); }
+.pt.pos { fill: var(--class-pos); }
+.pt.neg { fill: var(--class-neg); }
+.draggable .pt { cursor: grab; }
+.draggable .pt:active { cursor: grabbing; }
+
+.sv-ring { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: 3 3; animation: sv-spin 6s linear infinite; transform-box: fill-box; transform-origin: center; }
+.hl-ring { fill: none; stroke: var(--warning); stroke-width: 2.5; animation: hl-pulse 0.9s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+
+@keyframes sv-spin { to { transform: rotate(360deg); } }
+@keyframes hl-pulse { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+
+.pt-new { fill: none; stroke-width: 2; animation: pop-in 0.5s cubic-bezier(.2,1.6,.4,1) both; transform-box: fill-box; transform-origin: center; }
+.pt-new.pos { stroke: var(--class-pos); }
+.pt-new.neg { stroke: var(--class-neg); }
+.pt-new.bad { stroke: var(--danger); stroke-width: 3; fill: var(--danger); fill-opacity: 0.25; }
+@keyframes pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.side-pos { fill: var(--class-pos); fill-opacity: 0.12; transition: fill 0.3s ease; }
+.side-neg { fill: var(--class-neg); fill-opacity: 0.12; transition: fill 0.3s ease; }
+.side-none { fill: none; }

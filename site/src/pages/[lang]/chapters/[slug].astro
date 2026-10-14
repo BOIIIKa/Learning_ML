@@ -1,0 +1,132 @@
+---
+import Base from "../../../layouts/Base.astro";
+import Section from "../../../components/astro/Section.astro";
+import Practice from "../../../components/exercise/Practice";
+import Recap from "../../../components/course/Recap.astro";
+import { LANGS, SECTIONS, href, pick, t, type Lang } from "../../../i18n/ui";
+import { allChapters, chapterPage, courseSlugs, exercises, handbook, outline, readyChapters, readySlugs, recap } from "../../../lib/data";
+import { renderRich } from "../../../lib/rich";
+import "../../../styles/chapter.css";
+
+export function getStaticPaths() {
+  return LANGS.flatMap((lang) => readySlugs.map((slug) => ({ params: { lang, slug } })));
+}
+
+const lang = Astro.params.lang as Lang;
+const slug = Astro.params.slug!;
+const chapter = allChapters.find((c) => c.slug === slug)!;
+const part = outline.parts.find((p) => p.chapters.some((c) => c.slug === slug))!;
+const { default: Content } = chapterPage(lang, slug);
+const practice = exercises.chapters[chapter.id] ?? { derivation: [], code: [] };
+const entries = handbook(lang).filter((h) => h.chapters.includes(chapter.id));
+const idx = readyChapters.findIndex((c) => c.slug === slug);
+const prev = readyChapters[idx - 1];
+const next = readyChapters[idx + 1];
+const byId = Object.fromEntries(allChapters.map((c) => [c.id, c]));
+const hasCourse = courseSlugs.includes(slug);
+const hasRecap = !!recap(lang, slug);
+const L = {
+  course: { zh: "▶ 动画课程（初学推荐）", en: "▶ Animated course (best for first-timers)" },
+  recap: { zh: "本章一页纸 · 复习用", en: "The chapter on one page · for review" },
+}
+---
+<Base lang={lang} title={`${chapter.id} ${pick(chapter.title, lang)} · ${t(lang, "siteName")}`} path={`chapters/${slug}/`}>
+  <header class="ch-hero">
+    <div class="ch-hero-inner container">
+      <div class="ch-num" aria-hidden="true">{chapter.id}</div>
+      <div class="ch-hero-text">
+        <p class="ch-part">{pick(part.title, lang)}</p>
+        <h1 class="ch-title"><span class="gradient-text">{pick(chapter.title, lang)}</span></h1>
+        {hasCourse && <a class="btn btn-primary ch-course-btn" href={href(`${lang}/course/${slug}/`)}>{L.course[lang]}</a>}
+        <div class="ch-meta">
+          <span class="meta-chip">{t(lang, "sources")}: {Object.entries(chapter.sources).map(([b, chs]) => `${b} ${chs.join(", ")}`).join(" · ")}</span>
+          {chapter.prereqs.length > 0 && (
+            <span class="meta-chip">{t(lang, "prereqs")}: {chapter.prereqs.map((p) => `${p} ${pick(byId[p].title, lang)}`).join(" · ")}</span>
+          )}
+        </div>
+      </div>
+    </div>
+    <div class="container ch-goals-triad">
+      <div class="ch-goals card reveal">
+        <h3>{t(lang, "goals")}</h3>
+        <ul>{chapter.goals.map((g) => <li set:html={renderRich(g[lang])} />)}</ul>
+      </div>
+      {chapter.triad && (
+        <div class="triad">
+          {(["model", "strategy", "algorithm"] as const).map((k, i) => (
+            <div class="triad-card reveal" style={`transition-delay:${i * 90}ms`}>
+              <span class="triad-k">{t(lang, k)}</span>
+              <p class="triad-v" set:html={renderRich(chapter.triad![k][lang])} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </header>
+
+  {hasRecap && (
+    <div class="container">
+      <details class="ch-recap card reveal">
+        <summary>{L.recap[lang]}</summary>
+        <Recap lang={lang} slug={slug} />
+      </details>
+    </div>
+  )}
+
+  <div class="ch-body container">
+    <nav class="ch-rail" aria-label="sections">
+      <ol>
+        {SECTIONS.map((s, i) => (
+          <li><a href={`#s-${s.key}`} data-sec={s.key}><span>{String(i + 1).padStart(2, "0")}</span>{s[lang]}</a></li>
+        ))}
+      </ol>
+    </nav>
+
+    <article class="ch-article">
+      <Content lang={lang} />
+
+      <Section lang={lang} k="practice">
+        <Practice client:visible lang={lang} derivation={practice.derivation} code={practice.code} runtime={exercises.runtime} />
+      </Section>
+
+      <Section lang={lang} k="handbook">
+        <div class="hb-links">
+          {entries.map((e) => (
+            <a class="hb-link card reveal" href={href(`${lang}/handbook/#${e.slug}`)}>
+              <strong>{e.title}</strong>
+              <span class="muted">{e.summary}</span>
+              <span class="hb-arrow">→</span>
+            </a>
+          ))}
+        </div>
+        <h3>{t(lang, "frontier")}</h3>
+        <ul class="frontier-list">
+          {chapter.frontier.map((f) => (
+            <li class="reveal"><span class="fr-ref">{f.ref}</span><span class="fr-note" set:html={renderRich(f.note[lang])} /></li>
+          ))}
+        </ul>
+      </Section>
+
+      <nav class="ch-pager">
+        {prev ? <a class="btn" href={href(`${lang}/chapters/${prev.slug}/`)}>← {prev.id} {pick(prev.title, lang)}</a> : <span />}
+        {next && <a class="btn" href={href(`${lang}/chapters/${next.slug}/`)}>{next.id} {pick(next.title, lang)} →</a>}
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const setup = () => {
+      // Highlight the current section in the rail.
+      const links = new Map([...document.querySelectorAll(".ch-rail a")].map((a) => [(a as HTMLElement).dataset.sec, a]));
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          links.forEach((a) => a.classList.remove("active"));
+          links.get(e.target.id.slice(2))?.classList.add("active");
+        });
+      }, { rootMargin: "-30% 0px -60% 0px" });
+      document.querySelectorAll(".ch-section").forEach((s) => io.observe(s));
+    };
+    document.addEventListener("astro:page-load", setup);
+  </script>
+</Base>

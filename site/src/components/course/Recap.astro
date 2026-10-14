@@ -1,0 +1,11 @@
+---
+// The chapter's one-page summary, written once in src/recaps/<lang>/<slug>.mdx
+// and shown both in the notes (collapsible) and as the last slide of the course.
+import { recap } from "../../lib/data";
+import type { Lang } from "../../i18n/ui";
+interface Props { lang: Lang; slug: string }
+const { lang, slug } = Astro.props;
+const mod = recap(lang, slug);
+const Content = mod?.default;
+---
+{Content && <div class="recap"><Content /></div>}

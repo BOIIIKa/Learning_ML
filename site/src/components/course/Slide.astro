@@ -1,0 +1,40 @@
+---
+// One slide of the animated course. Layouts:
+//   title  — big centred title card (chapter opener / part divider)
+//   center — single column
+//   split  — text on the left, the `visual` slot (a widget) on the right
+import { SECTIONS, type Lang } from "../../i18n/ui";
+interface Props {
+  lang: Lang;
+  part: (typeof SECTIONS)[number]["key"] | "intro" | "recap";
+  layout?: "title" | "center" | "split";
+  title?: string;
+  kicker?: string;
+  /** Narration shown (and optionally spoken) when the slide opens, before any step. */
+  say?: string;
+}
+const { lang, part, layout = "split", title, kicker, say = "" } = Astro.props;
+const n = SECTIONS.findIndex((s) => s.key === part);
+const partLabel = n >= 0 ? SECTIONS[n][lang] : "";
+---
+<section class={`slide layout-${layout} part-${part}`} data-part={part} data-say={say}>
+  <div class="slide-bg" aria-hidden="true"></div>
+  {layout === "title" ? (
+    <div class="slide-title-card">
+      {kicker && <p class="slide-kicker">{kicker}</p>}
+      <h1 class="slide-h1"><span class="gradient-text">{title}</span></h1>
+      <slot />
+    </div>
+  ) : (
+    <>
+      <header class="slide-head">
+        {partLabel && <span class="slide-part">{String(n + 1).padStart(2, "0")} · {partLabel}</span>}
+        {title && <h2 class="slide-h2">{title}</h2>}
+      </header>
+      <div class="slide-body">
+        <div class="slide-main"><slot /></div>
+        {layout === "split" && <div class="slide-visual"><slot name="visual" /></div>}
+      </div>
+    </>
+  )}
+</section>

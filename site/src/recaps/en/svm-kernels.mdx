@@ -1,0 +1,7 @@
+- **Maximum margin**: among separating hyperplanes, pick the one with the largest geometric margin $\min_i y_i(w^\top x_i+b)/\|w\|$. Fixing the closest points' functional margin at 1 turns this into $\min \tfrac12\|w\|^2$ subject to $y_i(w^\top x_i+b)\ge 1$.
+- **Soft margin = hinge loss + L2**: $\sum_i\max(0,1-y_if(x_i)) + \tfrac{1}{2C}\|w\|^2$. A larger $C$ tolerates fewer mistakes.
+- **The dual**: $\max_\alpha \sum\alpha_i - \tfrac12\sum\alpha_i\alpha_jy_iy_j\,x_i^\top x_j$ subject to $0\le\alpha_i\le C$ and $\sum\alpha_iy_i=0$; then $w=\sum\alpha_iy_ix_i$.
+- **Support vectors**: by complementary slackness, only points with $\alpha_i>0$ (on the margin, inside it, or misclassified) determine the solution.
+- **SMO**: pick two $\alpha$'s and solve along the constraint line in closed form, $\alpha_j \leftarrow \alpha_j + y_j(E_i-E_j)/\eta$, then clip into $[L,H]$; the dual objective never decreases.
+- **Kernel trick**: the dual only uses inner products, so replacing $x_i^\top x_j$ with a PSD kernel $K(x_i,x_j)$ finds a max-margin boundary in a high-dimensional feature space.
+- **In practice**: standardize first, search $C$ and $\gamma$ on a log scale, and switch to a linear SVM or approximate kernels for big data.

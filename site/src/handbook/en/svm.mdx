@@ -1,0 +1,48 @@
+---
+title: "SVMs in practice: from running to running well"
+summary: "Scaling, search ranges for C and γ, switching to LinearSVC at scale, class imbalance, probabilities, and go-to code."
+chapters: ["07"]
+---
+
+### The standard pipeline
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
+
+model = make_pipeline(StandardScaler(), SVC(kernel="rbf"))
+grid = {"svc__C": [0.1, 1, 10, 100], "svc__gamma": ["scale", 0.001, 0.01, 0.1]}
+search = GridSearchCV(model, grid, cv=5, n_jobs=-1).fit(X_train, y_train)
+print(search.best_params_, search.score(X_test, y_test))
+```
+
+### Tuning tips
+
+- **Always standardize first.** The RBF kernel works on Euclidean distances, and without scaling a large-scale feature takes over the distance. Put the `StandardScaler` inside the pipeline so cross-validation does not leak the validation folds.
+- **Search on a log scale.** Step both $C$ and $\gamma$ by factors of 10, coarse first, then fine. `gamma="scale"` (that is, $1/(d\cdot\mathrm{Var}(X))$) is usually a good starting point.
+- **Know which way the knobs turn.** Raising either one makes the model more complex: a larger $C$ tolerates fewer mistakes, and a larger $\gamma$ shrinks each support vector's reach. If you are overfitting, lower them first.
+- **The support-vector fraction is a health check.** If `len(svc.support_) / n` is close to 1, the model is essentially memorizing the data. That usually means $C$ is too small, or $\gamma$ is too large or too small.
+
+### When the data gets big
+
+- Beyond roughly 100k samples, kernel SVM training costs between $O(n^2)$ and $O(n^3)$. Switch to `LinearSVC` (liblinear), or train online with `SGDClassifier(loss="hinge")`.
+- If you need non-linearity and scale at the same time, build approximate kernel features with `RBFSampler` or `Nystroem` and feed them to a linear SVM. This is the random-features idea (see the frontier reading in Chapter 07).
+
+### Class imbalance
+
+```python
+SVC(kernel="rbf", class_weight="balanced")   # weights C by inverse class frequency
+```
+
+In medicine and similar settings, a missed diagnosis costs far more than a false alarm. Express that cost explicitly with `class_weight={1: 5, 0: 1}`, then evaluate with recall or a PR curve rather than accuracy alone.
+
+### When you need probabilities
+
+`SVC(probability=True)` runs an internal 5-fold Platt scaling, which slows training noticeably, and its probabilities may not rank samples exactly as `decision_function` does. Prefer:
+
+```python
+from sklearn.calibration import CalibratedClassifierCV
+clf = CalibratedClassifierCV(make_pipeline(StandardScaler(), SVC()), method="sigmoid", cv=5)
+```

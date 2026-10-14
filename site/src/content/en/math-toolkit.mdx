@@ -1,0 +1,179 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import GaussianFit from "../../components/chapters/ch00/GaussianFit";
+import LinearMap from "../../components/chapters/ch00/LinearMap";
+import JensenKL from "../../components/chapters/ch00/JensenKL";
+import GradientBowl from "../../components/chapters/ch00/GradientBowl";
+import KKTPlayground from "../../components/chapters/ch00/KKTPlayground";
+
+<Section lang="en" k="scenario">
+
+You are handed a table from a health-check centre. Each row is a person; the two columns are height and weight, both standardized. Plotted, they form a tilted cloud of points.
+
+<GaussianFit client:visible lang="en" />
+
+This cloud immediately raises the three most common questions in machine learning:
+
+1. **Shape**: in which direction does the cloud spread most, and by how much? That calls for **linear algebra**: matrices, eigenvalues and the SVD.
+2. **Description**: which distribution describes it, and which parameter values fit the data best? That calls for **probability**: maximum likelihood, KL divergence and Jensen's inequality.
+3. **Solving**: parameters are usually found by minimizing a loss, sometimes under constraints (probabilities must be non-negative and sum to one, say). That calls for **optimization**: gradients, condition numbers, Lagrangian duality and the KKT conditions.
+
+This chapter covers only the mathematics the rest of the course actually uses. Each idea comes with a geometric picture first, then a rigorous derivation.
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Linear algebra: a matrix is a transformation
+
+A matrix $A$ turns a vector $x$ into $Ax$. Rather than reading it as a table of numbers, watch what it does to **the whole plane**: the grid is stretched, sheared and rotated, and the unit circle becomes an ellipse.
+
+<LinearMap client:visible lang="en" />
+
+<Box kind="theorem" title="Singular value decomposition (SVD)">
+
+Every matrix $A$ can be written as $A = U\Sigma V^\top$, where $U$ and $V$ are orthogonal (rotations or reflections) and $\Sigma$ is diagonal with entries $\sigma_1 \ge \sigma_2 \ge \dots \ge 0$, the singular values. Geometrically, every linear map is **rotate → stretch along the axes → rotate again**.
+
+</Box>
+
+For a **symmetric** matrix, such as a covariance matrix, the two rotations coincide: $S = Q\Lambda Q^\top$, where the columns of $Q$ are mutually orthogonal eigenvectors. They set the shape of the data cloud's ellipse: the eigenvectors are its axes, and $\sqrt{\lambda_i}$ is the standard deviation along each.
+
+### Probability: choosing parameters by likelihood
+
+Given a family of distributions $p(x \mid \theta)$ and independent samples $x_1, \dots, x_n$, **maximum likelihood estimation (MLE)** chooses the parameters that make the observed data most probable:
+
+$$
+\hat\theta_{\text{MLE}} = \arg\max_\theta \sum_{i=1}^n \log p(x_i \mid \theta).
+$$
+
+With a prior belief $p(\theta)$ about the parameters, maximize the posterior instead to get the **MAP** estimate $\hat\theta_{\text{MAP}} = \arg\max_\theta \big[\sum_i \log p(x_i\mid\theta) + \log p(\theta)\big]$. As we will see later, the prior is a regularizer: a Gaussian prior corresponds to L2, a Laplace prior to L1.
+
+### Optimization: walk against the gradient
+
+Many learning problems end up as $\min_w f(w)$. The **gradient** $\nabla f$ points in the direction of steepest increase, so gradient descent takes a small step the other way: $w \leftarrow w - \eta \nabla f(w)$. The **Hessian** $\nabla^2 f$ describes the curvature. The more its eigenvalues differ (the larger the **condition number**), the flatter the contours and the more gradient descent zig-zags.
+
+<GradientBowl client:visible lang="en" />
+
+In the course's triad, the three toolkits have clear jobs: linear algebra and probability **describe models**, likelihoods and losses define the **strategy**, and optimization supplies the **algorithm**.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### The spectral decomposition of symmetric matrices
+
+<Box kind="theorem" title="Spectral theorem (real symmetric matrices)">
+
+If $S = S^\top$, its eigenvalues are real and eigenvectors for distinct eigenvalues are orthogonal. Hence there is an orthogonal matrix $Q$ with $S = Q\Lambda Q^\top$.
+
+</Box>
+
+**Proof sketch.** Let $Sv = \lambda v$ with $v$ possibly complex. Then $\bar v^\top S v = \lambda \|v\|^2$. Taking the conjugate transpose and using that $S$ is real and symmetric gives $\bar v^\top S v = \bar\lambda \|v\|^2$, so $\lambda = \bar\lambda$ and the eigenvalue is real. If $Sv_1 = \lambda_1 v_1$ and $Sv_2 = \lambda_2 v_2$ with $\lambda_1 \ne \lambda_2$, then $\lambda_1 v_1^\top v_2 = (Sv_1)^\top v_2 = v_1^\top S v_2 = \lambda_2 v_1^\top v_2$, which forces $v_1^\top v_2 = 0$.
+
+**From the spectral theorem to the SVD.** $A^\top A$ is symmetric positive semi-definite, so $A^\top A = V\Lambda V^\top$ with $\lambda_i \ge 0$. Set $\sigma_i = \sqrt{\lambda_i}$ and, for $\sigma_i > 0$, define $u_i = Av_i/\sigma_i$. Then $u_i^\top u_j = v_i^\top A^\top A v_j/(\sigma_i\sigma_j) = \delta_{ij}$ and $Av_i = \sigma_i u_i$, i.e. $AV = U\Sigma$, which is $A = U\Sigma V^\top$.
+
+### Maximum likelihood for a multivariate Gaussian
+
+The log-density of a $d$-dimensional Gaussian is
+
+$$
+\log \mathcal N(x\mid\mu,\Sigma) = -\tfrac12 (x-\mu)^\top \Sigma^{-1}(x-\mu) - \tfrac12\log\det\Sigma - \tfrac d2\log 2\pi.
+$$
+
+Sum over $n$ samples and differentiate in $\mu$: $\sum_i \Sigma^{-1}(x_i - \mu) = 0 \Rightarrow \hat\mu = \frac1n\sum_i x_i$. Differentiating in $\Sigma^{-1}$ uses two matrix-calculus identities, $\partial_{X}\log\det X = X^{-\top}$ and $\partial_X a^\top X a = aa^\top$, and gives
+
+$$
+\hat\Sigma = \frac1n\sum_{i=1}^n (x_i - \hat\mu)(x_i - \hat\mu)^\top.
+$$
+
+Note the denominator is $n$, not $n-1$: the maximum-likelihood estimate is biased, and only the unbiased sample covariance divides by $n-1$. The ellipses in the scenario are contours of exactly this $\hat\Sigma$.
+
+### KL divergence and Jensen's inequality
+
+<Box kind="theorem" title="Jensen's inequality">
+
+If $f$ is convex, then $f(\mathbb E[X]) \le \mathbb E[f(X)]$. If $f$ is strictly convex, equality holds if and only if $X$ is almost surely constant.
+
+</Box>
+
+<JensenKL client:visible lang="en" />
+
+The **KL divergence** measures how a distribution $q$ differs from $p$: $\mathrm{KL}(p\,\|\,q) = \mathbb E_{p}\big[\log \tfrac{p(x)}{q(x)}\big]$. Since $-\log$ is convex,
+
+$$
+\mathrm{KL}(p\,\|\,q) = \mathbb E_p\Big[-\log\frac{q(x)}{p(x)}\Big] \ge -\log \mathbb E_p\Big[\frac{q(x)}{p(x)}\Big] = -\log \int q(x)\,dx = 0,
+$$
+
+with equality if and only if $p = q$. KL is not symmetric: $\mathrm{KL}(p\|q) \ne \mathrm{KL}(q\|p)$ in general. It has one more key property: **maximizing likelihood is equivalent to minimizing $\mathrm{KL}(p_{\text{data}}\,\|\,p_\theta)$**, because the two differ only by an entropy term that does not depend on $\theta$. The EM algorithm (Chapter 11) and the VAE (Chapter 24) are both built on this inequality.
+
+### Why gradient descent dislikes flat bowls
+
+For a quadratic $f(w) = \tfrac12 w^\top H w$, gradient descent reads $w_{k+1} = (I - \eta H)w_k$. In the eigenbasis of $H$, each direction is multiplied independently by $1 - \eta\lambda_i$:
+
+$$
+w_{k}^{(i)} = (1 - \eta\lambda_i)^k\, w_0^{(i)}.
+$$
+
+- **Convergence condition**: every $|1 - \eta\lambda_i| < 1$, i.e. $0 < \eta < 2/\lambda_{\max}$.
+- **Best step size**: $\eta^* = 2/(\lambda_{\min} + \lambda_{\max})$. The slowest direction then shrinks by a factor $\dfrac{\kappa - 1}{\kappa + 1}$ per step, where $\kappa = \lambda_{\max}/\lambda_{\min}$ is the condition number.
+
+The larger $\kappa$, the slower the convergence. Momentum and Adam (Chapter 16) exist to fix exactly this.
+
+### Lagrangian duality and the KKT conditions
+
+For $\min_x f(x)$ subject to $g_i(x) \le 0$, form the Lagrangian $L(x, \lambda) = f(x) + \sum_i \lambda_i g_i(x)$ with $\lambda_i \ge 0$. The **dual function** $D(\lambda) = \min_x L(x, \lambda)$ is always a lower bound on the primal optimum (**weak duality**), because $L(x,\lambda) \le f(x)$ at every feasible $x$.
+
+<Box kind="theorem" title="The KKT conditions">
+
+If $f$ and every $g_i$ are convex and Slater's condition holds (a strictly feasible point exists), then strong duality holds, and $x^*$ is optimal if and only if there is a $\lambda^*$ with
+
+1. **Stationarity**: $\nabla f(x^*) + \sum_i \lambda_i^* \nabla g_i(x^*) = 0$;
+2. **Primal feasibility**: $g_i(x^*) \le 0$;
+3. **Dual feasibility**: $\lambda_i^* \ge 0$;
+4. **Complementary slackness**: $\lambda_i^* g_i(x^*) = 0$.
+
+</Box>
+
+**Example**: project a point $t$ onto the half-plane $a^\top x \le c$, i.e. $\min \|x - t\|^2$. Stationarity gives $2(x - t) + \lambda a = 0$, so $x = t - \tfrac{\lambda}{2}a$. If $a^\top t \le c$, then $\lambda = 0$ and $x = t$ satisfy every condition. Otherwise the constraint must be active, and $a^\top x = c$ gives $\lambda^* = \dfrac{2(a^\top t - c)}{\|a\|^2}$.
+
+<KKTPlayground client:visible lang="en" />
+
+$\lambda^*$ has an economic reading: it is the constraint's **shadow price**. Relaxing $c$ by a small $\delta$ lowers the optimal value by about $\lambda^*\delta$.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Worked example: the principal directions of four points
+
+<Box kind="example" title="Covariance, eigendecomposition and power iteration by hand">
+
+Four health-check samples (standardized): $(2,2)$, $(-2,-2)$, $(1,-1)$ and $(-1,1)$.
+
+**Mean**: $\hat\mu = (0, 0)$.
+
+**Covariance (MLE, divide by 4)**:
+
+$$
+\hat\Sigma = \frac14\begin{pmatrix} 4+4+1+1 & 4+4-1-1 \\ 4+4-1-1 & 4+4+1+1\end{pmatrix} = \begin{pmatrix} 2.5 & 1.5 \\ 1.5 & 2.5 \end{pmatrix}.
+$$
+
+**Eigendecomposition**: the trace is 5 and the determinant is $6.25 - 2.25 = 4$, so the eigenvalues are the roots of $\lambda^2 - 5\lambda + 4 = 0$: $\lambda_1 = 4$ and $\lambda_2 = 1$. The eigenvectors are $\tfrac{1}{\sqrt2}(1,1)$ and $\tfrac1{\sqrt2}(1,-1)$. The data's standard deviation is $2$ along the 45° direction and $1$ along −45°.
+
+**Power iteration**: start from $v_0 = (1, 0)$. Then $\hat\Sigma v_0 = (2.5, 1.5)$, which normalizes to $v_1 \approx (0.857, 0.514)$. One more step gives $v_2 \approx (0.750, 0.662)$, and the iterates keep approaching $(0.707, 0.707)$. The error component along the second eigenvector shrinks by $\lambda_2/\lambda_1 = 1/4$ per step, so convergence is fast.
+
+</Box>
+
+The larger the gap between the two eigenvalues, the faster power iteration converges. When they are close, the principal direction itself is unstable. This is common in PCA: if $\lambda_1 \approx \lambda_2$, a fresh sample of data can rotate the principal direction by a large angle.
+
+### Where these tools come back
+
+| Tool | Where it reappears |
+|---|---|
+| Spectral decomposition, SVD | PCA, low-rank approximation and LoRA fine-tuning (Ch. 12) |
+| Maximum likelihood | Logistic regression (Ch. 04), "losses are likelihoods" (Ch. 15) |
+| KL divergence, Jensen's inequality | The EM lower bound (Ch. 11), the VAE's ELBO (Ch. 24), diffusion models (Ch. 25) |
+| Condition numbers, gradient descent | Linear regression (Ch. 03), optimizers (Ch. 16) |
+| Lagrangian duality, KKT | Support vector machines (Ch. 07), the maximum-entropy model (Ch. 04) |
+
+</Section>

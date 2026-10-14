@@ -1,0 +1,174 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Box from "../../components/astro/Box.astro";
+import GaussianFit from "../../components/chapters/ch00/GaussianFit";
+import LinearMap from "../../components/chapters/ch00/LinearMap";
+import JensenKL from "../../components/chapters/ch00/JensenKL";
+import GradientBowl from "../../components/chapters/ch00/GradientBowl";
+import KKTPlayground from "../../components/chapters/ch00/KKTPlayground";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 00 · Animated course" title="The Mathematical Toolkit" say="Before the machine learning starts, let's pack three tools: linear algebra, probability and optimization. For each one we look at the geometric picture first and then the derivation.">
+
+Linear algebra · probability · optimization: only what the course actually uses
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="A health-check table" say="You are handed a health-check table: each row is a person, and the two columns are standardized height and weight.">
+
+<Step say="Plotted, it is a tilted cloud of points. Click empty space on the right to add your own samples.">The data: a tilted cloud of points →</Step>
+
+<Step say="Question one: in which direction does it spread most? That needs linear algebra.">① **Shape**: which way does it spread? → linear algebra</Step>
+
+<Step say="Question two: which distribution describes it, and with which parameters? That needs probability.">② **Description**: which distribution, which parameters? → probability</Step>
+
+<Step say="Question three: how do we compute the parameters, and what if there are constraints? That needs optimization.">③ **Solving**: how do we find the best parameters? → optimization</Step>
+
+<div slot="visual"><GaussianFit client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" title="A matrix is a transformation" say="First, a new way to see a matrix: not a table of numbers, but a transformation of the whole plane.">
+
+<Step say="Drag the four entries and watch the grid stretch, shear and rotate. The unit circle always becomes an ellipse.">Unit circle → ellipse, semi-axes = singular values</Step>
+
+<Step say="Press 'decompose': any matrix splits into three simple moves, rotate, stretch along the axes, rotate again. That is the SVD.">
+
+$$
+A = U\,\Sigma\,V^\top
+$$
+
+</Step>
+
+<Step say="For a symmetric matrix the two rotations coincide, and the eigenvectors are the ellipse's axes.">Symmetric: $S = Q\Lambda Q^\top$, eigenvectors = the ellipse's axes</Step>
+
+<div slot="visual"><LinearMap client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Choosing parameters by likelihood" say="Second tool: given a family of distributions, pick the parameters under which the observed data is most probable.">
+
+<Step say="That is maximum likelihood: maximize the sum of the log-probabilities of all samples.">
+
+$$
+\hat\theta_{\text{MLE}} = \arg\max_\theta \sum_i \log p(x_i\mid\theta)
+$$
+
+</Step>
+
+<Step say="With a prior belief about the parameters, add a prior term to get MAP. As we will see, the prior is a regularizer.">MAP: add $\log p(\theta)$, and **the prior is a regularizer**</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Walk against the gradient" say="Third tool: optimization. The gradient points in the direction of steepest increase.">
+
+<Step say="Gradient descent takes a small step against the gradient.">$w \leftarrow w - \eta\,\nabla f(w)$</Step>
+
+<Step say="The Hessian describes curvature. The more its eigenvalues differ, the larger the condition number and the flatter the bowl.">Condition number $\kappa = \lambda_{\max}/\lambda_{\min}$: how flat the bowl is</Step>
+
+<Step say="Raise the condition number on the right and the path zig-zags while the step count shoots up. With a step size above two over the largest eigenvalue, it diverges.">Raise $\kappa$ → zig-zag; $\eta > 2/\lambda_{\max}$ → divergence →</Step>
+
+<div slot="visual"><GradientBowl client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The spectral theorem" say="Now the rigorous derivations, one at a time. First, the eigenvalues of a symmetric matrix are real.">
+
+<Step say="Let S v equal lambda v. Multiply on the left by the conjugate transpose of v, then take the conjugate: lambda equals its own conjugate.">$\bar v^\top S v = \lambda\|v\|^2 = \bar\lambda\|v\|^2 \Rightarrow \lambda\in\mathbb R$</Step>
+
+<Step say="Eigenvectors of distinct eigenvalues must be orthogonal.">$\lambda_1 v_1^\top v_2 = v_1^\top S v_2 = \lambda_2 v_1^\top v_2 \Rightarrow v_1 \perp v_2$</Step>
+
+<Step say="The SVD follows: decompose A transpose A, and the singular values are the square roots of its eigenvalues.">SVD: $A^\top A = V\Lambda V^\top$, $\sigma_i = \sqrt{\lambda_i}$, $u_i = Av_i/\sigma_i$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Maximum likelihood for a Gaussian" say="Differentiate the multivariate Gaussian log-likelihood.">
+
+<Step say="Differentiating in the mean gives the sample average.">$\hat\mu = \frac1n\sum_i x_i$</Step>
+
+<Step say="Differentiating in the inverse covariance gives the average outer product. Note the denominator is n, not n minus one.">$\hat\Sigma = \frac1n\sum_i (x_i-\hat\mu)(x_i-\hat\mu)^\top$ (divide by $n$)</Step>
+
+<Step effect="focus" say="The ellipses in the scenario are contours of exactly this covariance.">
+<p class="big-q sm">The scenario's ellipses = contours of $\hat\Sigma$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Jensen's inequality and KL" say="A chord of a convex function always lies above the curve.">
+
+<Step say="That is Jensen's inequality. Try dragging the two points and the weight on the right.">$f(\mathbb E X) \le \mathbb E f(X)$ for convex $f$</Step>
+
+<Step say="Apply it to the convex function minus log, and KL divergence comes out non-negative.">
+
+$$
+\mathrm{KL}(p\|q) = \mathbb E_p\Big[-\log\tfrac{q}{p}\Big] \ge -\log \mathbb E_p\tfrac{q}{p} = 0
+$$
+
+</Step>
+
+<Step say="Moreover, maximizing likelihood is equivalent to minimizing the KL from the data distribution to the model.">Maximizing likelihood ⇔ minimizing $\mathrm{KL}(p_{\text{data}}\|p_\theta)$</Step>
+
+<div slot="visual"><JensenKL client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Why gradient descent dislikes flat bowls" say="On a quadratic, gradient descent shrinks each eigen-direction independently.">
+
+<Step say="Each step multiplies direction i by one minus eta times lambda i.">$w_k^{(i)} = (1-\eta\lambda_i)^k\,w_0^{(i)}$</Step>
+
+<Step say="To converge, every factor must have absolute value below one, so the step size must be below two over the largest eigenvalue.">Converges ⇔ $0 < \eta < 2/\lambda_{\max}$</Step>
+
+<Step say="With the best step size, the slowest direction shrinks by kappa minus one over kappa plus one. The larger the condition number the slower, which is the problem momentum and Adam solve in Chapter 16.">Best rate $\dfrac{\kappa-1}{\kappa+1}$ → momentum and Adam in Ch. 16</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="The KKT conditions" say="Finally, constrained optimization.">
+
+<Step say="For a convex problem, the optimum must satisfy four conditions: stationarity, primal feasibility, dual feasibility and complementary slackness.">Stationarity · primal feas. · dual feas. · **complementary slackness** $\lambda_i g_i(x^*) = 0$</Step>
+
+<Step say="Example: project a target point onto a half-plane. Drag the orange target on the right.">Example: $\min\|x-t\|^2$ subject to $a^\top x \le c$ →</Step>
+
+<Step say="When the target is feasible, the constraint is inactive and the multiplier is zero.">$t$ feasible: $\lambda^* = 0$</Step>
+
+<Step say="Once the target leaves, the optimum sits on the boundary and the two gradients cancel exactly. The multiplier is twice the violation over the squared norm of a.">$t$ infeasible: $\lambda^* = 2(a^\top t - c)/\|a\|^2$</Step>
+
+<div slot="visual"><KKTPlayground client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Worked example: four points" say="Let's work an example by hand with four samples: two two, minus two minus two, one minus one, and minus one one.">
+
+<Step say="The mean is zero. Dividing by four gives a covariance of 2.5, 1.5, 1.5, 2.5.">
+
+$$
+\hat\Sigma = \begin{pmatrix}2.5 & 1.5\\1.5 & 2.5\end{pmatrix}
+$$
+
+</Step>
+
+<Step say="The trace is five and the determinant is four, so the eigenvalues are four and one, and the principal direction is at forty-five degrees.">Trace 5, determinant 4 ⇒ $\lambda = 4, 1$; principal direction $(1,1)/\sqrt2$</Step>
+
+<Step say="Power iteration from one, zero shrinks the error by a factor of four each step and quickly turns to forty-five degrees.">Power iteration: $(1,0) \to (0.857, 0.514) \to (0.750, 0.662) \to \cdots$, error $\times \tfrac14$ per step</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Where these tools come back" say="These tools come back again and again in later chapters.">
+
+<Step say="The SVD is the heart of PCA in Chapter 12.">SVD → PCA, low-rank approximation (Ch. 12)</Step>
+
+<Step say="Maximum likelihood runs through every loss function.">Maximum likelihood → logistic regression (Ch. 04), losses as likelihoods (Ch. 15)</Step>
+
+<Step say="KL and Jensen underpin EM, VAEs and diffusion models.">KL, Jensen → EM (Ch. 11), VAE (Ch. 24), diffusion (Ch. 25)</Step>
+
+<Step say="And KKT is the key to support vector machines.">KKT → support vector machines (Ch. 07)</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, then covariance and power iteration by hand, and finally the same tasks with scikit-learn and SciPy.">
+
+<Step say="After running the coding exercise, replay power iteration as the line turns step by step toward the data's principal direction.">✎ 4 derivations · ⌨ power iteration by hand · ⚙ check KKT with PCA and SLSQP</Step>
+
+<Step effect="pop" say="Use the button to start practising.">
+<a class="btn btn-primary btn-xl" href="../../chapters/math-toolkit/#s-practice">Start practising →</a>
+</Step>
+
+</Slide>

@@ -1,0 +1,107 @@
+---
+import "katex/dist/katex.min.css";
+import "../../../styles/global.css";
+import "../../../styles/chapter.css";
+import "../../../styles/course.css";
+import Recap from "../../../components/course/Recap.astro";
+import Slide from "../../../components/course/Slide.astro";
+import { LANGS, SECTIONS, href, otherLang, pick, t, type Lang } from "../../../i18n/ui";
+import { allChapters, courseSlugs, deck } from "../../../lib/data";
+
+export function getStaticPaths() {
+  return LANGS.flatMap((lang) => courseSlugs.map((slug) => ({ params: { lang, slug } })));
+}
+const lang = Astro.params.lang as Lang;
+const slug = Astro.params.slug!;
+const chapter = allChapters.find((c) => c.slug === slug)!;
+const { default: Deck } = deck(lang, slug);
+const L = {
+  notes: { zh: "讲义", en: "Notes" },
+  recap: { zh: "本章一页纸", en: "The chapter on one page" },
+  hint: { zh: "→ / 空格 下一步 · ← 上一步 · P 自动播放 · F 全屏", en: "→ / Space next · ← back · P autoplay · F fullscreen" },
+  play: { zh: "自动播放（P）", en: "Autoplay (P)" },
+  pause: { zh: "暂停", en: "Pause" },
+  voiceOn: { zh: "开启朗读", en: "Read aloud" },
+  voiceOff: { zh: "关闭朗读", en: "Stop reading aloud" },
+  part: { zh: "部分", en: "Part" },
+};
+---
+<!doctype html>
+<html lang={lang === "zh" ? "zh-CN" : "en"} data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{chapter.id} {pick(chapter.title, lang)} · {t(lang, "siteName")}</title>
+    <link rel="icon" href={href("favicon.svg")} type="image/svg+xml" />
+    <script is:inline>
+      try {
+        const saved = localStorage.getItem("learnml:theme");
+        document.documentElement.dataset.theme = saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      } catch {}
+    </script>
+  </head>
+  <body class="course-body">
+    <div class="course" id="course" data-lang={lang}>
+      <header class="course-bar">
+        <a class="brand" href={href(`${lang}/`)}><span class="brand-mark">∇</span></a>
+        <span class="course-title">{chapter.id} · {pick(chapter.title, lang)}</span>
+        <span class="stage-counter"></span>
+        <a class="btn course-link" href={href(`${lang}/chapters/${slug}/`)}>📄 {L.notes[lang]}</a>
+        <a class="btn course-link" href={href(`${otherLang(lang)}/course/${slug}/`)}>{otherLang(lang) === "zh" ? "中文" : "EN"}</a>
+      </header>
+
+      <div class="stage-fit">
+        <div class="stage">
+          <Deck lang={lang} />
+          <Slide lang={lang} part="recap" layout="center" title={L.recap[lang]} say={L.recap[lang]}>
+            <Recap lang={lang} slug={slug} />
+          </Slide>
+        </div>
+      </div>
+
+      <div class="subtitle" aria-live="polite"><span class="subtitle-text"></span></div>
+
+      <footer class="course-controls">
+        <button class="btn ctl" data-act="prev" aria-label="previous">←</button>
+        <button class="btn ctl ctl-play" data-act="play" title={L.play[lang]}>▶</button>
+        <button class="btn ctl" data-act="next" aria-label="next">→</button>
+        <div class="segments" id="segments"></div>
+        <button class="btn ctl" data-act="voice" title={L.voiceOn[lang]}>🔊</button>
+        <button class="btn ctl" data-act="full" title="F">⛶</button>
+      </footer>
+      <p class="course-hint">{L.hint[lang]}</p>
+    </div>
+
+    <script define:vars={{ partNames: Object.fromEntries(SECTIONS.map((s) => [s.key, s[lang]])), introName: { zh: "开场", en: "Intro" }[lang], recapName: { zh: "总结", en: "Recap" }[lang] }}>
+      // Build the part-segmented progress bar from the slides' data-part attributes.
+      const slides = [...document.querySelectorAll(".slide")];
+      const box = document.getElementById("segments");
+      let start = 0;
+      slides.forEach((s, i) => {
+        const part = s.dataset.part;
+        if (i === slides.length - 1 || slides[i + 1].dataset.part !== part) {
+          const seg = document.createElement("button");
+          seg.className = "seg";
+          seg.dataset.range = `${start}-${i}`;
+          seg.style.flexGrow = String(i - start + 1);
+          const name = part === "intro" ? introName : part === "recap" ? recapName : partNames[part];
+          seg.innerHTML = `<span class="seg-track"><span class="seg-fill"></span></span><span class="seg-label"></span>`;
+          seg.querySelector(".seg-label").textContent = name;
+          seg.title = name;
+          box.appendChild(seg);
+          start = i + 1;
+        }
+      });
+    </script>
+    <script>
+      import { initCourse } from "../../../components/course/controller";
+      const root = document.getElementById("course")!;
+      const lang = root.dataset.lang as "zh" | "en";
+      const labels = {
+        zh: { play: "自动播放（P）", pause: "暂停", voiceOn: "开启朗读", voiceOff: "关闭朗读" },
+        en: { play: "Autoplay (P)", pause: "Pause", voiceOn: "Read aloud", voiceOff: "Stop reading aloud" },
+      }[lang];
+      initCourse(root, { lang, labels });
+    </script>
+  </body>
+</html>

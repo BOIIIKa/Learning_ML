@@ -1,0 +1,20 @@
+.toc-tabs { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.3rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 1.5rem; }
+.toc-tab { font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--text-muted); background: none; border: none; border-radius: 999px; padding: 0.35em 1em; cursor: pointer; transition: all 0.25s ease; }
+.toc-tab.on { color: #061018; background: linear-gradient(100deg, var(--accent), var(--accent-3)); box-shadow: 0 4px 18px -6px var(--accent-3); }
+:root[data-theme="light"] .toc-tab.on { color: #fff; }
+
+.toc-groups { display: grid; gap: 2rem; }
+.toc-group { animation: group-in 0.5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes group-in { from { opacity: 0; transform: translateY(14px); } }
+.toc-group h3 { margin: 0 0 0.2rem; font-size: 1.1rem; }
+.toc-summary { margin: 0 0 0.8rem; font-size: 0.9rem; }
+.toc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.7rem; }
+.toc-card { position: relative; display: grid; gap: 0.25rem; align-content: start; padding: 0.8rem 0.95rem 2rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); min-height: 110px; opacity: 0.72; transition: transform 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease; }
+.toc-card.ready { opacity: 1; border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.toc-card.ready:hover { text-decoration: none; transform: translateY(-3px); box-shadow: 0 10px 30px -12px var(--accent); }
+.toc-id { font-family: var(--mono); font-weight: 800; font-size: 0.8rem; color: var(--accent-3); }
+.toc-title { font-weight: 600; font-size: 0.95rem; line-height: 1.4; }
+.toc-triad { font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
+.toc-badge { position: absolute; left: 0.95rem; bottom: 0.6rem; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); }
+.toc-badge.ready { color: var(--success); }
+.toc-badge.ready::before { content: "● "; animation: dot-breathe 1.8s ease-in-out infinite; }

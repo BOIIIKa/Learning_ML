@@ -1,0 +1,90 @@
+---
+import { ClientRouter } from "astro:transitions";
+import "katex/dist/katex.min.css";
+import "../styles/global.css";
+import "../styles/layout.css";
+import { href, otherLang, t, type Lang } from "../i18n/ui";
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description?: string;
+  /** Path after the language segment, used for the language switch. */
+  path?: string;
+}
+const { lang, title, description = "", path = "" } = Astro.props;
+const other = otherLang(lang);
+---
+<!doctype html>
+<html lang={lang === "zh" ? "zh-CN" : "en"} data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href={href("favicon.svg")} type="image/svg+xml" />
+    <script is:inline>
+      try {
+        const saved = localStorage.getItem("learnml:theme");
+        const theme = saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
+    <ClientRouter />
+  </head>
+  <body>
+    <div class="progress-bar" id="progress-bar"></div>
+    <header class="site-header">
+      <a class="brand" href={href(`${lang}/`)}>
+        <span class="brand-mark" aria-hidden="true">∇</span>
+        <span>{t(lang, "siteName")}</span>
+      </a>
+      <nav class="site-nav">
+        <a href={href(`${lang}/#contents`)}>{t(lang, "contents")}</a>
+        <a href={href(`${lang}/handbook/`)}>{t(lang, "handbook")}</a>
+        <a class="lang-switch" href={href(`${other}/${path}`)} data-lang={other}>{other === "zh" ? "中文" : "EN"}</a>
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">◐</button>
+      </nav>
+    </header>
+    <main transition:animate="fade">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <span>{t(lang, "siteName")} · CC BY-NC-SA 4.0 · MIT</span>
+      <a href="https://github.com/BOIIIKa/Learning_ML">GitHub</a>
+    </footer>
+    <script>
+      const setup = () => {
+        // Scroll reveal
+        const io = new IntersectionObserver(
+          (entries) => entries.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))),
+          { rootMargin: "0px 0px -8% 0px" },
+        );
+        document.querySelectorAll(".reveal:not(.in)").forEach((el) => io.observe(el));
+        // Reading progress
+        const bar = document.getElementById("progress-bar");
+        const onScroll = () => {
+          const h = document.documentElement.scrollHeight - innerHeight;
+          if (bar) bar.style.transform = `scaleX(${h > 0 ? scrollY / h : 0})`;
+        };
+        addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+        // Theme toggle
+        document.getElementById("theme-toggle")?.addEventListener("click", () => {
+          const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+          document.documentElement.dataset.theme = next;
+          try { localStorage.setItem("learnml:theme", next); } catch {}
+        });
+        // Remember the language choice
+        document.querySelector(".lang-switch")?.addEventListener("click", (e) => {
+          try { localStorage.setItem("learnml:lang", (e.currentTarget as HTMLElement).dataset.lang!); } catch {}
+        });
+      };
+      document.addEventListener("astro:page-load", setup);
+      // Keep the theme across client-side navigations.
+      document.addEventListener("astro:after-swap", () => {
+        try { const s = localStorage.getItem("learnml:theme"); if (s) document.documentElement.dataset.theme = s; } catch {}
+      });
+    </script>
+  </body>
+</html>

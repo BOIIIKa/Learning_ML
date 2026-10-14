@@ -1,0 +1,85 @@
+---
+import Base from "../../layouts/Base.astro";
+import HeroCanvas from "../../components/home/HeroCanvas";
+import TocExplorer from "../../components/home/TocExplorer";
+import { LANGS, href, pick, t, type Lang } from "../../i18n/ui";
+import { outline, readyChapters, readySlugs } from "../../lib/data";
+import "../../styles/home.css";
+
+export function getStaticPaths() {
+  return LANGS.map((lang) => ({ params: { lang } }));
+}
+const lang = Astro.params.lang as Lang;
+const first = readyChapters[0];
+const PILLARS = {
+  zh: [
+    ["∂", "严谨推导", "每个模型拆成模型–策略–算法三要素，关键推导一步不省。"],
+    ["◉", "可视化交互", "拖动数据点、拨动超参数、逐步回放训练过程，在浏览器里亲眼看到算法如何工作。"],
+    ["⌁", "前沿跟进", "每章都连到当前的研究前沿，并附上值得读的论文。"],
+  ],
+  en: [
+    ["∂", "Rigorous derivations", "Every model broken into model–strategy–algorithm, with no key step skipped."],
+    ["◉", "Interactive visuals", "Drag data, turn the knobs, replay training step by step — watch the algorithm work."],
+    ["⌁", "Research frontier", "Every chapter links to where the field is today, with papers worth reading."],
+  ],
+}[lang];
+const MODES = {
+  zh: {
+    title: "两种学习方式",
+    items: [
+      ["▶", "横版动画课程 · 初学推荐", "像看一节课：一屏一个想法，公式与图形逐步出现，配字幕和可选朗读，可自动播放。方向键翻页，F 全屏。"],
+      ["📄", "竖版讲义 · 复习推荐", "完整推导、全部交互图、课后训练与实战手册都在一页里；顶部的“本章一页纸”适合考前快速回顾。"],
+    ],
+  },
+  en: {
+    title: "Two ways to learn",
+    items: [
+      ["▶", "Animated course · best for first-timers", "Like watching a lecture: one idea per screen, formulas and figures appear step by step, with subtitles, optional read-aloud and autoplay. Arrow keys to move, F for fullscreen."],
+      ["📄", "Vertical notes · best for review", "Full derivations, every interactive figure, practice and the handbook on one page; the one-page recap at the top is ideal for a quick refresher."],
+    ],
+  },
+}[lang];
+---
+<Base lang={lang} title={`${t(lang, "siteName")} — ${t(lang, "tagline")}`} description={pick(outline.meta.audience, lang)} path="">
+  <section class="hero">
+    <HeroCanvas client:load />
+    <div class="hero-content container">
+      <p class="hero-kicker">ISL · UDL · 统计学习方法</p>
+      <h1 class="hero-title"><span class="gradient-text">{t(lang, "siteName")}</span></h1>
+      <p class="hero-sub">{t(lang, "tagline")}</p>
+      <p class="hero-audience muted">{pick(outline.meta.audience, lang)}</p>
+      <div class="hero-cta">
+        {first && <a class="btn btn-primary hero-btn" href={href(`${lang}/chapters/${first.slug}/`)}>{t(lang, "start")} → {first.id} {pick(first.title, lang)}</a>}
+        <a class="btn hero-btn" href="#contents">{t(lang, "contents")}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="pillars container">
+    {PILLARS.map(([icon, title, text], i) => (
+      <div class="pillar card reveal" style={`transition-delay:${i * 100}ms`}>
+        <span class="pillar-icon">{icon}</span>
+        <h3>{title}</h3>
+        <p class="muted">{text}</p>
+      </div>
+    ))}
+  </section>
+
+  <section class="container modes">
+    <h2 class="reveal">{MODES.title}</h2>
+    <div class="mode-grid">
+      {MODES.items.map(([icon, title, text], i) => (
+        <div class="mode card reveal" style={`transition-delay:${i * 120}ms`}>
+          <span class="mode-icon">{icon}</span>
+          <h3>{title}</h3>
+          <p class="muted">{text}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section id="contents" class="container contents">
+    <h2 class="reveal">{t(lang, "contents")}</h2>
+    <TocExplorer client:visible lang={lang} parts={outline.parts} tags={outline.tags} ready={readySlugs} />
+  </section>
+</Base>

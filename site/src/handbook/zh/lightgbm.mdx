@@ -1,0 +1,54 @@
+---
+title: "LightGBM 实战：调参顺序与常用代码"
+summary: "先固定学习率调树结构，再加正则与采样；早停、类别特征、特征重要性与 SHAP。"
+chapters: ["08"]
+---
+
+### 标配写法：早停
+
+```python
+import lightgbm as lgb
+
+model = lgb.LGBMClassifier(
+    n_estimators=5000,          # 设大一点，交给早停决定
+    learning_rate=0.05,
+    num_leaves=31,
+    min_child_samples=20,
+    subsample=0.8, subsample_freq=1,   # 行采样（bagging）
+    colsample_bytree=0.8,               # 列采样
+    reg_lambda=1.0,
+)
+model.fit(X_tr, y_tr, eval_set=[(X_va, y_va)],
+          callbacks=[lgb.early_stopping(100), lgb.log_evaluation(200)])
+print(model.best_iteration_)
+```
+
+### 调参顺序
+
+1. **固定较大的学习率**（如 0.1），用早停确定树的数量，先把流程跑通。
+2. **调树的复杂度**：`num_leaves` 是主旋钮。LightGBM 按叶子优先生长，`max_depth` 只作为上限；`min_child_samples` 越大，模型越保守。
+3. **加随机性**：`subsample`、`colsample_bytree` 取 0.6–0.9，既降方差又加速。
+4. **加正则**：`reg_lambda`（即本章推导中的 $\lambda$）、`min_split_gain`。
+5. **最后调小学习率**（如 0.02），同时增大 `n_estimators` 上限，通常能再提升一点。
+
+### 类别特征与缺失值
+
+- 把 pandas 列转为 `category` 类型，LightGBM 会直接按类别做最优分组，不需要独热编码。
+- 缺失值不用填充：每次切分时，算法会学习缺失值应该走左边还是右边。
+
+### 解释模型
+
+```python
+import shap
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_va)
+shap.summary_plot(shap_values, X_va)
+```
+
+`feature_importances_` 默认按分裂次数统计；`importance_type="gain"` 按增益统计，通常更有意义。SHAP 值则能解释**单个样本**的预测。
+
+### 常见坑
+
+- 类别不平衡时用 `class_weight="balanced"` 或 `scale_pos_weight`，评价指标用 AUC 或 PR-AUC。
+- 不要用测试集做早停，验证集要单独划分。
+- 树模型不需要标准化，但需要防止**目标泄漏**：任何用标签算出来的特征，都只能在训练折内计算。

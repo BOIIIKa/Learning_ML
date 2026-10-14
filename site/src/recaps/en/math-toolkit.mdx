@@ -1,0 +1,6 @@
+- **Matrices are maps**: every matrix is "rotate → stretch along the axes → rotate" (the SVD, $A = U\Sigma V^\top$); the unit circle maps to an ellipse whose semi-axes are the singular values.
+- **Spectral theorem**: a symmetric $S = Q\Lambda Q^\top$ has real eigenvalues and orthogonal eigenvectors; the covariance's eigenvectors are the data cloud's principal axes.
+- **Maximum likelihood**: $\hat\theta = \arg\max\sum\log p(x_i\mid\theta)$; for a Gaussian, $\hat\mu$ is the sample mean and $\hat\Sigma$ the sample covariance divided by $n$. MAP adds a prior term, i.e. a regularizer.
+- **Jensen and KL**: for convex $f$, $f(\mathbb E X) \le \mathbb E f(X)$ ⇒ $\mathrm{KL}(p\|q) \ge 0$; maximizing likelihood is equivalent to minimizing $\mathrm{KL}(p_{\text{data}}\|p_\theta)$.
+- **Gradient descent**: $w \leftarrow w - \eta\nabla f$; on a quadratic it converges only if $\eta < 2/\lambda_{\max}$, and the best rate is $(\kappa-1)/(\kappa+1)$.
+- **KKT**: stationarity, primal feasibility, dual feasibility, complementary slackness; for convex problems with Slater's condition they are necessary and sufficient. $\lambda^*$ is the constraint's shadow price.

@@ -1,0 +1,199 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import ScenarioLines from "../../components/chapters/ch07/ScenarioLines";
+import SvmPlayground from "../../components/chapters/ch07/SvmPlayground";
+import SmoReplay from "../../components/chapters/ch07/SmoReplay";
+import KernelPlayground from "../../components/chapters/ch07/KernelPlayground";
+import FivePoints from "../../components/chapters/ch07/FivePoints";
+
+<Section lang="zh" k="scenario">
+
+一家医院想用两项影像指标给肿瘤做初筛：肿块的半径，以及边缘纹理的不均匀程度。历史病例已经由病理检查确诊，标成**良性**（蓝）和**恶性**（橙）。在下面这批训练数据上，两类恰好可以被一条直线完全分开。
+
+麻烦在于：能把训练数据完全分开的直线**有无穷多条**。下面画出了其中三条，它们在训练集上的错误数都是 0。如果只看训练误差，它们一样好。但医生真正关心的是**还没来的病人**。
+
+<ScenarioLines client:visible lang="zh" />
+
+多点几次“新病人”按钮，通常会看到：紧贴着某一类样本的直线 A、B，很快就会把新病人判错；而离两类都尽量远的那条线最稳。直觉是，新病人与旧病人来自同一分布，会落在旧数据附近。决策边界离数据越远，给这种波动留的**安全缓冲**就越大。
+
+本章要回答的问题是：**怎样把“离两类都尽量远”变成一个可以精确求解的数学问题？** 答案就是支持向量机（SVM）。
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 用“间隔”度量安全缓冲
+
+一个超平面 $w^\top x + b = 0$ 把空间分成两半，我们用 $\mathrm{sign}(w^\top x + b)$ 做预测，标签取 $y \in \{-1, +1\}$。
+
+<Box kind="definition" title="几何间隔">
+
+样本 $(x_i, y_i)$ 到超平面的**几何间隔**为
+
+$$
+\gamma_i = \frac{y_i\,(w^\top x_i + b)}{\|w\|}.
+$$
+
+分对时它就是点到超平面的距离，分错时为负。数据集的间隔取所有样本中的最小值：$\gamma = \min_i \gamma_i$。
+
+</Box>
+
+**最大间隔原则**：在所有能分开数据的超平面中，选间隔 $\gamma$ 最大的那个，即 $\max_{w,b} \min_i \gamma_i$。
+
+这个问题看上去难解，但有一个关键观察：把 $(w, b)$ 同时乘以任意正数，超平面不变，$\gamma_i$ 也不变。因此我们可以约定**离超平面最近的点满足** $y_i(w^\top x_i + b) = 1$。这样间隔就是 $1/\|w\|$。最大化 $1/\|w\|$ 等价于最小化 $\tfrac12\|w\|^2$，于是得到：
+
+<Box kind="theorem" title="硬间隔 SVM（原问题）">
+
+$$
+\min_{w,b}\ \frac12\|w\|^2 \quad \text{s.t.}\quad y_i\,(w^\top x_i + b) \ge 1,\quad i = 1,\dots,n.
+$$
+
+目标是凸二次函数，约束是线性的，所以这是一个**凸二次规划**：没有坏的局部最优，并且解唯一。
+
+</Box>
+
+### 允许犯一点错：软间隔
+
+真实数据很少能完美分开。给每个样本一个**松弛变量** $\xi_i \ge 0$，允许它进入间隔、甚至跑到另一侧，同时为此付出代价：
+
+$$
+\min_{w,b,\xi}\ \frac12\|w\|^2 + C\sum_{i=1}^n \xi_i \quad \text{s.t.}\quad y_i\,(w^\top x_i + b) \ge 1 - \xi_i,\ \ \xi_i \ge 0.
+$$
+
+在最优解处必然有 $\xi_i = \max(0,\,1 - y_i f(x_i))$（这是课后推导第 2 题）。代回目标，软间隔 SVM 就是
+
+$$
+\min_{w,b}\ \underbrace{\sum_i \max\big(0,\,1 - y_i f(x_i)\big)}_{\text{合页损失}} + \frac{1}{2C}\|w\|^2 \quad(\text{差一个常数倍}).
+$$
+
+这正对应本课程的三要素：**模型**是线性超平面，**策略**是合页损失加 L2 正则，**算法**是下一节的对偶加 SMO。$C$ 控制两者的权衡：$C$ 大时几乎不容忍错误，逼近硬间隔；$C$ 小时更看重宽间隔，抗噪声能力更强。
+
+<SvmPlayground client:visible lang="zh" />
+
+<Box kind="insight" title="只有边界上的点说了算">
+
+拖动一个远离边界的点，超平面纹丝不动；拖动带旋转圈的点，它立刻跟着变。决定解的只是落在间隔边界上（或进入间隔内）的少数样本，它们就是**支持向量**。下一节会从 KKT 条件严格证明这一点。
+
+</Box>
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 工具一：拉格朗日对偶与 KKT 条件
+
+（回顾第 00 章）对凸问题 $\min f(\theta)$，约束为 $g_i(\theta) \le 0$，引入乘子 $\alpha_i \ge 0$，构造拉格朗日函数 $L = f + \sum_i \alpha_i g_i$。
+
+<Box kind="theorem" title="强对偶与 KKT">
+
+若 $f$ 与 $g_i$ 都是凸函数，并且存在严格可行点（Slater 条件；约束为线性时只需可行），则原问题与对偶问题的最优值相等。$(\theta^*, \alpha^*)$ 同时是两者的最优解，当且仅当满足 KKT 条件：
+
+1. 平稳性：$\nabla_\theta L = 0$；
+2. 原始可行：$g_i(\theta^*) \le 0$；
+3. 对偶可行：$\alpha_i^* \ge 0$；
+4. 互补松弛：$\alpha_i^*\, g_i(\theta^*) = 0$。
+
+</Box>
+
+### 推导 SVM 的对偶问题
+
+以软间隔为例。把约束写成 $1 - \xi_i - y_i(w^\top x_i + b) \le 0$ 和 $-\xi_i \le 0$，分别配乘子 $\alpha_i$、$\mu_i$：
+
+$$
+L = \frac12\|w\|^2 + C\sum_i\xi_i - \sum_i \alpha_i\big[y_i(w^\top x_i + b) - 1 + \xi_i\big] - \sum_i \mu_i \xi_i.
+$$
+
+对原变量求导并令其为零：
+
+$$
+\frac{\partial L}{\partial w} = 0 \Rightarrow w = \sum_i \alpha_i y_i x_i, \qquad \frac{\partial L}{\partial b} = 0 \Rightarrow \sum_i \alpha_i y_i = 0, \qquad \frac{\partial L}{\partial \xi_i} = 0 \Rightarrow C - \alpha_i - \mu_i = 0.
+$$
+
+由 $\mu_i \ge 0$ 得到 $\alpha_i \le C$。把这些关系代回 $L$，$\xi$ 和 $b$ 项全部消去，得到只含 $\alpha$ 的对偶问题：
+
+<Box kind="theorem" title="SVM 对偶问题">
+
+$$
+\max_{\alpha}\ \sum_i \alpha_i - \frac12\sum_{i,j} \alpha_i\alpha_j y_i y_j\, x_i^\top x_j \quad \text{s.t.}\quad 0 \le \alpha_i \le C,\ \ \sum_i \alpha_i y_i = 0.
+$$
+
+注意：数据**只以内积 $x_i^\top x_j$ 的形式出现**。这是第 4 部分“核技巧”的伏笔。
+
+</Box>
+
+### 互补松弛给出支持向量
+
+由 $\alpha_i[y_i f(x_i) - 1 + \xi_i] = 0$ 与 $\mu_i\xi_i = (C - \alpha_i)\xi_i = 0$，每个样本必然落在下面三种情况之一：
+
+| $\alpha_i$ | 位置 | 含义 |
+|---|---|---|
+| $\alpha_i = 0$ | $y_i f(x_i) \ge 1$ | 在间隔外，对 $w$ 毫无贡献 |
+| $0 < \alpha_i < C$ | $y_i f(x_i) = 1$ | 恰在间隔边界上，是自由支持向量 |
+| $\alpha_i = C$ | $y_i f(x_i) \le 1$ | 进入间隔或被分错 |
+
+因为 $w = \sum_i \alpha_i y_i x_i$ 只对 $\alpha_i > 0$ 的样本求和，所以**解只由支持向量决定**。这正是上一节拖动实验看到的现象。$b$ 可以由任一自由支持向量 $x_j$ 求出：$b = y_j - \sum_i \alpha_i y_i\, x_i^\top x_j$。
+
+### 工具二：SMO——每次只解两个变量
+
+对偶问题有 $n$ 个变量和一个等式约束 $\sum_i\alpha_iy_i = 0$。如果每次只改一个 $\alpha_i$，等式约束会把它钉死，所以**至少要同时改两个**。SMO（序列最小优化）的做法是：
+
+1. 选一对 $(\alpha_i, \alpha_j)$，其中 $\alpha_i$ 是最违反 KKT 条件的样本，$\alpha_j$ 让 $|E_i - E_j|$ 最大，$E_k = f(x_k) - y_k$；
+2. 固定其余变量。由 $\alpha_iy_i + \alpha_jy_j = \text{常数}$，目标变成 $\alpha_j$ 的一元二次函数，二次项系数为 $-\tfrac12\eta$，其中 $\eta = K_{ii} + K_{jj} - 2K_{ij}$；
+3. 令导数为零，得到解析解 $\alpha_j^{\text{new}} = \alpha_j + y_j(E_i - E_j)/\eta$，再裁剪回可行区间 $[L, H]$（来自 $0 \le \alpha \le C$ 与等式约束的交线段）；
+4. 由等式约束更新 $\alpha_i$，再更新 $b$；重复直到所有样本都满足 KKT 条件。
+
+每一步都是精确的一维最大化，所以对偶目标单调不减。下面的回放展示了这一过程：
+
+<SmoReplay client:visible lang="zh" />
+
+课后训练里，你会亲手补全这个算法的五个关键步骤，并与 scikit-learn（底层是 libsvm）的结果逐一对拍。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题：一个能手算的 SVM
+
+<Box kind="example" title="五个点的最大间隔">
+
+正类：$x_1 = (2,0)$，$x_2 = (0,2)$，$x_3 = (2,2)$；负类：$x_4 = (0,0)$，$x_5 = (-1,0)$。求硬间隔 SVM。
+
+**第 1 步：猜支持向量。** 离对方最近的是 $x_1, x_2$ 与 $x_4$。假设它们恰在间隔边界上，即 $y_i(w^\top x_i + b) = 1$：
+
+$$
+2w_1 + b = 1,\qquad 2w_2 + b = 1,\qquad -(0 + b) = 1.
+$$
+
+解得 $b = -1$，$w = (1, 1)$。
+
+**第 2 步：检查原始可行。** $x_3$：$1\cdot(2 + 2 - 1) = 3 \ge 1$ ✓；$x_5$：$-1\cdot(-1 + 0 - 1) = 2 \ge 1$ ✓。
+
+**第 3 步：求乘子，检查对偶可行。** 由 $w = \sum_i\alpha_iy_ix_i = \alpha_1(2,0) + \alpha_2(0,2) - \alpha_4(0,0)$ 得 $\alpha_1 = \alpha_2 = \tfrac12$；再由 $\sum_i\alpha_iy_i = 0$ 得 $\alpha_4 = \alpha_1 + \alpha_2 = 1$。非支持向量取 $\alpha_3 = \alpha_5 = 0$。所有 $\alpha \ge 0$ ✓。
+
+**第 4 步：结论。** KKT 条件全部满足，而问题是凸的，所以这就是全局最优：分离超平面为 $x_1 + x_2 = 1$，间隔宽度 $2/\|w\| = \sqrt2$。验证强对偶：对偶目标 $\sum\alpha - \tfrac12\|w\|^2 = 2 - 1 = 1$，等于原目标 $\tfrac12\|w\|^2 = 1$ ✓。
+
+</Box>
+
+<FivePoints client:visible lang="zh" />
+
+一个容易忽略的细节：$x_4$ 位于原点，对 $w$ 的贡献为零，但它的乘子 $\alpha_4 = 1$ 却最大。它通过等式约束 $\sum\alpha_iy_i = 0$ 和 $b$ 起作用。“支持向量”的含义是“约束起作用”，不等于“对 $w$ 贡献大”。
+
+### 回到医院：真实数据
+
+情景中的数据是二维示意。真实的威斯康星乳腺癌诊断数据有 30 个特征（半径、纹理、周长……的均值、标准差和最差值），量纲差别很大。课后的“组装库训练”题会带你用 scikit-learn 搭建**标准化 + RBF 核 SVM** 的流水线，并用交叉验证选择 $C$ 与 $\gamma$，测试准确率可以超过 95%。标准化不是可有可无的步骤：核函数依赖距离，量纲大的特征会独占距离。
+
+### 拓展一：线性不可分？换一个核
+
+对偶问题只用到内积 $x_i^\top x_j$。把它换成**核函数** $K(x_i, x_j) = \phi(x_i)^\top\phi(x_j)$，就相当于先把数据映射到高维特征空间 $\phi(x)$，再在那里找最大间隔超平面。整个过程从不需要显式计算 $\phi$。只要 $K$ 对应的核矩阵总是半正定的（Mercer 条件），对偶问题依然是凸的，SMO 一行都不用改。
+
+<KernelPlayground client:visible lang="zh" />
+
+### 拓展二：更多情景
+
+- **多分类**：一对多（OvR，训练 $k$ 个分类器）或一对一（OvO，训练 $k(k-1)/2$ 个，再投票）。
+- **回归（SVR）**：把合页损失换成 $\varepsilon$-不敏感损失 $\max(0, |y - f(x)| - \varepsilon)$，误差在 $\varepsilon$ 管道内不计罚。
+- **异常检测（One-Class SVM）**：只用正常样本，找一个把数据与原点以最大间隔分开的超平面。
+- **大规模线性 SVM**：样本上百万时不解对偶问题，直接对“合页损失 + L2”做随机梯度下降或坐标下降（liblinear）。
+- **概率输出**：SVM 给出的是间隔而不是概率；需要概率时用 Platt 缩放，在 $f(x)$ 上再拟合一个逻辑回归。
+
+</Section>

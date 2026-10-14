@@ -1,0 +1,38 @@
+---
+import Base from "../../../layouts/Base.astro";
+import { LANGS, href, pick, t, type Lang } from "../../../i18n/ui";
+import { allChapters, handbook } from "../../../lib/data";
+import "../../../styles/chapter.css";
+
+export function getStaticPaths() {
+  return LANGS.map((lang) => ({ params: { lang } }));
+}
+const lang = Astro.params.lang as Lang;
+const entries = handbook(lang);
+const intro = {
+  zh: "独立于章节的实战小册子：常用代码块、调参经验与工程技巧。每个条目都链接回讲解它的章节。",
+  en: "A practical companion, independent of the chapters: go-to code, tuning experience and engineering tips. Each entry links back to the chapter that explains it.",
+}[lang];
+const byId = Object.fromEntries(allChapters.map((c) => [c.id, c]));
+---
+<Base lang={lang} title={`${t(lang, "handbook")} · ${t(lang, "siteName")}`} path="handbook/">
+  <header class="ch-hero">
+    <div class="container">
+      <h1 class="ch-title"><span class="gradient-text">{t(lang, "handbook")}</span></h1>
+      <p class="muted">{intro}</p>
+    </div>
+  </header>
+  <div class="prose ch-article handbook">
+    {entries.map(({ slug, title, chapters, Content }) => (
+      <section id={slug} class="ch-section">
+        <header class="sec-head reveal"><h2>{title}</h2></header>
+        <p class="ch-meta">
+          {chapters.map((id) => byId[id] && (
+            <a class="meta-chip" href={href(`${lang}/chapters/${byId[id].slug}/`)}>{id} {pick(byId[id].title, lang)}</a>
+          ))}
+        </p>
+        <Content />
+      </section>
+    ))}
+  </div>
+</Base>

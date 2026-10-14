@@ -1,0 +1,54 @@
+---
+title: "LightGBM in practice: tuning order and go-to code"
+summary: "Fix the learning rate and tune tree shape first, then add regularization and sampling; early stopping, categorical features, importance and SHAP."
+chapters: ["08"]
+---
+
+### The standard recipe: early stopping
+
+```python
+import lightgbm as lgb
+
+model = lgb.LGBMClassifier(
+    n_estimators=5000,          # set high; early stopping decides
+    learning_rate=0.05,
+    num_leaves=31,
+    min_child_samples=20,
+    subsample=0.8, subsample_freq=1,   # row sampling (bagging)
+    colsample_bytree=0.8,               # column sampling
+    reg_lambda=1.0,
+)
+model.fit(X_tr, y_tr, eval_set=[(X_va, y_va)],
+          callbacks=[lgb.early_stopping(100), lgb.log_evaluation(200)])
+print(model.best_iteration_)
+```
+
+### Tuning order
+
+1. **Fix a fairly large learning rate** (say 0.1) and let early stopping pick the number of trees, so the pipeline works end to end.
+2. **Tune tree complexity**: `num_leaves` is the main knob. LightGBM grows trees leaf-wise, so `max_depth` only acts as a cap; a larger `min_child_samples` makes the model more conservative.
+3. **Add randomness**: `subsample` and `colsample_bytree` in 0.6–0.9 lower the variance and speed up training.
+4. **Add regularization**: `reg_lambda` (the $\lambda$ from this chapter's derivation) and `min_split_gain`.
+5. **Finally, lower the learning rate** (say 0.02) and raise the `n_estimators` cap; this usually buys a little more.
+
+### Categorical features and missing values
+
+- Convert pandas columns to the `category` dtype and LightGBM will group categories optimally on its own; no one-hot encoding needed.
+- No need to impute: at every split the algorithm learns whether missing values should go left or right.
+
+### Explaining the model
+
+```python
+import shap
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_va)
+shap.summary_plot(shap_values, X_va)
+```
+
+By default `feature_importances_` counts splits; `importance_type="gain"` sums the gain instead and is usually more meaningful. SHAP values explain **individual** predictions.
+
+### Common pitfalls
+
+- For class imbalance, use `class_weight="balanced"` or `scale_pos_weight`, and evaluate with AUC or PR-AUC.
+- Never early-stop on the test set; hold out a separate validation set.
+- Trees need no scaling, but watch out for **target leakage**: any feature computed from the labels must be computed inside the training fold only.

@@ -1,0 +1,48 @@
+---
+title: "SVM 实战：从能跑到跑好"
+summary: "标准化、C 与 γ 的搜索范围、大数据时换 LinearSVC、类别不平衡、概率输出，以及常用代码块。"
+chapters: ["07"]
+---
+
+### 标配流水线
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
+
+model = make_pipeline(StandardScaler(), SVC(kernel="rbf"))
+grid = {"svc__C": [0.1, 1, 10, 100], "svc__gamma": ["scale", 0.001, 0.01, 0.1]}
+search = GridSearchCV(model, grid, cv=5, n_jobs=-1).fit(X_train, y_train)
+print(search.best_params_, search.score(X_test, y_test))
+```
+
+### 调参要点
+
+- **永远先标准化。** RBF 核看的是欧氏距离，没有标准化时，量纲大的特征会独占距离。把 `StandardScaler` 放进流水线，交叉验证时就不会把验证折的信息泄漏进来。
+- **在对数尺度上搜索。** $C$ 和 $\gamma$ 都按 10 倍间隔搜索，先粗后细。`gamma="scale"`（即 $1/(d\cdot\mathrm{Var}(X))$）通常是不错的起点。
+- **看清 $C$ 与 $\gamma$ 的方向。** 二者调大都会让模型更复杂：$C$ 大表示更少容忍错误，$\gamma$ 大表示每个支持向量的影响范围更小。过拟合时先把它们调小。
+- **支持向量占比是健康指标。** 如果 `len(svc.support_) / n` 接近 1，模型几乎在记忆数据，通常说明 $C$ 太小，或 $\gamma$ 太大或太小。
+
+### 数据变大时
+
+- 样本超过约 10 万时，核 SVM 的训练成本在 $O(n^2)$ 到 $O(n^3)$ 之间。改用 `LinearSVC`（liblinear），或用 `SGDClassifier(loss="hinge")` 做在线训练。
+- 需要非线性又要可扩展时，可以先用 `RBFSampler` 或 `Nystroem` 构造近似核特征，再接线性 SVM。这就是随机特征的思路（见第 07 章的前沿阅读）。
+
+### 类别不平衡
+
+```python
+SVC(kernel="rbf", class_weight="balanced")   # 按类别频率的倒数加权 C
+```
+
+在医疗等场景中，漏诊的代价远高于误诊。可以用 `class_weight={1: 5, 0: 1}` 显式表达这种代价差异，再用召回率或 PR 曲线评估，不只看准确率。
+
+### 需要概率时
+
+`SVC(probability=True)` 会在内部做 5 折 Platt 缩放，训练速度明显变慢，而且概率与 `decision_function` 的排序可能不完全一致。更推荐的写法是：
+
+```python
+from sklearn.calibration import CalibratedClassifierCV
+clf = CalibratedClassifierCV(make_pipeline(StandardScaler(), SVC()), method="sigmoid", cv=5)
+```
