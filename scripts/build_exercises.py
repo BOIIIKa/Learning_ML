@@ -5,6 +5,7 @@ reference), splits each code exercise into skeleton / solution / blanks with
 learnml.blanks, and writes site/src/generated/{outline,exercises}.json.
 """
 
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -12,9 +13,11 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "python"))
 
-from learnml import blanks  # noqa: E402
+# Load learnml/blanks.py on its own: the package __init__ imports numpy, which the site build does not need.
+_spec = importlib.util.spec_from_file_location("blanks", ROOT / "python" / "learnml" / "blanks.py")
+blanks = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(blanks)
 
 OUT = ROOT / "site" / "src" / "generated"
 
