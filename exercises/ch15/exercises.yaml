@@ -1,0 +1,68 @@
+# 第 15 章 损失函数即最大似然 —— 课后练习 / Chapter 15 exercises
+
+derivation:
+  - id: bce
+    title: {zh: "伯努利的负对数似然", en: "The Bernoulli negative log-likelihood"}
+    prompt:
+      zh: "伯努利头输出 logit $f$，概率 $p = \\sigma(f) = 1/(1 + e^{-f})$。观测 $y = 1$ 时，负对数似然是多少？可用变量：`f`。"
+      en: "A Bernoulli head outputs the logit $f$, with probability $p = \\sigma(f) = 1/(1 + e^{-f})$. What is the negative log-likelihood when $y = 1$? Variables: `f`."
+    answer: "log(1 + exp(-f))"
+    vars: {f: [-4, 4]}
+    solution:
+      zh: "$-\\log \\Pr(y = 1) = -\\log \\sigma(f) = \\log(1 + e^{-f})$。$y = 0$ 时是 $-\\log(1 - \\sigma(f)) = \\log(1 + e^{f})$。合起来 $\\ell = \\log(1 + e^f) - yf$，两种情况之差恰好是 $f$——例题一中 $2.1269 - 0.1269 = 2$。"
+      en: "$-\\log \\Pr(y = 1) = -\\log \\sigma(f) = \\log(1 + e^{-f})$. For $y = 0$ it is $-\\log(1 - \\sigma(f)) = \\log(1 + e^{f})$. Together $\\ell = \\log(1 + e^f) - yf$, and the two cases differ by exactly $f$: in example 1, $2.1269 - 0.1269 = 2$."
+
+  - id: bce-grad
+    title: {zh: "交叉熵对 logit 的梯度", en: "The gradient of cross-entropy in the logit"}
+    prompt:
+      zh: "$\\ell = \\log(1 + e^f) - yf$，$y \\in [0, 1]$。求 $\\partial \\ell / \\partial f$。可用变量：`f, y`。"
+      en: "$\\ell = \\log(1 + e^f) - yf$ with $y \\in [0, 1]$. Find $\\partial \\ell / \\partial f$. Variables: `f, y`."
+    answer: "1/(1 + exp(-f)) - y"
+    vars: {f: [-4, 4], y: [0, 1]}
+    solution:
+      zh: "$\\frac{d}{df}\\log(1 + e^f) = \\frac{e^f}{1 + e^f} = \\sigma(f)$，所以梯度是 $\\sigma(f) - y$：预测的概率减去观测。高斯的 $\\mu - y$、softmax 的 $p - e_y$、泊松的 $e^f - y$ 都是同一形式——典范连接函数的共同特点。梯度为零时 $\\sigma(f) = y$：软标签 $y = 0.3$ 的最优 logit 是 $\\log(0.3/0.7)$。"
+      en: "$\\frac{d}{df}\\log(1 + e^f) = \\frac{e^f}{1 + e^f} = \\sigma(f)$, so the gradient is $\\sigma(f) - y$: predicted probability minus observation. The Gaussian's $\\mu - y$, the softmax's $p - e_y$ and the Poisson's $e^f - y$ have the same form, the shared trait of canonical links. The gradient vanishes when $\\sigma(f) = y$: for a soft label $y = 0.3$ the best logit is $\\log(0.3/0.7)$."
+
+  - id: best-variance
+    title: {zh: "最优的方差", en: "The best variance"}
+    prompt:
+      zh: "高斯负对数似然 $\\frac{r^2}{2\\sigma^2} + \\log \\sigma$（$r = y - \\mu$ 固定）。使它最小的 $\\sigma^2$ 是多少？可用变量：`r`。"
+      en: "The Gaussian negative log-likelihood $\\frac{r^2}{2\\sigma^2} + \\log \\sigma$ with the residual $r = y - \\mu$ fixed. Which $\\sigma^2$ minimises it? Variables: `r`."
+    answer: "r^2"
+    vars: {r: [0.2, 5]}
+    solution:
+      zh: "令 $s = \\log \\sigma$，$\\ell = \\frac{r^2}{2} e^{-2s} + s$，$\\frac{d\\ell}{ds} = 1 - r^2 e^{-2s} = 0$，得 $\\sigma^2 = r^2$。二阶导 $2r^2 e^{-2s} \\gt 0$，是最小值。对许多样本，异方差网络学到的 $\\sigma^2(x)$ 就是条件残差平方的期望。例题三：$r = 8$ 时 $\\sigma = 8$ 给出最小的 $3.498$。"
+      en: "With $s = \\log \\sigma$, $\\ell = \\frac{r^2}{2} e^{-2s} + s$ and $\\frac{d\\ell}{ds} = 1 - r^2 e^{-2s} = 0$, so $\\sigma^2 = r^2$. The second derivative $2r^2 e^{-2s} \\gt 0$, so it is a minimum. Over many samples, the $\\sigma^2(x)$ a heteroscedastic network learns is the conditional expected squared residual. Example 3: for $r = 8$, $\\sigma = 8$ gives the smallest value, $3.498$."
+
+  - id: kl
+    title: {zh: "两个伯努利之间的 KL 散度", en: "KL divergence between two Bernoullis"}
+    prompt:
+      zh: "真实及格率 $p$，模型预测 $q$。写出 $\\mathrm{KL}(p \\| q) = H(p, q) - H(p)$。可用变量：`p, q`。"
+      en: "True pass rate $p$, model $q$. Write $\\mathrm{KL}(p \\| q) = H(p, q) - H(p)$. Variables: `p, q`."
+    answer: "p*log(p/q) + (1 - p)*log((1 - p)/(1 - q))"
+    vars: {p: [0.05, 0.95], q: [0.05, 0.95]}
+    solution:
+      zh: "$H(p, q) = -p\\log q - (1 - p)\\log(1 - q)$，$H(p) = -p \\log p - (1 - p)\\log(1 - p)$，相减得 $p \\log\\frac{p}{q} + (1 - p)\\log\\frac{1 - p}{1 - q}$。由 Gibbs 不等式它 $\\ge 0$，$q = p$ 时为零。$p = 0.7, q = 0.5$ 时为 $0.082$（例题四）。"
+      en: "$H(p, q) = -p\\log q - (1 - p)\\log(1 - q)$ and $H(p) = -p \\log p - (1 - p)\\log(1 - p)$; subtracting gives $p \\log\\frac{p}{q} + (1 - p)\\log\\frac{1 - p}{1 - q}$. By Gibbs' inequality it is $\\ge 0$, and zero at $q = p$. For $p = 0.7, q = 0.5$ it is $0.082$ (example 4)."
+
+code:
+  - id: nll-losses
+    kind: implement
+    file: nll_losses.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现稳定的交叉熵与异方差回归", en: "Stable cross-entropy and heteroscedastic regression from scratch"}
+    intro:
+      zh: "补全数值稳定的二元交叉熵和 softmax 交叉熵、高斯负对数似然，以及用梯度下降拟合“均值 + log σ”的异方差回归。检查会与 scikit-learn 的 log_loss 对拍，喂进 ±800 的 logit 确认不溢出，复现例题里的数，并确认异方差模型的负对数似然明显低于常数方差。运行后可以回放：±2σ 带在梯度下降中慢慢学会随 x 变宽。"
+      en: "Fill in numerically stable binary and softmax cross-entropy, the Gaussian NLL, and a heteroscedastic regression (mean + log σ) fitted by gradient descent. The checks compare against scikit-learn's log_loss, feed logits of ±800 to make sure nothing overflows, reproduce the worked numbers, and confirm the heteroscedastic NLL clearly beats a constant variance. Afterwards, replay the ±2σ band learning to widen with x during gradient descent."
+    metrics:
+      - {key: nll, label: {zh: "平均负对数似然", en: "Average NLL"}}
+  - id: nll-library
+    kind: library
+    file: nll_library.py
+    packages: [numpy, scipy, scikit-learn]
+    title: {zh: "用 scikit-learn 做似然：对数损失、泊松回归、分位数区间", en: "Likelihood in scikit-learn: log-loss, Poisson regression, quantile intervals"}
+    intro:
+      zh: "计算分类器在手写数字上的测试负对数似然（几乎没训练的模型约为 log 10）；用泊松回归拟合计数数据，与线性回归比较泊松偏差；再用分位数回归给出 90% 预测区间，看它随噪声变宽。运行后可以回放从 20% 到 98% 的预测区间。"
+      en: "Compute a classifier's test NLL on handwritten digits (an almost untrained model sits near log 10); fit count data with Poisson regression and compare its Poisson deviance with linear regression; then build a 90% prediction interval with quantile regression and watch it widen with the noise. Afterwards, replay prediction intervals from 20% to 98%."
+    metrics:
+      - {key: coverage, label: {zh: "区间覆盖率", en: "Interval coverage"}}

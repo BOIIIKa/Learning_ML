@@ -1,0 +1,10 @@
+/* Chapter 15 widgets. Colours only from the theme variables. */
+.lr-card { display: grid; gap: 0.2rem; margin: 0.5rem 0; padding: 0.6rem 0.8rem; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.lr-q { font-weight: 700; color: var(--ink); }
+.lr-row { font-size: 0.9rem; color: var(--text-muted); }
+.lr-row b { color: var(--text); font-weight: 600; margin-right: 0.4rem; }
+.lr-loss { font-family: var(--mono); font-size: 1.02rem; color: var(--class-pos); }
+.lr-classic { font-size: 0.88rem; color: var(--accent-2); }
+.ck-bar { margin: 0.2rem 0 0.4rem; }
+.ck-h { fill: var(--accent-2); opacity: 0.7; }
+.ck-kl { fill: var(--accent); }

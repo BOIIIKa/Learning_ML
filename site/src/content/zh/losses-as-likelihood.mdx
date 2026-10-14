@@ -1,0 +1,187 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import LossRecipe from "../../components/chapters/ch15/LossRecipe";
+import HeteroBand from "../../components/chapters/ch15/HeteroBand";
+import CrossEntropyKL from "../../components/chapters/ch15/CrossEntropyKL";
+
+<Section lang="zh" k="scenario">
+
+老师想用一个网络，对每个学生同时回答四个问题：期末能考多少分？能不能及格？会拿 A、B 还是 C？这学期会缺勤几次？
+
+网络的主体可以共用，区别只在最后一层——输出一个实数、一个概率、三个类的概率，还是一个非负的次数。那每个“头”该配什么损失？平方损失、交叉熵、绝对值……前面几章各用各的，像是一份零散的菜单。其实它们都出自同一个配方。在下面选一个输出分布试试：
+
+<LossRecipe client:visible lang="zh" />
+
+这一章回答：
+
+1. 损失函数从哪里来？（选分布 → 写负对数似然）
+2. 第二、三部分用过的那些损失，怎样统一到这个配方里？
+3. 网络能不能除了给出预测，还告诉我们“有多不确定”？交叉熵和 KL 散度又是什么关系？
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 最大似然的配方
+
+<Box kind="definition" title="损失 = 负对数似然">
+
+1. **选分布**：为输出 $y$ 选一个参数为 $\theta$ 的分布 $\Pr(y \mid \theta)$。
+2. **让网络输出参数**：$\theta = f(x; \phi)$，必要时经过一个“头”把实数映到合法范围（概率用 sigmoid / softmax，正数用指数）。
+3. **最小化负对数似然**：
+
+$$
+L(\phi) = -\sum_{i=1}^{n} \log \Pr\big(y_i \mid f(x_i; \phi)\big).
+$$
+
+预测时取分布的均值（回归）或众数（分类）。
+
+</Box>
+
+取对数有三个好处：乘积变求和，梯度好算；概率的乘积会迅速下溢，对数不会；对数单调，最大化似然和最大化对数似然是同一件事。
+
+同一个配方，换一个分布就是一个经典模型：
+
+| 分布 | $y$ 的取值 | 输出头 | 负对数似然 | 对应 |
+|---|---|---|---|---|
+| 高斯（$\sigma$ 固定） | 实数 | $\mu = f$ | $\tfrac12 (y - f)^2 + $ 常数 | 平方损失，第 03 章 |
+| 拉普拉斯（$b$ 固定） | 实数 | $m = f$ | $\lvert y - f \rvert + $ 常数 | 绝对值损失，第 03 章 |
+| 伯努利 | $\{0, 1\}$ | $p = \sigma(f)$ | $\log(1 + e^f) - yf$ | 逻辑回归，第 04 章 |
+| 分类分布 | $\{1, \dots, K\}$ | $p = \mathrm{softmax}(f)$ | $\log \sum_k e^{f_k} - f_y$ | 多类逻辑回归，第 04 章 |
+| 泊松 | $\{0, 1, 2, \dots\}$ | $\lambda = e^f$ | $e^f - yf + \log y!$ | 计数的广义线性模型 |
+
+第 04 章的最大熵模型、第 11 章 EM 里的对数似然，也都是这同一件事：**策略 = 负对数似然**。
+
+<Box kind="insight" title="三要素">
+
+**模型**：网络输出某个分布的参数。**策略**：负对数似然。**算法**：怎样最小化它，是第 16 章（梯度下降）和第 17 章（反向传播）的事。
+
+</Box>
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 高斯 ⇒ 平方损失
+
+$\Pr(y \mid \mu, \sigma) = \frac{1}{\sqrt{2\pi}\sigma} \exp\!\big(-\frac{(y - \mu)^2}{2\sigma^2}\big)$，取负对数：
+
+$$
+-\log \Pr(y \mid \mu, \sigma) = \frac{(y - \mu)^2}{2\sigma^2} + \log \sigma + \tfrac12 \log 2\pi.
+$$
+
+$\sigma$ 固定时，后两项是常数，第一项正比于 $(y - \mu)^2$：**最小二乘就是高斯噪声下的最大似然**。同理，拉普拉斯分布 $\frac{1}{2b} e^{-\lvert y - m \rvert / b}$ 给出绝对值损失，最优的 $m$ 是中位数而不是均值——这就是它对离群点稳健的原因。
+
+### 伯努利 ⇒ 二元交叉熵
+
+$\Pr(y \mid p) = p^y (1 - p)^{1 - y}$，$p = \sigma(f) = 1/(1 + e^{-f})$。利用 $\log \sigma(f) = -\log(1 + e^{-f})$ 和 $\log(1 - \sigma(f)) = -\log(1 + e^{f})$：
+
+$$
+\ell = -y \log \sigma(f) - (1 - y)\log\big(1 - \sigma(f)\big) = \log(1 + e^{f}) - y f.
+$$
+
+（最后一步用了 $\log(1 + e^f) - \log(1 + e^{-f}) = f$。）对 $f$ 求导，
+
+$$
+\frac{\partial \ell}{\partial f} = \sigma(f) - y
+$$
+
+（推导题 2）。写成 $\log(1 + e^f)$ 也是数值上稳定的算法：直接算 $\log \sigma(f)$ 在 $f$ 很负时会得到 $\log 0$。
+
+### 分类分布 ⇒ softmax 交叉熵
+
+$\Pr(y = k) = p_k = e^{f_k} / \sum_j e^{f_j}$，于是
+
+$$
+\ell = -\log p_y = \log \sum_j e^{f_j} - f_y, \qquad \frac{\partial \ell}{\partial f_k} = p_k - \mathbb 1[k = y].
+$$
+
+<Box kind="insight" title="同一个梯度">
+
+高斯：$\partial \ell / \partial \mu = \mu - y$；伯努利：$\sigma(f) - y$；softmax：$p - e_y$；泊松：$e^f - y$。梯度总是**“预测的均值 − 观测值”**。这不是巧合：这些分布都属于指数族，所用的头正是它们的“典范连接函数”。所以无论哪种头，误差信号都长得一样，反向传播（第 17 章）对它们一视同仁。
+
+</Box>
+
+### 异方差回归：同时预测均值和方差
+
+平方损失默认噪声方差处处相同。很多数据并非如此：学得越多的学生，成绩分得越开。让网络输出两个数 $\mu(x)$ 和 $s(x) = \log \sigma(x)$（取对数保证 $\sigma \gt 0$），损失用完整的高斯负对数似然：
+
+$$
+\ell = \frac{(y - \mu)^2}{2 e^{2s}} + s + \tfrac12 \log 2\pi, \qquad \frac{\partial \ell}{\partial s} = 1 - \frac{(y - \mu)^2}{e^{2s}}.
+$$
+
+令导数为零，$\sigma^2 = (y - \mu)^2$：网络学到的方差就是残差平方的（条件）期望（推导题 3）。残差大的地方 $\sigma$ 变大，平方项的权重 $1/\sigma^2$ 随之变小——模型会“承认”这里本来就难预测，而不是为了它们牺牲别处的拟合。
+
+<HeteroBand client:visible lang="zh" />
+
+### 交叉熵与 KL 散度
+
+设数据真实的分布是 $p$，模型是 $q$。平均负对数似然在样本足够多时趋于**交叉熵**
+
+$$
+H(p, q) = -\sum_y p(y) \log q(y) = \underbrace{-\sum_y p(y) \log p(y)}_{H(p)} + \underbrace{\sum_y p(y) \log \frac{p(y)}{q(y)}}_{\mathrm{KL}(p \| q)}.
+$$
+
+<Box kind="theorem" title="KL 散度非负（Gibbs 不等式）">
+
+$\mathrm{KL}(p \| q) \ge 0$，当且仅当 $p = q$ 时取等号。
+
+</Box>
+
+**证明**：$\log$ 是凹函数，由 Jensen 不等式，$-\mathrm{KL}(p \| q) = \sum_y p(y) \log \frac{q(y)}{p(y)} \le \log \sum_y p(y) \frac{q(y)}{p(y)} = \log \sum_y q(y) \le \log 1 = 0$。
+
+所以 $H(p)$ 是任何模型都降不下去的下限，最大似然所做的全部事情就是把 $\mathrm{KL}(p \| q)$ 压小。把 $p$ 换成训练数据的经验分布，最小化训练集上的负对数似然就是最小化经验分布到模型的 KL 散度（推导题 4）。
+
+<CrossEntropyKL client:visible lang="zh" />
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题一：一个 logit，两种答案
+
+<Box kind="example" title="伯努利头，f = 2">
+
+$\sigma(2) = 0.8808$。若 $y = 1$，$\ell = \log(1 + e^{-2}) = 0.1269$；若 $y = 0$，$\ell = \log(1 + e^{2}) = 2.1269$。两者之差恰好是 $f = 2$。梯度 $\sigma(f) - y$ 分别是 $-0.1192$（再把 $f$ 推大一点）和 $0.8808$（把 $f$ 大幅拉小）：答错时信心越足，惩罚越重。
+
+</Box>
+
+### 例题二：三个类的 softmax
+
+<Box kind="example" title="logits (2, 1, 0)，正确答案是第一类">
+
+$p = \mathrm{softmax}(2, 1, 0) = (0.665,\ 0.245,\ 0.090)$，损失 $\ell = -\log 0.665 = \log(1 + e^{-1} + e^{-2}) = 0.4076$。梯度 $p - e_1 = (-0.335,\ 0.245,\ 0.090)$：抬高正确类的 logit，压低另外两个，压低的幅度与它们当前的概率成正比。
+
+</Box>
+
+### 例题三：方差也要“恰到好处”
+
+<Box kind="example" title="μ = 70，观测 y = 78">
+
+残差 $8$。负对数似然 $\frac{64}{2\sigma^2} + \log(\sigma\sqrt{2\pi})$：
+
+| $\sigma$ | $5$ | $8$ | $10$ |
+|---|---|---|---|
+| $\ell$ | $3.808$ | $3.498$ | $3.542$ |
+
+$\sigma = 5$ 太自信（平方项 $1.28$ 太大），$\sigma = 10$ 太含糊（$\log \sigma$ 项太大），最优正是 $\sigma = \lvert y - \mu \rvert = 8$。
+
+</Box>
+
+### 例题四：KL 的大小
+
+<Box kind="example" title="p = 0.7，q = 0.5">
+
+$H(0.7) = 0.611$ nats，$H(0.7, 0.5) = \log 2 = 0.693$，$\mathrm{KL} = 0.082$。即使模型完全不知道（$q = 0.5$），平均损失也只比最好的模型高 $0.082$——而最好的模型损失仍有 $0.611$，那是数据本身的随机性。
+
+</Box>
+
+### 拓展
+
+- **稳健回归**：学生 $t$ 分布的负对数似然对离群点比高斯更宽容，自由度还能一起学。
+- **多峰输出**：混合密度网络让网络输出高斯混合的权重、均值和方差（第 11 章的混合模型搬进了网络）。
+- **分位数回归**：弹球损失（pinball loss）对应非对称拉普拉斯分布，直接预测分位数和预测区间。
+- **标签平滑与焦点损失**：把 one-hot 目标换成软标签，或给难样本加权；它们都可以看作修改了“数据分布 $p$”。
+- **校准**：交叉熵训练出的概率不一定可信（深网络常常过度自信），温度缩放是最简单的事后校准。
+
+</Section>

@@ -1,0 +1,187 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import LossRecipe from "../../components/chapters/ch15/LossRecipe";
+import HeteroBand from "../../components/chapters/ch15/HeteroBand";
+import CrossEntropyKL from "../../components/chapters/ch15/CrossEntropyKL";
+
+<Section lang="en" k="scenario">
+
+The teacher wants one network to answer four questions about every student at once: what will the final score be? Will they pass? Will they get an A, B or C? How many classes will they miss this term?
+
+The body of the network can be shared; only the last layer differs: one real number, one probability, three class probabilities, or a non-negative count. So which loss goes with which "head"? Squared loss, cross-entropy, absolute loss… earlier chapters each used their own, like a scattered menu. In fact they all come from one recipe. Pick an output distribution below:
+
+<LossRecipe client:visible lang="en" />
+
+This chapter answers:
+
+1. Where do loss functions come from? (Choose a distribution → write its negative log-likelihood)
+2. How do the losses of Parts II and III fit into this recipe?
+3. Can a network tell us how uncertain it is, not just what it predicts? And how are cross-entropy and the KL divergence related?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### The maximum-likelihood recipe
+
+<Box kind="definition" title="Loss = negative log-likelihood">
+
+1. **Choose a distribution** $\Pr(y \mid \theta)$ for the output $y$, with parameters $\theta$.
+2. **Let the network output the parameters**: $\theta = f(x; \phi)$, through a "head" that maps real numbers to the valid range where needed (sigmoid / softmax for probabilities, the exponential for positive numbers).
+3. **Minimise the negative log-likelihood**:
+
+$$
+L(\phi) = -\sum_{i=1}^{n} \log \Pr\big(y_i \mid f(x_i; \phi)\big).
+$$
+
+To predict, report the distribution's mean (regression) or mode (classification).
+
+</Box>
+
+Taking logs pays three times: products become sums, so gradients are easy; products of probabilities underflow quickly and logs do not; and the log is monotone, so maximising the likelihood and the log-likelihood are the same thing.
+
+One recipe; change the distribution and out comes a classical model:
+
+| Distribution | Values of $y$ | Output head | Negative log-likelihood | Corresponds to |
+|---|---|---|---|---|
+| Gaussian ($\sigma$ fixed) | real | $\mu = f$ | $\tfrac12 (y - f)^2 + $ const | squared loss, chapter 03 |
+| Laplace ($b$ fixed) | real | $m = f$ | $\lvert y - f \rvert + $ const | absolute loss, chapter 03 |
+| Bernoulli | $\{0, 1\}$ | $p = \sigma(f)$ | $\log(1 + e^f) - yf$ | logistic regression, chapter 04 |
+| Categorical | $\{1, \dots, K\}$ | $p = \mathrm{softmax}(f)$ | $\log \sum_k e^{f_k} - f_y$ | multinomial logistic, chapter 04 |
+| Poisson | $\{0, 1, 2, \dots\}$ | $\lambda = e^f$ | $e^f - yf + \log y!$ | GLMs for counts |
+
+The maximum-entropy model of chapter 04 and the log-likelihood of EM in chapter 11 are the same thing again: **strategy = negative log-likelihood**.
+
+<Box kind="insight" title="The triad">
+
+**Model**: the network outputs the parameters of a distribution. **Strategy**: the negative log-likelihood. **Algorithm**: how to minimise it is the business of chapter 16 (gradient descent) and chapter 17 (backpropagation).
+
+</Box>
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Gaussian ⇒ squared loss
+
+$\Pr(y \mid \mu, \sigma) = \frac{1}{\sqrt{2\pi}\sigma} \exp\!\big(-\frac{(y - \mu)^2}{2\sigma^2}\big)$; take minus the log:
+
+$$
+-\log \Pr(y \mid \mu, \sigma) = \frac{(y - \mu)^2}{2\sigma^2} + \log \sigma + \tfrac12 \log 2\pi.
+$$
+
+With $\sigma$ fixed the last two terms are constants and the first is proportional to $(y - \mu)^2$: **least squares is maximum likelihood under Gaussian noise**. Likewise the Laplace distribution $\frac{1}{2b} e^{-\lvert y - m \rvert / b}$ gives the absolute loss, whose best $m$ is the median rather than the mean, which is why it is robust to outliers.
+
+### Bernoulli ⇒ binary cross-entropy
+
+$\Pr(y \mid p) = p^y (1 - p)^{1 - y}$ with $p = \sigma(f) = 1/(1 + e^{-f})$. Using $\log \sigma(f) = -\log(1 + e^{-f})$ and $\log(1 - \sigma(f)) = -\log(1 + e^{f})$:
+
+$$
+\ell = -y \log \sigma(f) - (1 - y)\log\big(1 - \sigma(f)\big) = \log(1 + e^{f}) - y f.
+$$
+
+(The last step uses $\log(1 + e^f) - \log(1 + e^{-f}) = f$.) Differentiating in $f$,
+
+$$
+\frac{\partial \ell}{\partial f} = \sigma(f) - y
+$$
+
+(derivation exercise 2). Writing it as $\log(1 + e^f)$ is also the numerically stable way to compute it: evaluating $\log \sigma(f)$ directly gives $\log 0$ for very negative $f$.
+
+### Categorical ⇒ softmax cross-entropy
+
+$\Pr(y = k) = p_k = e^{f_k} / \sum_j e^{f_j}$, so
+
+$$
+\ell = -\log p_y = \log \sum_j e^{f_j} - f_y, \qquad \frac{\partial \ell}{\partial f_k} = p_k - \mathbb 1[k = y].
+$$
+
+<Box kind="insight" title="One gradient for all">
+
+Gaussian: $\partial \ell / \partial \mu = \mu - y$; Bernoulli: $\sigma(f) - y$; softmax: $p - e_y$; Poisson: $e^f - y$. The gradient is always **"predicted mean − observation"**. This is no coincidence: these distributions belong to the exponential family and each head is its "canonical link". Whatever the head, the error signal looks the same, and backpropagation (chapter 17) treats them all alike.
+
+</Box>
+
+### Heteroscedastic regression: predicting the mean and the variance
+
+The squared loss assumes the noise variance is the same everywhere. Many datasets disagree: the more the students study, the more their scores spread. Let the network output two numbers, $\mu(x)$ and $s(x) = \log \sigma(x)$ (the log keeps $\sigma \gt 0$), and use the full Gaussian negative log-likelihood:
+
+$$
+\ell = \frac{(y - \mu)^2}{2 e^{2s}} + s + \tfrac12 \log 2\pi, \qquad \frac{\partial \ell}{\partial s} = 1 - \frac{(y - \mu)^2}{e^{2s}}.
+$$
+
+Setting the derivative to zero gives $\sigma^2 = (y - \mu)^2$: the variance the network learns is the (conditional) expected squared residual (derivation exercise 3). Where residuals are large, $\sigma$ grows and the weight $1/\sigma^2$ of the squared term shrinks: the model admits these points are hard to predict instead of sacrificing the fit elsewhere for them.
+
+<HeteroBand client:visible lang="en" />
+
+### Cross-entropy and the KL divergence
+
+Let the data come from a true distribution $p$ and let the model be $q$. With enough samples the average negative log-likelihood tends to the **cross-entropy**
+
+$$
+H(p, q) = -\sum_y p(y) \log q(y) = \underbrace{-\sum_y p(y) \log p(y)}_{H(p)} + \underbrace{\sum_y p(y) \log \frac{p(y)}{q(y)}}_{\mathrm{KL}(p \| q)}.
+$$
+
+<Box kind="theorem" title="The KL divergence is non-negative (Gibbs' inequality)">
+
+$\mathrm{KL}(p \| q) \ge 0$, with equality if and only if $p = q$.
+
+</Box>
+
+**Proof**: the log is concave, so by Jensen's inequality $-\mathrm{KL}(p \| q) = \sum_y p(y) \log \frac{q(y)}{p(y)} \le \log \sum_y p(y) \frac{q(y)}{p(y)} = \log \sum_y q(y) \le \log 1 = 0$.
+
+So $H(p)$ is a floor no model can go below, and all maximum likelihood ever does is shrink $\mathrm{KL}(p \| q)$. Replace $p$ by the empirical distribution of the training data, and minimising the training negative log-likelihood is minimising the KL divergence from the empirical distribution to the model (derivation exercise 4).
+
+<CrossEntropyKL client:visible lang="en" />
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Example 1: one logit, two answers
+
+<Box kind="example" title="A Bernoulli head with f = 2">
+
+$\sigma(2) = 0.8808$. If $y = 1$, $\ell = \log(1 + e^{-2}) = 0.1269$; if $y = 0$, $\ell = \log(1 + e^{2}) = 2.1269$. The difference is exactly $f = 2$. The gradients $\sigma(f) - y$ are $-0.1192$ (push $f$ up a little more) and $0.8808$ (pull $f$ down hard): the more confident the wrong answer, the heavier the penalty.
+
+</Box>
+
+### Example 2: a three-class softmax
+
+<Box kind="example" title="Logits (2, 1, 0); the correct class is the first">
+
+$p = \mathrm{softmax}(2, 1, 0) = (0.665,\ 0.245,\ 0.090)$ and the loss is $\ell = -\log 0.665 = \log(1 + e^{-1} + e^{-2}) = 0.4076$. The gradient $p - e_1 = (-0.335,\ 0.245,\ 0.090)$ raises the correct logit and lowers the other two, each in proportion to its current probability.
+
+</Box>
+
+### Example 3: the variance must be just right too
+
+<Box kind="example" title="μ = 70, observed y = 78">
+
+The residual is $8$. The negative log-likelihood $\frac{64}{2\sigma^2} + \log(\sigma\sqrt{2\pi})$:
+
+| $\sigma$ | $5$ | $8$ | $10$ |
+|---|---|---|---|
+| $\ell$ | $3.808$ | $3.498$ | $3.542$ |
+
+$\sigma = 5$ is overconfident (the squared term, $1.28$, is too big), $\sigma = 10$ too vague (the $\log \sigma$ term is too big), and the best is exactly $\sigma = \lvert y - \mu \rvert = 8$.
+
+</Box>
+
+### Example 4: how big is a KL?
+
+<Box kind="example" title="p = 0.7, q = 0.5">
+
+$H(0.7) = 0.611$ nats, $H(0.7, 0.5) = \log 2 = 0.693$, and $\mathrm{KL} = 0.082$. Even a clueless model ($q = 0.5$) loses only $0.082$ on average against the best one, and the best one still loses $0.611$: that is the randomness of the data itself.
+
+</Box>
+
+### Further
+
+- **Robust regression**: the Student-$t$ negative log-likelihood is more forgiving of outliers than the Gaussian, and its degrees of freedom can be learned too.
+- **Multimodal outputs**: mixture density networks output the weights, means and variances of a Gaussian mixture (the mixtures of chapter 11, moved into the network).
+- **Quantile regression**: the pinball loss corresponds to an asymmetric Laplace distribution and predicts quantiles and prediction intervals directly.
+- **Label smoothing and focal loss**: replace the one-hot target by a soft label, or up-weight hard examples; both can be read as changing the "data distribution $p$".
+- **Calibration**: probabilities trained with cross-entropy are not automatically trustworthy (deep nets are often overconfident); temperature scaling is the simplest post-hoc fix.
+
+</Section>

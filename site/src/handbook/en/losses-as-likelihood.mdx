@@ -1,0 +1,35 @@
+---
+title: "Losses in practice: stable cross-entropy, class imbalance and uncertainty"
+summary: "Writing losses correctly in PyTorch / scikit-learn, the logits-vs-probabilities trap, class weights, heteroscedastic and quantile predictions, and calibration."
+chapters: ["15"]
+---
+
+### Go-to code
+
+```python
+import torch, torch.nn as nn
+loss_bin = nn.BCEWithLogitsLoss()        # takes logits; do not apply sigmoid first
+loss_cls = nn.CrossEntropyLoss()         # takes logits and class indices; do not apply softmax first
+loss_het = nn.GaussianNLLLoss()          # takes mean, variance (not std) and target
+loss_cnt = nn.PoissonNLLLoss(log_input=True)
+
+from sklearn.metrics import log_loss                  # evaluation: needs predict_proba
+from sklearn.linear_model import PoissonRegressor, QuantileRegressor
+```
+
+### Traps
+
+- **Logits or probabilities**: `CrossEntropyLoss` and `BCEWithLogitsLoss` apply softmax / sigmoid internally with the log-sum-exp trick; applying softmax yourself first is the single most common bug, and training slows down or fails to converge.
+- **Never write `log(softmax(x))`**: use `log_softmax`, or large logits give `log(0) = -inf`.
+- **Class imbalance**: use `weight=` / `class_weight="balanced"` or resampling; accuracy alone is fooled by the majority class. Evaluate with cross-entropy and PR curves.
+- **`GaussianNLLLoss` takes a variance**: have the network output a log-variance and exponentiate it, with a floor (`eps`) so the variance cannot collapse to 0.
+- **Heteroscedastic training is touchy**: learning the mean and the variance together from the start lets the model dodge fitting by inflating the variance. Train the mean with the squared loss first, then free the variance, or use β-NLL weighting.
+- **Calibrate probabilities**: deep nets are often overconfident. Fit a temperature on a validation set (divide the logits by $T$, choose the $T$ with the lowest NLL) and check a reliability diagram.
+
+### Frontier reading
+
+- Nix and Weigend (1994): networks that estimate a mean and a variance together.
+- Kendall and Gal (2017): aleatoric and epistemic uncertainty in deep learning.
+- Guo et al. (2017): calibration of modern neural networks, temperature scaling.
+- Lin et al. (2017): the focal loss for extremely imbalanced detection.
+- Seitzer et al. (2022): β-NLL, easing the pathologies of heteroscedastic training.

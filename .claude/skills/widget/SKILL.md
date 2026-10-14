@@ -53,6 +53,10 @@ Both plots draw a CAD crosshair with coordinates on hover and "draw in" their cu
      style props — set them in `useEffect` via a ref.
    - Don't use `<table>` inside a widget: the notes page decorates tables after load (adds a class),
      which breaks hydration. Lay matrices out with CSS grid `div`s.
+   - SVG ids (`clipPath`, `marker`, gradients) must be unique per instance: a page often holds several
+     copies of a shared plot, and `url(#id)` resolves to the first one in the document (a fixed
+     `cp-clip` once clipped a tall CurvePlot to a short one's height). Use `useId()`; Astro gives each
+     island its own prefix, so the ids stay unique across islands and hydrate cleanly.
    - Don't mutate island DOM before hydration (the course's animations use the Web Animations API
      and CSS for exactly this reason).
 2. **Colours only from CSS variables**: `var(--accent)`, `--accent-2`, `--accent-3`, `--ink`,
