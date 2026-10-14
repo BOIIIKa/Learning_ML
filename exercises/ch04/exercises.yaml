@@ -1,0 +1,72 @@
+# 第 04 章 线性分类：感知机、逻辑回归与最大熵 —— 课后练习 / Chapter 04 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+# Derivation answers are checked numerically: write them in mathjs syntax using only `vars`.
+
+derivation:
+  - id: sigmoid-deriv
+    title: {zh: "sigmoid 的导数", en: "Derivative of the sigmoid"}
+    prompt:
+      zh: "$\\sigma(z) = \\dfrac{1}{1 + e^{-z}}$。写出 $\\sigma'(z)$（只用 $z$ 表示，可以用 `exp`）。可用变量：`z`。"
+      en: "$\\sigma(z) = \\dfrac{1}{1 + e^{-z}}$. Write $\\sigma'(z)$ in terms of $z$ (you may use `exp`). Variables: `z`."
+    answer: "exp(-z) / (1 + exp(-z))^2"
+    vars: {z: [-4, 4]}
+    solution:
+      zh: "由链式法则，$\\sigma'(z) = \\dfrac{e^{-z}}{(1+e^{-z})^2} = \\dfrac{1}{1+e^{-z}}\\cdot\\dfrac{e^{-z}}{1+e^{-z}} = \\sigma(z)\\,(1-\\sigma(z))$，因为 $\\dfrac{e^{-z}}{1+e^{-z}} = 1 - \\sigma(z)$。导数在 $z = 0$ 处最大（$1/4$），两端趋于 0。这个因子 $p(1-p)$ 就是逻辑回归 Hessian 里的权重 $S$：已经很有把握的点（$p$ 接近 0 或 1）几乎不贡献曲率。"
+      en: "By the chain rule, $\\sigma'(z) = \\dfrac{e^{-z}}{(1+e^{-z})^2} = \\dfrac{1}{1+e^{-z}}\\cdot\\dfrac{e^{-z}}{1+e^{-z}} = \\sigma(z)\\,(1-\\sigma(z))$, since $\\dfrac{e^{-z}}{1+e^{-z}} = 1 - \\sigma(z)$. It peaks at $z = 0$ (value $1/4$) and vanishes at both ends. This factor $p(1-p)$ is the weight $S$ in the logistic Hessian: points the model is already sure about ($p$ near 0 or 1) contribute almost no curvature."
+
+  - id: novikoff
+    title: {zh: "Novikoff 界", en: "Novikoff's bound"}
+    prompt:
+      zh: "感知机第 $k$ 次更新后，证明中的两条不等式合起来是 $k\\eta\\gamma \\le \\hat w_k^\\top\\hat w_{\\text{opt}} \\le \\|\\hat w_k\\| \\le \\sqrt{k}\\,\\eta R$。由此写出更新次数 $k$ 的上界。可用变量：`R, gamma, eta`。"
+      en: "After the perceptron's $k$-th update, the two inequalities of the proof combine into $k\\eta\\gamma \\le \\hat w_k^\\top\\hat w_{\\text{opt}} \\le \\|\\hat w_k\\| \\le \\sqrt{k}\\,\\eta R$. Write the resulting upper bound on the number of updates $k$. Variables: `R, gamma, eta`."
+    answer: "(R / gamma)^2"
+    vars: {R: [1, 5], gamma: [0.1, 0.9], eta: [0.1, 2]}
+    solution:
+      zh: "由 $k\\eta\\gamma \\le \\sqrt{k}\\,\\eta R$ 得 $\\sqrt{k} \\le R/\\gamma$，即 $k \\le (R/\\gamma)^2$。$\\eta$ 两边约掉：学习率不影响更新次数。第一条不等式来自每次更新让 $\\hat w$ 在 $\\hat w_{\\text{opt}}$ 上的投影至少增加 $\\eta\\gamma$；第二条来自误分类时交叉项 $2\\eta y_i\\hat w_{k-1}^\\top\\hat x_i \\le 0$，所以 $\\|\\hat w\\|^2$ 每次最多增加 $\\eta^2R^2$。投影线性增长、长度只按 $\\sqrt k$ 增长，两者不可能一直共存。例题中 $R^2 = 18$，$\\gamma^2 = 81/221$，界约为 49.1，实际只更新 6 次。"
+      en: "From $k\\eta\\gamma \\le \\sqrt{k}\\,\\eta R$ we get $\\sqrt{k} \\le R/\\gamma$, i.e. $k \\le (R/\\gamma)^2$. $\\eta$ cancels: the learning rate does not change the number of updates. The first inequality holds because each update raises the projection of $\\hat w$ on $\\hat w_{\\text{opt}}$ by at least $\\eta\\gamma$; the second because the cross term $2\\eta y_i\\hat w_{k-1}^\\top\\hat x_i$ is $\\le 0$ at a mistake, so $\\|\\hat w\\|^2$ grows by at most $\\eta^2R^2$ per update. The projection grows linearly while the length grows only like $\\sqrt k$, and that cannot go on forever. In the worked example $R^2 = 18$, $\\gamma^2 = 81/221$, the bound is about 49.1, and only 6 updates happen."
+
+  - id: ce-grad
+    title: {zh: "交叉熵的梯度", en: "Gradient of the cross-entropy"}
+    prompt:
+      zh: "单个样本 $y \\in \\{0, 1\\}$，$z = w_1x_1 + w_2x_2 + b$，损失 $\\ell = \\log(1 + e^{z}) - yz$（即 $-\\log P(y\\mid x)$）。写出 $\\partial\\ell/\\partial w_1$。可用变量：`w1, w2, b, x1, x2, y`。"
+      en: "One sample with $y \\in \\{0, 1\\}$, $z = w_1x_1 + w_2x_2 + b$ and loss $\\ell = \\log(1 + e^{z}) - yz$ (that is, $-\\log P(y\\mid x)$). Write $\\partial\\ell/\\partial w_1$. Variables: `w1, w2, b, x1, x2, y`."
+    answer: "(1 / (1 + exp(-(w1*x1 + w2*x2 + b))) - y) * x1"
+    vars: {w1: [-1, 1], w2: [-1, 1], b: [-1, 1], x1: [-2, 2], x2: [-2, 2], y: [0, 1]}
+    solution:
+      zh: "$\\dfrac{\\partial}{\\partial z}\\log(1+e^z) = \\dfrac{e^z}{1+e^z} = \\sigma(z)$，所以 $\\dfrac{\\partial\\ell}{\\partial z} = \\sigma(z) - y$，再乘以 $\\partial z/\\partial w_1 = x_1$：$\\dfrac{\\partial\\ell}{\\partial w_1} = (\\sigma(z) - y)\\,x_1$。“预测概率减真实标签”乘以输入——对所有样本求和就是 $\\hat X^\\top(p - y)$。分对且很有把握的点 $\\sigma(z) \\approx y$，几乎不产生梯度；在“损失动物园”里切到“拉力”，交叉熵那条曲线就是 $|\\sigma(z) - y|$。"
+      en: "$\\dfrac{\\partial}{\\partial z}\\log(1+e^z) = \\dfrac{e^z}{1+e^z} = \\sigma(z)$, so $\\dfrac{\\partial\\ell}{\\partial z} = \\sigma(z) - y$; multiply by $\\partial z/\\partial w_1 = x_1$ to get $\\dfrac{\\partial\\ell}{\\partial w_1} = (\\sigma(z) - y)\\,x_1$. \"Predicted probability minus label\" times the input; summed over samples it is $\\hat X^\\top(p - y)$. A confidently correct point has $\\sigma(z) \\approx y$ and contributes almost no gradient; switch the loss-zoo widget to \"pull\" and the cross-entropy curve is exactly $|\\sigma(z) - y|$."
+
+  - id: softmax-grad
+    title: {zh: "softmax 交叉熵对 logit 的导数", en: "Softmax cross-entropy with respect to a logit"}
+    prompt:
+      zh: "三个类别的 logit 为 $z_1, z_2, z_3$，真实类别是 1，损失 $\\ell = -\\log\\dfrac{e^{z_1}}{e^{z_1}+e^{z_2}+e^{z_3}}$。写出 $\\partial\\ell/\\partial z_1$。可用变量：`z1, z2, z3`。"
+      en: "Three classes with logits $z_1, z_2, z_3$, true class 1, and loss $\\ell = -\\log\\dfrac{e^{z_1}}{e^{z_1}+e^{z_2}+e^{z_3}}$. Write $\\partial\\ell/\\partial z_1$. Variables: `z1, z2, z3`."
+    answer: "exp(z1) / (exp(z1) + exp(z2) + exp(z3)) - 1"
+    vars: {z1: [-2, 2], z2: [-2, 2], z3: [-2, 2]}
+    solution:
+      zh: "$\\ell = -z_1 + \\log\\sum_c e^{z_c}$。对 $z_1$ 求导：$-1 + \\dfrac{e^{z_1}}{\\sum_c e^{z_c}} = p_1 - 1$。对其他类别 $c \\ne 1$ 则得 $p_c$。合起来 $\\nabla_z\\ell = p - e_y$（$e_y$ 是真实类别的独热向量）：又是“预测减真实”。两类时 $p_1 - 1 = \\sigma(z_1 - z_0) - 1$，正好回到逻辑回归的梯度——这与最大熵对偶推出 softmax、而 softmax 两类时退化为 sigmoid 是一致的。"
+      en: "$\\ell = -z_1 + \\log\\sum_c e^{z_c}$. Differentiating in $z_1$: $-1 + \\dfrac{e^{z_1}}{\\sum_c e^{z_c}} = p_1 - 1$; for any other class $c \\ne 1$ you get $p_c$. Together $\\nabla_z\\ell = p - e_y$ ($e_y$ is the one-hot vector of the true class): prediction minus truth again. With two classes, $p_1 - 1 = \\sigma(z_1 - z_0) - 1$, which is the logistic-regression gradient, consistent with the maximum-entropy dual giving the softmax and the softmax reducing to the sigmoid for two classes."
+
+code:
+  - id: linear-cls
+    kind: implement
+    file: linear_cls.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现感知机与牛顿法逻辑回归", en: "The perceptron and Newton's logistic regression from scratch"}
+    intro:
+      zh: "补全感知机的更新、数值稳定的 sigmoid、负对数似然的梯度与 Hessian，以及牛顿步。检查会先跑讲义里的例题（应当恰好 6 次更新），再用有限差分验证梯度和 Hessian，并与 scikit-learn 对拍。运行后可以回放感知机的每一次更新（黄圈是触发更新的点），以及牛顿法几步之内把概率场“拉陡”的过程。"
+      en: "Fill in the perceptron update, a numerically stable sigmoid, the gradient and Hessian of the negative log-likelihood, and the Newton step. The checks first run the worked example of the notes (exactly 6 updates), then verify the gradient and Hessian against finite differences and compare with scikit-learn. Afterwards, replay every perceptron update (the yellow ring marks the point that triggered it) and watch Newton's method sharpen the probability field in a few steps."
+    metrics:
+      - {key: updates, label: {zh: "更新次数", en: "Updates"}}
+      - {key: nll, label: {zh: "负对数似然", en: "Negative log-likelihood"}}
+  - id: logreg-library
+    kind: library
+    file: logreg_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 scikit-learn 组装逻辑回归与“损失动物园”", en: "Logistic regression and the loss zoo in scikit-learn"}
+    intro:
+      zh: "先在葡萄酒数据（3 个品种）上用交叉验证选 C，训练一个 softmax 模型并读出预测置信度；再画正则化路径，看 C 越大 ‖w‖ 越大；最后用 SGDClassifier 以四种损失训练同一个线性模型。运行后可以回放 C 从小到大时概率场怎样变陡，以及在两个错标的离群点面前，四种损失各自停在哪里。"
+      en: "First choose C by cross-validation on the wine data (3 cultivars), train a softmax model and read off its confidence; then trace the regularization path and see ‖w‖ grow with C; finally train the same linear model with SGDClassifier under four losses. Afterwards, replay how the probability field sharpens as C grows, and where each loss settles when two mislabeled outliers pull on it."
+    metrics:
+      - {key: norm, label: {zh: "‖w‖", en: "‖w‖"}}
+      - {key: acc, label: {zh: "训练准确率", en: "Training accuracy"}}

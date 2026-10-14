@@ -53,11 +53,11 @@ export default function TracePlayer({ traces, lang, metrics = [], stepMs = 650, 
     setPlaying(!playing);
   };
 
-  const primary = traces[0];
-  const series: Series[] = metrics.map((m) => ({
-    ...m,
-    values: primary.steps.map((s) => s.metrics?.[m.key] ?? NaN),
-  }));
+  // Each metric comes from the first trace that records it (traces may record different metrics).
+  const series: Series[] = metrics.flatMap((m) => {
+    const tr = traces.find((x) => x.steps.some((s) => Number.isFinite(s.metrics?.[m.key])));
+    return tr ? [{ ...m, values: tr.steps.map((s) => s.metrics?.[m.key] ?? NaN) }] : [];
+  });
 
   return (
     <div className="trace-player">
@@ -78,7 +78,7 @@ export default function TracePlayer({ traces, lang, metrics = [], stepMs = 650, 
         })}
       </div>
 
-      {series.length > 0 && <MetricChart series={series} cursor={Math.min(k, primary.steps.length - 1)} />}
+      {series.length > 0 && <MetricChart series={series} cursor={Math.min(k, total - 1)} />}
 
       <div className="tp-controls">
         <button className="btn tp-play" onClick={toggle} aria-label={playing ? t(lang, "pause") : t(lang, "play")}>

@@ -36,7 +36,7 @@ export default function MetricChart({ series, cursor, height = 150, zero = true 
         {series.map((s) => (
           <path
             key={s.key}
-            d={"M" + s.values.map((v, i) => `${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join("L")}
+            d={"M" + s.values.flatMap((v, i) => (Number.isFinite(v) ? [`${sx(i).toFixed(1)},${sy(v).toFixed(1)}`] : [])).join("L")}
             stroke={s.color}
             strokeDasharray={s.dashed ? "5 4" : undefined}
             pathLength={s.dashed ? undefined : 1}
@@ -45,7 +45,7 @@ export default function MetricChart({ series, cursor, height = 150, zero = true 
         ))}
         <line x1={f1(sx(cursor))} x2={f1(sx(cursor))} y1={pad.t} y2={H - pad.b} className="mc-cursor" />
         {series.map((s) =>
-          s.values[cursor] === undefined ? null : (
+          !Number.isFinite(s.values[cursor]) ? null : (
             <circle key={s.key} cx={f1(sx(cursor))} cy={f1(sy(s.values[cursor]))} r={4} fill={s.color} className="mc-dot" />
           ),
         )}
@@ -54,7 +54,7 @@ export default function MetricChart({ series, cursor, height = 150, zero = true 
         {series.map((s) => (
           <span key={s.key} className="mc-legend">
             <i style={{ background: s.color }} /> {s.label}
-            {s.values[cursor] !== undefined && <b> {s.values[cursor].toFixed(3)}</b>}
+            {Number.isFinite(s.values[cursor]) && <b> {s.values[cursor].toFixed(3)}</b>}
           </span>
         ))}
       </figcaption>

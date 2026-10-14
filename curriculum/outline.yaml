@@ -324,8 +324,13 @@ parts:
           - id: viz-logistic-surface
             title: {zh: "逻辑回归的概率曲面", en: "The logistic probability surface"}
             interaction:
-              zh: "拖动 w 与 b，3D 曲面与 2D 决策边界联动，并显示交叉熵损失数值"
-              en: "Drag w and b; the 3D sigmoid surface, 2D boundary and cross-entropy loss update together"
+              zh: "调节 w 的方向、陡峭度与边界位置：2D 概率等高线与沿 w 方向的 sigmoid 截面联动，显示交叉熵；牛顿法一键拟合，可分数据上 ‖w‖ → ∞"
+              en: "Adjust the direction, steepness and offset of w: the 2D probability contours and the sigmoid cross-section along w update together with the cross-entropy; fit with Newton in one click, and watch ‖w‖ → ∞ on separable data"
+          - id: viz-maxent-dice
+            title: {zh: "最大熵骰子", en: "The maximum-entropy die"}
+            interaction:
+              zh: "只给定骰子的平均点数 μ，拖动 μ 看熵最大的分布 p_k ∝ e^{λk}（点数的 softmax），并与同均值的其他分布比较熵"
+              en: "Given only a die's mean μ, drag μ to see the maximum-entropy distribution p_k ∝ e^{λk} (a softmax of the faces) and compare its entropy with another distribution of the same mean"
           - id: viz-loss-zoo
             title: {zh: "分类损失动物园", en: "Zoo of classification losses"}
             interaction:

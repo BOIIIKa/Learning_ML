@@ -6,7 +6,7 @@
 - **License**: Content under CC BY-NC-SA 4.0, code under MIT; no text or figures are copied from the source books
 - **Source books**: `ISL` [An Introduction to Statistical Learning (2nd ed. / Python ed.)](https://www.statlearning.com/); `UDL` [Understanding Deep Learning](https://udlbook.github.io/udlbook/); `LH` [统计学习方法（第 2 版）/ Statistical Learning Methods (2nd ed.)](https://book.douban.com/subject/33437381/)
 
-9 parts, 30 chapters, 69 interactive visuals, 58 frontier papers.
+9 parts, 30 chapters, 70 interactive visuals, 58 frontier papers.
 
 ## Table of Contents
 
@@ -224,7 +224,8 @@
 **Interactive visuals**
 
 - `viz-perceptron-steps` **Perceptron step by step** — Step through: highlight the misclassified point, show the update vector and the rotating hyperplane; toggle primal / dual form
-- `viz-logistic-surface` **The logistic probability surface** — Drag w and b; the 3D sigmoid surface, 2D boundary and cross-entropy loss update together
+- `viz-logistic-surface` **The logistic probability surface** — Adjust the direction, steepness and offset of w: the 2D probability contours and the sigmoid cross-section along w update together with the cross-entropy; fit with Newton in one click, and watch ‖w‖ → ∞ on separable data
+- `viz-maxent-dice` **The maximum-entropy die** — Given only a die's mean μ, drag μ to see the maximum-entropy distribution p_k ∝ e^{λk} (a softmax of the faces) and compare its entropy with another distribution of the same mean
 - `viz-loss-zoo` **Zoo of classification losses** — Plot 0-1, perceptron, cross-entropy, hinge and exponential losses against the margin $yf(x)$ (linked to Ch. 07 and 08)
 
 <a id="ch-05"></a>

@@ -1,0 +1,8 @@
+- **感知机**：$f(x) = \mathrm{sign}(w^\top x + b)$；遇到 $y_i(w^\top x_i + b) \le 0$ 就更新 $w \leftarrow w + \eta y_i x_i$，$b \leftarrow b + \eta y_i$。损失是误分类点到超平面的（未归一化）距离和。
+- **对偶形式**：$w = \sum_i \alpha_i y_i x_i$，$\alpha_i = \eta \times$ 点 $i$ 的更新次数；只用内积（Gram 矩阵）→ 核方法。
+- **Novikoff**：线性可分、间隔 $\gamma$、半径 $R$（增广空间）时，更新次数 $\le (R/\gamma)^2$，与 $\eta$、维数无关；不可分时永不停止（口袋算法、平均感知机）。解依赖初值与顺序。
+- **逻辑回归**：$P(Y=1\mid x) = \sigma(w^\top x + b)$，对数几率线性；极大似然 = 最小化交叉熵 = $\sum_i \log(1 + e^{-y_i f(x_i)})$。
+- **梯度与 Hessian**：$\nabla\ell = \hat X^\top(y - p)$，$\nabla^2\ell = -\hat X^\top S\hat X$，$S = \mathrm{diag}(p(1-p))$ ⇒ 凹；牛顿法 = IRLS，几步收敛。
+- **可分数据**：MLE 不存在，$\|w\| \to \infty$；加 L2（sklearn 默认 `C=1`）。无正则梯度下降的方向 → 最大间隔方向。
+- **最大熵**：满足特征期望约束的熵最大模型是 $P_w(y\mid x) \propto \exp(\sum_k w_k f_k(x,y))$，其对偶就是对数似然；取 $f_{j,c} = x_j\mathbb 1[y=c]$ 得 softmax，两类时退化为 sigmoid。
+- **损失视角**：都只依赖间隔 $m = yf(x)$——感知机 $\max(0,-m)$、交叉熵 $\log(1+e^{-m})$、合页 $\max(0,1-m)$、指数 $e^{-m}$；梯度都是“预测减真实”的形式。例题：$(1,3),(4,1)$ 对 $(1,0)$，6 次更新得 $w = (1,4)$，$b = -2$，$\alpha = (1,1,4)$。

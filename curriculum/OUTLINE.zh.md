@@ -6,7 +6,7 @@
 - **许可**: 内容以 CC BY-NC-SA 4.0 发布，代码以 MIT 发布；不复制原书文字与插图
 - **底本**: `ISL` [An Introduction to Statistical Learning (2nd ed. / Python ed.)](https://www.statlearning.com/); `UDL` [Understanding Deep Learning](https://udlbook.github.io/udlbook/); `LH` [统计学习方法（第 2 版）/ Statistical Learning Methods (2nd ed.)](https://book.douban.com/subject/33437381/)
 
-共 9 个部分、30 章、69 个可视化组件、58 篇前沿文献。
+共 9 个部分、30 章、70 个可视化组件、58 篇前沿文献。
 
 ## 目录
 
@@ -224,7 +224,8 @@
 **可视化组件**
 
 - `viz-perceptron-steps` **感知机逐步更新** — 逐步播放：高亮当前误分类点，显示 w 的更新向量与超平面旋转；可切换原始 / 对偶形式
-- `viz-logistic-surface` **逻辑回归的概率曲面** — 拖动 w 与 b，3D 曲面与 2D 决策边界联动，并显示交叉熵损失数值
+- `viz-logistic-surface` **逻辑回归的概率曲面** — 调节 w 的方向、陡峭度与边界位置：2D 概率等高线与沿 w 方向的 sigmoid 截面联动，显示交叉熵；牛顿法一键拟合，可分数据上 ‖w‖ → ∞
+- `viz-maxent-dice` **最大熵骰子** — 只给定骰子的平均点数 μ，拖动 μ 看熵最大的分布 p_k ∝ e^{λk}（点数的 softmax），并与同均值的其他分布比较熵
 - `viz-loss-zoo` **分类损失动物园** — 在同一坐标系中对比 0-1、感知机、交叉熵、合页、指数损失关于间隔 $yf(x)$ 的曲线（与第 07、08 章联动）
 
 <a id="ch-05"></a>
