@@ -47,6 +47,6 @@ python3 scripts/new_chapter.py <id>          # scaffold the next chapter
 
 ## Status
 
-Done: chapters 00–08 (notes, course, recap, widgets, exercises, handbook): Parts I–II complete.
-Next in order: Part III, chapter 09 onward (see curriculum/outline.yaml).
+Done: chapters 00–09 (notes, course, recap, widgets, exercises, handbook).
+Next in order: 10 clustering, 11 EM, 12 matrix factorization, 13 Markov chains, then Part IV.
 See `docs/PROJECT_SUMMARY.md` for the full picture and roadmap, and `docs/HANDOFF.md` for the user's preferences, environment notes and the concrete plan for the next chapter.

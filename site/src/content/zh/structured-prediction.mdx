@@ -1,0 +1,152 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import Trellis from "../../components/chapters/ch09/Trellis";
+import BaumWelchFit from "../../components/chapters/ch09/BaumWelchFit";
+import HmmVsCrf from "../../components/chapters/ch09/HmmVsCrf";
+
+<Section lang="zh" k="scenario">
+
+前面每一章都是给一个 $x$ 预测一个 $y$。可住院病人每天的病情不是互相独立的：昨天恶化，今天多半还在恶化。病情本身看不见，医生每天只拿到一张化验单——正常或异常。要回答的问题变成了**一整串**：
+
+<Trellis client:visible lang="zh" />
+
+输出是一个序列（或一棵树、一张图），各个位置之间相互依赖，这就是**结构化预测**。这一章回答三个问题：
+
+1. 一串化验结果出现的概率是多少？（**概率计算**：前向–后向算法）
+2. 最可能的病情序列是什么？（**预测 / 解码**：维特比算法）
+3. 只有化验单、没有病情标签，怎样学出模型参数？（**学习**：Baum–Welch 算法）
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 隐马尔可夫模型
+
+<Box kind="definition" title="隐马尔可夫模型（HMM）">
+
+**模型**：隐藏状态序列 $s_1, \dots, s_T$ 取值于 $N$ 个状态，观测 $o_1, \dots, o_T$ 取值于 $M$ 个符号。参数 $\lambda = (\pi, A, B)$：初始分布 $\pi_i = P(s_1 = i)$，转移矩阵 $A_{ij} = P(s_{t+1} = j \mid s_t = i)$，发射矩阵 $B_j(o) = P(o_t = o \mid s_t = j)$。两条假设：
+
+- **齐次马尔可夫性**：$s_{t+1}$ 只依赖于 $s_t$；
+- **观测独立性**：$o_t$ 只依赖于 $s_t$。
+
+于是联合分布为
+
+$$
+P(o, s \mid \lambda) = \pi_{s_1}B_{s_1}(o_1)\prod_{t=2}^T A_{s_{t-1}s_t}B_{s_t}(o_t).
+$$
+
+**策略**：极大似然（学习）、后验最大（解码）。**算法**：前向–后向、维特比、Baum–Welch（EM）。
+
+</Box>
+
+本章的例子：状态 $\{$稳定, 恶化$\}$，观测 $\{$正常, 异常$\}$，$\pi = (0.6, 0.4)$，
+
+$$
+A = \begin{pmatrix} 0.7 & 0.3 \\ 0.4 & 0.6 \end{pmatrix}, \qquad B = \begin{pmatrix} 0.9 & 0.1 \\ 0.2 & 0.8 \end{pmatrix}.
+$$
+
+### 三个基本问题
+
+- **概率计算**：$P(o \mid \lambda) = \sum_s P(o, s \mid \lambda)$。直接求和有 $N^T$ 项；**前向算法**用动态规划只需 $O(TN^2)$。
+- **解码**：$\arg\max_s P(s \mid o, \lambda)$。**维特比算法**把前向算法里的“求和”换成“取最大”，再沿回溯指针取出路径。
+- **学习**：只有观测，没有状态时，最大化 $P(o \mid \lambda)$。**Baum–Welch** 是 EM 算法：用前向–后向算出状态的后验当作“软计数”，再像有标签一样数数。
+
+<BaumWelchFit client:visible lang="zh" />
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 前向与后向递推
+
+定义**前向变量** $\alpha_t(i) = P(o_1, \dots, o_t, s_t = i)$。初值 $\alpha_1(i) = \pi_i B_i(o_1)$，按“上一天在哪个状态”分情况：
+
+$$
+\alpha_{t+1}(j) = \Big[\sum_{i=1}^N \alpha_t(i)A_{ij}\Big]B_j(o_{t+1}), \qquad P(o \mid \lambda) = \sum_i \alpha_T(i).
+$$
+
+每一步对 $N$ 个 $j$ 各做一次 $N$ 项求和，总代价 $O(TN^2)$（推导题 4）。对称地，**后向变量** $\beta_t(i) = P(o_{t+1}, \dots, o_T \mid s_t = i)$，$\beta_T(i) = 1$，
+
+$$
+\beta_t(i) = \sum_{j=1}^N A_{ij}B_j(o_{t+1})\beta_{t+1}(j).
+$$
+
+二者相乘得到**状态后验**（推导题 2）：
+
+$$
+\gamma_t(i) = P(s_t = i \mid o) = \frac{\alpha_t(i)\beta_t(i)}{\sum_j \alpha_t(j)\beta_t(j)}, \qquad \xi_t(i, j) = \frac{\alpha_t(i)A_{ij}B_j(o_{t+1})\beta_{t+1}(j)}{P(o \mid \lambda)}.
+$$
+
+长序列中 $\alpha$ 会指数级变小，实现时每一步把 $\alpha_t$ 归一化并记下缩放因子 $c_t$，$\log P(o) = \sum_t \log c_t$。
+
+### 维特比算法
+
+定义 $\delta_t(j)$ 为“在 $t$ 时刻到达状态 $j$ 的所有路径中，概率最大的那条的概率”：
+
+$$
+\delta_{t+1}(j) = \max_i\big[\delta_t(i)A_{ij}\big]B_j(o_{t+1}), \qquad \psi_{t+1}(j) = \arg\max_i \delta_t(i)A_{ij}
+$$
+
+（推导题 3）。终点取 $s_T^* = \arg\max_i \delta_T(i)$，再沿 $s_t^* = \psi_{t+1}(s_{t+1}^*)$ 回溯。正确性来自**最优子结构**：最优路径的任何前缀，必是到达该前缀终点的最优路径。
+
+### Baum–Welch 是 EM 的特例
+
+把状态序列当作缺失数据。EM 的 E 步计算完整数据对数似然在后验下的期望；HMM 的完整数据似然对参数是“计数”的形式，所以期望就是把计数换成后验期望 $\gamma$、$\xi$。M 步的闭式解是
+
+$$
+\hat\pi_i = \gamma_1(i), \qquad \hat A_{ij} = \frac{\sum_{t=1}^{T-1}\xi_t(i, j)}{\sum_{t=1}^{T-1}\gamma_t(i)}, \qquad \hat B_j(o) = \frac{\sum_{t:\,o_t = o}\gamma_t(j)}{\sum_t \gamma_t(j)}.
+$$
+
+EM 保证似然单调不降（第 11 章证明），但只收敛到局部极大，初值很重要。
+
+### 从 HMM 到条件随机场
+
+HMM 是**生成式**的：它建模 $P(o, s)$，每个因子是归一化的条件概率，观测只能通过当前状态影响模型。**线性链条件随机场（CRF）**直接建模条件分布：
+
+$$
+P(y \mid x) = \frac{1}{Z(x)}\exp\Big(\sum_{t}\sum_k w_k f_k(y_{t-1}, y_t, x, t)\Big), \qquad Z(x) = \sum_{y}\exp\Big(\sum_{t}\sum_k w_k f_k(y_{t-1}, y_t, x, t)\Big).
+$$
+
+特征函数 $f_k$ 可以看整个观测序列 $x$（例如前后几天的化验、词的前后缀），不必是概率。这和第 04 章最大熵模型的形式一模一样，只是 $y$ 变成了一条链。
+
+<HmmVsCrf client:visible lang="zh" />
+
+<Box kind="theorem" title="CRF 的规范化因子可以高效计算">
+
+$Z(x)$ 是对 $N^T$ 个标签序列求和，但由于打分只涉及相邻标签，可以用与前向算法相同的递推（在对数空间里把乘法换成加法、求和换成 log-sum-exp）在 $O(TN^2)$ 内算出。训练时最大化条件对数似然 $\sum \log P(y \mid x)$，它是 $w$ 的凹函数；梯度等于“特征的经验期望减去模型期望”，模型期望用前向–后向得到。解码仍用维特比。
+
+</Box>
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题：三天的化验单
+
+<Box kind="example" title="前向概率与维特比路径">
+
+观测 $o = ($正常, 异常, 异常$)$，模型如上。
+
+**前向**：
+
+- $\alpha_1 = (0.6 \times 0.9,\ 0.4 \times 0.2) = (0.54,\ 0.08)$；
+- $\alpha_2(\text{稳}) = (0.54 \times 0.7 + 0.08 \times 0.4) \times 0.1 = 0.041$，$\alpha_2(\text{恶}) = (0.54 \times 0.3 + 0.08 \times 0.6) \times 0.8 = 0.168$；
+- $\alpha_3 = (0.00959,\ 0.09048)$，所以 $P(o) = 0.10007$。
+
+**维特比**：
+
+- $\delta_1 = (0.54,\ 0.08)$；
+- $\delta_2(\text{稳}) = \max(0.378,\ 0.032) \times 0.1 = 0.0378$，$\delta_2(\text{恶}) = \max(0.162,\ 0.048) \times 0.8 = 0.1296$，两者的回溯指针都指向“稳定”；
+- $\delta_3 = (0.005184,\ 0.062208)$，回溯指针都指向“恶化”。
+
+终点取较大的 $\delta_3(\text{恶}) = 0.062208$，回溯得到最可能的病情：**稳定 → 恶化 → 恶化**。它只占全部观测概率的约 62%（$0.062208/0.10007$）：其余概率分散在另外七条路径上。
+
+</Box>
+
+### 拓展
+
+- **逐位置最优 vs 整体最优**：按 $\gamma_t$ 逐天取最大的状态，每一天单独看最可能，但拼起来的序列可能概率为 0（例如包含不允许的转移）；维特比给出整体最可能的序列。按任务的损失选择解码方式。
+- **从 CRF 到神经序列模型**：BiLSTM-CRF、Transformer + CRF 用神经网络算出每个位置的打分 $U_t(y)$，再在上面接一个线性链 CRF，曾是命名实体识别的标准做法。
+- **状态空间模型**：线性高斯版本的 HMM 就是卡尔曼滤波。近年的 S4、Mamba 等模型用线性递推加并行扫描处理长序列，计算结构与前向算法同源（第 20 章）。
+
+</Section>

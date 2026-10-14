@@ -1,0 +1,126 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import Trellis from "../../components/chapters/ch09/Trellis";
+import BaumWelchFit from "../../components/chapters/ch09/BaumWelchFit";
+import HmmVsCrf from "../../components/chapters/ch09/HmmVsCrf";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 09 章 · 动画课程" title="结构化预测：隐马尔可夫模型与条件随机场" say="这一次要预测的不是一个标签，而是一整串彼此相关的标签。">
+
+看不见的病情 · 前向与维特比 · 从 HMM 到 CRF
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="看不见的病情" say="住院病人每天的病情看不见，只看得到当天的化验单。">
+
+<Step drive="click:chip1; s1=1/0.6; s1=3/3" say="每一列是一天，每个圆是“这一天处于某个状态”。前向算法逐列累加所有路径的概率。">前向：逐列求和，$P(o) = 0.10007$</Step>
+
+<Step drive="click:chip2; s1=1/0.6; s1=3/3" say="维特比把求和换成取最大，粗线是回溯指针。最可能的病情：稳定、恶化、恶化。">维特比：取最大 + 回溯 → 稳定 → 恶化 → 恶化</Step>
+
+<Step drive="click:chip4; s1=1/0.6; s1=6/4" say="六天也一样，每一步只看上一列，不必枚举两的六次方条路径。">代价 $O(TN^2)$，不是 $N^T$</Step>
+
+<div slot="visual"><Trellis client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="三个基本问题" say="隐马尔可夫模型有三个基本问题。">
+
+<Step effect="focus" say="概率计算：一串观测出现的概率是多少？">
+<p class="big-q sm">概率计算 · 解码 · 学习</p>
+</Step>
+
+<Step say="解码：最可能的状态序列是什么？">解码：$\arg\max_s P(s\mid o)$</Step>
+
+<Step say="学习：只有观测、没有状态标签，怎样学参数？">学习：只有 $o$，学 $\lambda = (\pi, A, B)$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="隐马尔可夫模型" say="模型由三组参数和两条假设组成。">
+
+<Step say="初始分布 pi，转移矩阵 A，发射矩阵 B。">$\lambda = (\pi, A, B)$</Step>
+
+<Step say="两条假设：明天只取决于今天；今天的化验只取决于今天的病情。">马尔可夫性 + 观测独立性</Step>
+
+<Step say="于是一条路径和观测的联合概率，就是一串乘积。">$P(o, s) = \pi_{s_1}B_{s_1}(o_1)\prod_t A_{s_{t-1}s_t}B_{s_t}(o_t)$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="前向递推" say="怎样不枚举路径，就算出 P(O)？">
+
+<Morph>
+
+<Step effect="morph" say="前向变量：前 t 天的观测，并且第 t 天处于状态 j。">
+
+$$
+\alpha_{t+1}(j) = P(o_1, \dots, o_{t+1},\ s_{t+1} = j)
+$$
+
+</Step>
+
+<Step effect="morph" say="按前一天在哪个状态分情况，用全概率公式。">
+
+$$
+\alpha_{t+1}(j) = \sum_i P(o_1, \dots, o_t,\ s_t = i)\,A_{ij}\,B_j(o_{t+1})
+$$
+
+</Step>
+
+<Step effect="morph" say="括号里就是上一列的前向变量。">
+
+$$
+\alpha_{t+1}(j) = \Big[\sum_i \alpha_t(i)A_{ij}\Big]B_j(o_{t+1})
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="把求和换成取最大，就是维特比。">维特比：$\delta_{t+1}(j) = \max_i[\delta_t(i)A_{ij}]\,B_j(o_{t+1})$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="Baum–Welch：没有标签也能学" say="只有化验单，没有病情标签，怎样学参数？">
+
+<Step drive="s1=0/0.6; s1=10/4" say="E 步用前向后向算出每天处于各状态的后验，当作软计数；M 步照常数数。">E 步：$\gamma$、$\xi$ 软计数；M 步：数数归一化</Step>
+
+<Step drive="s1=40/4" say="对数似然单调上升，参数逐步接近真实值。">似然单调上升（EM，第 11 章）</Step>
+
+<Step say="转移矩阵的更新：从 i 到 j 的期望次数，除以待在 i 的期望次数。">$\hat A_{ij} = \sum_t \xi_t(i,j) / \sum_t \gamma_t(i)$</Step>
+
+<div slot="visual"><BaumWelchFit client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="从 HMM 到 CRF" say="HMM 是生成式的，CRF 是判别式的。">
+
+<Step drive="click:chip1" say="HMM 是有向图：生成状态链，每个状态再生成观测，建模联合分布。">HMM：建模 $P(x, y)$，因子是条件概率</Step>
+
+<Step drive="click:chip2" say="线性链 CRF 是无向图：只建模条件分布，打分可以看整个观测序列。">CRF：建模 $P(y\mid x) = \exp(\sum w\cdot f)/Z(x)$</Step>
+
+<Step say="规范化因子 Z 用同样的前向递推，在对数空间里算，代价仍是 T N 方。">$Z(x)$：前向递推（log-sum-exp），$O(TN^2)$</Step>
+
+<div slot="visual"><HmmVsCrf client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：三天的化验单" say="正常、异常、异常。">
+
+<Step say="第一天：零点六乘零点九，零点四乘零点二，得到零点五四和零点零八。">$\alpha_1 = (0.54,\ 0.08)$</Step>
+
+<Step say="第二天稳定：零点五四乘零点七加零点零八乘零点四，再乘零点一，等于零点零四一。">$\alpha_2 = (0.041,\ 0.168)$</Step>
+
+<Step say="第三天：零点零零九五九和零点零九零四八，相加得到 P O 等于零点一零零零七。">$\alpha_3 = (0.00959,\ 0.09048)$，$P(o) = 0.10007$</Step>
+
+<Step say="维特比路径：稳定、恶化、恶化，概率零点零六二二零八，约占总概率的百分之六十二。">维特比：稳定 → 恶化 → 恶化，$0.062208$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现前向、维特比和 Baum–Welch，再用 scikit-learn 比较逐日分类和序列解码。">
+
+<Step say="代码运行后，可以回放 EM 迭代时，维特比解码的结果怎样逐步对齐真实病情。">✎ 4 道推导 · ⌨ 前向 + 维特比 + Baum–Welch · ⚙ 逐日分类 vs 维特比</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/structured-prediction/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

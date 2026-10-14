@@ -29,10 +29,11 @@
 | 04 线性分类：感知机、逻辑回归与最大熵 | ✓ | ✓ | ✓ | 4 | 4 + 2 | 逻辑回归 |
 | 05 生成式分类：朴素贝叶斯与判别分析 | ✓ | ✓ | ✓ | 3 | 4 + 2 | 生成式分类 |
 | 06 非参数方法与基函数扩展 | ✓ | ✓ | ✓ | 4 | 4 + 2 | 非参数方法 |
+| 09 结构化预测：HMM 与 CRF | ✓ | ✓ | ✓ | 3 | 4 + 2 | 序列标注 |
 | 07 支持向量机与核方法 | ✓ | ✓ | ✓ | 5 | 4 + 2 | SVM |
 | 08 决策树与集成学习 | ✓ | ✓ | ✓ | 5 | 4 + 2 | LightGBM |
 
-合计：30 章中完成 9 章（第一、二部分全部完成），共有 38 个交互组件、380 拍动画（每种语言）、36 道推导题、18 道代码题。测试有 112 项前端单元测试，以及 54 项练习测试（参考答案全部通过，骨架全部不通过）。
+合计：30 章中完成 10 章（第一、二部分全部完成，第三部分开始），共有 41 个交互组件、415 拍动画（每种语言）、40 道推导题、20 道代码题。测试有 123 项前端单元测试，以及 60 项练习测试（参考答案全部通过，骨架全部不通过）。
 
 ## 3. 架构一览
 
@@ -100,9 +101,9 @@ review) and a 3Blue1Brown-style **animated course** that plays itself: manim-lik
 TransformMatchingTex animations, narration subtitles (optionally spoken), and drive scripts that
 operate the interactive figures.
 
-Nine of 30 chapters are done: 00–08, all of Parts I and II. They contain 38 widgets, 380 animated
-beats per language, 36 derivation drills and 18 in-browser Python exercises, tested by 112 unit tests
-and 54 exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
+Ten of 30 chapters are done: 00–09 (Parts I and II, and the start of Part III). They contain 41 widgets,
+415 animated beats per language, 40 derivation drills and 20 in-browser Python exercises, tested by
+123 unit tests and 60 exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
 `.claude/skills/*` and `templates/chapter/`, and scaffolded by `scripts/new_chapter.py`.
 
 Next steps:

@@ -1,0 +1,68 @@
+# 第 09 章 结构化预测：隐马尔可夫模型与条件随机场 —— 课后练习 / Chapter 09 exercises
+
+derivation:
+  - id: forward-step
+    title: {zh: "前向递推一步", en: "One step of the forward recursion"}
+    prompt:
+      zh: "两状态 HMM，已知 $\\alpha_t(1) = a_1$、$\\alpha_t(2) = a_2$，转移概率 $A_{11}, A_{21}$，状态 1 发射 $o_{t+1}$ 的概率为 $b$。写出 $\\alpha_{t+1}(1)$。可用变量：`a1, a2, A11, A21, b`。"
+      en: "A two-state HMM with $\\alpha_t(1) = a_1$, $\\alpha_t(2) = a_2$, transitions $A_{11}, A_{21}$, and probability $b$ that state 1 emits $o_{t+1}$. Write $\\alpha_{t+1}(1)$. Variables: `a1, a2, A11, A21, b`."
+    answer: "(a1*A11 + a2*A21) * b"
+    vars: {a1: [0, 1], a2: [0, 1], A11: [0, 1], A21: [0, 1], b: [0, 1]}
+    solution:
+      zh: "$\\alpha_{t+1}(1) = P(o_1..o_{t+1}, s_{t+1} = 1) = \\sum_i P(o_1..o_t, s_t = i)\\,P(s_{t+1} = 1 \\mid s_t = i)\\,P(o_{t+1} \\mid s_{t+1} = 1) = (a_1A_{11} + a_2A_{21})\\,b$。第一步用了全概率公式，后两个因子用了马尔可夫性和观测独立性。例题中 $\\alpha_2(\\text{稳}) = (0.54\\cdot0.7 + 0.08\\cdot0.4)\\cdot0.1 = 0.041$。"
+      en: "$\\alpha_{t+1}(1) = P(o_1..o_{t+1}, s_{t+1} = 1) = \\sum_i P(o_1..o_t, s_t = i)\\,P(s_{t+1} = 1 \\mid s_t = i)\\,P(o_{t+1} \\mid s_{t+1} = 1) = (a_1A_{11} + a_2A_{21})\\,b$. The first step is the law of total probability; the last two factors use the Markov property and observation independence. In the worked example $\\alpha_2(\\text{stable}) = (0.54\\cdot0.7 + 0.08\\cdot0.4)\\cdot0.1 = 0.041$."
+
+  - id: gamma
+    title: {zh: "状态后验", en: "State posterior"}
+    prompt:
+      zh: "两状态 HMM 在时刻 $t$：$\\alpha_t = (a_1, a_2)$，$\\beta_t = (b_1, b_2)$。写出 $\\gamma_t(1) = P(s_t = 1 \\mid o)$。可用变量：`a1, a2, b1, b2`。"
+      en: "A two-state HMM at time $t$ has $\\alpha_t = (a_1, a_2)$ and $\\beta_t = (b_1, b_2)$. Write $\\gamma_t(1) = P(s_t = 1 \\mid o)$. Variables: `a1, a2, b1, b2`."
+    answer: "a1*b1 / (a1*b1 + a2*b2)"
+    vars: {a1: [0.01, 1], a2: [0.01, 1], b1: [0.01, 1], b2: [0.01, 1]}
+    solution:
+      zh: "$\\alpha_t(i)\\beta_t(i) = P(o_1..o_t, s_t = i)\\,P(o_{t+1}..o_T \\mid s_t = i) = P(o, s_t = i)$（给定 $s_t$，过去和未来的观测条件独立）。对 $i$ 求和得 $P(o)$，所以 $\\gamma_t(1) = \\frac{a_1b_1}{a_1b_1 + a_2b_2}$。Baum–Welch 的 E 步就是算这些 $\\gamma$ 和相邻两天的 $\\xi$。"
+      en: "$\\alpha_t(i)\\beta_t(i) = P(o_1..o_t, s_t = i)\\,P(o_{t+1}..o_T \\mid s_t = i) = P(o, s_t = i)$ (given $s_t$, past and future observations are conditionally independent). Summing over $i$ gives $P(o)$, so $\\gamma_t(1) = \\frac{a_1b_1}{a_1b_1 + a_2b_2}$. Baum–Welch's E-step computes exactly these $\\gamma$ and the pairwise $\\xi$."
+
+  - id: viterbi-step
+    title: {zh: "维特比递推一步", en: "One step of the Viterbi recursion"}
+    prompt:
+      zh: "两状态，已知 $\\delta_t = (d_1, d_2)$，到状态 $j$ 的转移概率 $A_{1j}, A_{2j}$（记为 `A1j, A2j`），$j$ 发射 $o_{t+1}$ 的概率为 $b$。写出 $\\delta_{t+1}(j)$。可用变量：`d1, d2, A1j, A2j, b`（可以用 `max`）。"
+      en: "Two states with $\\delta_t = (d_1, d_2)$, transitions into state $j$ $A_{1j}, A_{2j}$ (named `A1j, A2j`), and probability $b$ that $j$ emits $o_{t+1}$. Write $\\delta_{t+1}(j)$. Variables: `d1, d2, A1j, A2j, b` (you may use `max`)."
+    answer: "max(d1*A1j, d2*A2j) * b"
+    vars: {d1: [0, 1], d2: [0, 1], A1j: [0, 1], A2j: [0, 1], b: [0, 1]}
+    solution:
+      zh: "到达 $(t+1, j)$ 的最优路径，其前缀必是到达 $(t, i)$ 的最优路径（最优子结构），所以只需在 $i$ 上取最大：$\\delta_{t+1}(j) = \\max(d_1A_{1j}, d_2A_{2j})\\,b$，并记下取到最大的 $i$ 作为回溯指针。和前向递推相比，唯一的区别是“求和”换成了“取最大”。"
+      en: "The best path to $(t+1, j)$ must extend a best path to some $(t, i)$ (optimal substructure), so it suffices to maximize over $i$: $\\delta_{t+1}(j) = \\max(d_1A_{1j}, d_2A_{2j})\\,b$, recording the maximizing $i$ as the back-pointer. The only difference from the forward recursion is max instead of sum."
+
+  - id: cost
+    title: {zh: "前向算法的代价", en: "Cost of the forward algorithm"}
+    prompt:
+      zh: "HMM 有 $N$ 个状态，序列长 $T$。前向算法一共要做多少次“乘一个转移概率”（量级，不计常数和发射概率的乘法）？可用变量：`T, N`。"
+      en: "An HMM has $N$ states and the sequence has length $T$. How many multiplications by a transition probability does the forward algorithm perform (order of magnitude, ignoring constants and the emission multiplications)? Variables: `T, N`."
+    answer: "T*N^2"
+    vars: {T: [2, 50], N: [2, 10]}
+    solution:
+      zh: "每个时刻对 $N$ 个目标状态 $j$ 各做一次 $N$ 项求和 $\\sum_i \\alpha_t(i)A_{ij}$，共 $N^2$ 次乘法；$T$ 个时刻（准确说 $T-1$ 次递推）合计约 $TN^2$。直接枚举所有路径要 $N^T$ 条、每条 $O(T)$——$N = 2$、$T = 50$ 时是 $10^{15}$ 量级对 200 次。CRF 的规范化因子 $Z(x)$ 用同一递推，代价相同。"
+      en: "At each time, for each of the $N$ target states $j$, the sum $\\sum_i \\alpha_t(i)A_{ij}$ has $N$ terms: $N^2$ multiplications. Over $T$ steps (strictly $T-1$ recursions) that is about $TN^2$. Enumerating paths means $N^T$ paths of $O(T)$ each: for $N = 2$, $T = 50$ that is around $10^{15}$ against 200. A CRF's partition function $Z(x)$ uses the same recursion at the same cost."
+
+code:
+  - id: hmm
+    kind: implement
+    file: hmm.py
+    packages: [numpy]
+    title: {zh: "从零实现前向、维特比与 Baum–Welch", en: "Forward, Viterbi and Baum–Welch from scratch"}
+    intro:
+      zh: "补全带缩放的前向递推、对数空间的维特比与回溯，以及 Baum–Welch 的 M 步。检查会重现讲义例题的 P(O) = 0.10007 与路径“稳定 → 恶化 → 恶化”，与穷举所有路径对拍，并确认 EM 单调上升。运行后可以回放：EM 迭代过程中，维特比解码出的“恶化”日（黄圈）怎样逐步对齐真实病情（红点）。"
+      en: "Fill in the scaled forward recursion, Viterbi in log space with backtracking, and Baum–Welch's M-step. The checks reproduce the notes' P(O) = 0.10007 and the path stable → worse → worse, compare with enumerating every path, and confirm that EM never goes downhill. Afterwards, replay how the days Viterbi decodes as worse (rings) line up with the true condition (red points) as EM proceeds."
+    metrics:
+      - {key: loglik, label: {zh: "对数似然", en: "Log-likelihood"}}
+  - id: seq-library
+    kind: library
+    file: seq_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "逐日分类 vs 序列解码", en: "Per-day classification vs sequence decoding"}
+    intro:
+      zh: "用 scikit-learn 训练一个只看单日化验的逻辑回归，再加上前后一天的窗口特征；然后把分类器的对数概率和从标签数出来的转移概率合在一起，用维特比解码整条序列。看看“利用结构”比“只看局部”能多对多少天。运行后可以并排比较两种解码判为恶化的日子。"
+      en: "Train a scikit-learn logistic regression that sees a single day's labs, then add a window of the neighbouring days; finally combine the classifier's log-probabilities with transition probabilities counted from the labels and decode the whole sequence with Viterbi. See how many more days you get right by using the structure. Afterwards, compare the days each decoder marks as worse."
+    metrics:
+      - {key: acc, label: {zh: "准确率", en: "Accuracy"}}

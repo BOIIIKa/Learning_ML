@@ -1,0 +1,7 @@
+- **HMM**: $\lambda = (\pi, A, B)$; homogeneous Markov property + observation independence; $P(o, s) = \pi_{s_1}B_{s_1}(o_1)\prod_t A_{s_{t-1}s_t}B_{s_t}(o_t)$. Three problems: evaluation, decoding, learning.
+- **Forward**: $\alpha_{t+1}(j) = [\sum_i \alpha_t(i)A_{ij}]B_j(o_{t+1})$, $P(o) = \sum_i \alpha_T(i)$; cost $O(TN^2)$ instead of $N^T$. Rescale at every step on long sequences.
+- **Backward and posteriors**: $\beta_t(i) = \sum_j A_{ij}B_j(o_{t+1})\beta_{t+1}(j)$; $\gamma_t(i) \propto \alpha_t(i)\beta_t(i)$ and $\xi_t(i,j) \propto \alpha_t(i)A_{ij}B_j(o_{t+1})\beta_{t+1}(j)$.
+- **Viterbi**: replace the sum by a max, $\delta_{t+1}(j) = \max_i[\delta_t(i)A_{ij}]B_j(o_{t+1})$, and keep back-pointers; optimal substructure makes it correct.
+- **Baum–Welch = EM**: the E-step computes $\gamma$ and $\xi$ (soft counts), the M-step sets $\hat A_{ij} = \sum\xi_{ij}/\sum\gamma_i$ and so on; the likelihood never decreases, but only a local maximum is reached.
+- **Worked example**: $o = ($normal, abnormal, abnormal$)$: $\alpha_3 = (0.00959, 0.09048)$, $P(o) = 0.10007$; the Viterbi path is stable → worse → worse with probability $0.062208$.
+- **Linear-chain CRF**: $P(y\mid x) = \exp(\sum_t w\cdot f(y_{t-1}, y_t, x, t))/Z(x)$, discriminative, with features that may see all of $x$; $Z(x)$ by the forward recursion (log-sum-exp) in $O(TN^2)$; the conditional log-likelihood is concave. HMM vs CRF ≈ naive Bayes vs logistic regression.
