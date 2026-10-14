@@ -18,3 +18,8 @@
 .toc-badge { position: absolute; left: 0.95rem; bottom: 0.6rem; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); }
 .toc-badge.ready { color: var(--success); }
 .toc-badge.ready::before { content: "● "; animation: dot-breathe 1.8s ease-in-out infinite; }
+
+/* A ready card: the whole card opens the notes; the ▶ chip opens the animated course. */
+.toc-main { position: absolute; inset: 0; z-index: 1; }
+.toc-course { position: absolute; right: 0.7rem; bottom: 0.45rem; z-index: 2; font-family: var(--mono); font-size: 0.68rem; padding: 0.15em 0.55em; border: 1px solid var(--border); color: var(--text); background: var(--surface); }
+.toc-course:hover { text-decoration: none; border-color: var(--accent); color: var(--accent); }

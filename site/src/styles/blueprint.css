@@ -183,6 +183,13 @@
 
 /* The animated course has its own manim-style theme: styles/course.css. */
 
+/* ---------- accessibility + small chrome ---------- */
+:root :focus-visible { outline: 2px dashed var(--accent); outline-offset: 3px; }
+:root .btn:focus-visible, :root .chip:focus-visible { outline-offset: 2px; }
+.back-top { position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 60; width: 2.4rem; height: 2.4rem; display: grid; place-items: center; font: 700 1rem var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--border); cursor: pointer; opacity: 0; transform: translateY(12px); pointer-events: none; transition: opacity 0.3s, transform 0.3s, border-color 0.2s; }
+.back-top.on { opacity: 1; transform: none; pointer-events: auto; }
+.back-top:hover { border-color: var(--accent); color: var(--accent); }
+
 /* Remaining controls: flat ink, no glow. */
 :root .cp-handle { filter: none; stroke: var(--ink); stroke-width: 1.5; }
 

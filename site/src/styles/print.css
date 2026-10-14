@@ -1,0 +1,17 @@
+/* Printing the notes (竖版讲义) for review: paper colours, no chrome, figures kept whole. */
+@media print {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    --bg: #fff; --surface: #fff; --surface-2: #f4f4f4; --border: #999; --ink: #111; --text: #111; --text-muted: #444;
+    --accent: #b23c00; --accent-2: #1d4f8c; --accent-3: #b23c00; --grid-minor: transparent; --grid-major: transparent;
+  }
+  body { background: #fff !important; color: #111; font-size: 11pt; }
+  .site-header, .site-footer, .progress-bar, .ch-rail, .ch-pager, .ch-course-btn, .back-top, .theme-toggle,
+  .hero-canvas, .w-slider, .chips, .btn, .tp-controls, .ex-actions, .practice { display: none !important; }
+  .reveal, .ch-article table tbody tr { opacity: 1 !important; transform: none !important; clip-path: none !important; filter: none !important; }
+  .card, .widget, .box, figure, table, .katex-display { break-inside: avoid; box-shadow: none !important; }
+  h2, h3 { break-after: avoid; }
+  a { color: inherit; text-decoration: none; }
+  .ch-body { display: block !important; }
+  .ch-article { max-width: none !important; }
+  .container { max-width: none !important; padding: 0 !important; }
+}

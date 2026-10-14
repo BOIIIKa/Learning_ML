@@ -1,0 +1,23 @@
+---
+import Base from "../layouts/Base.astro";
+import { href, t } from "../i18n/ui";
+// GitHub Pages serves this for any unknown path; it speaks both languages.
+---
+<Base lang="zh" title="404 · 看得见的机器学习 / Visible ML" description="404">
+  <section class="container nf">
+    <p class="nf-code" aria-hidden="true">404</p>
+    <h1 class="nf-title">{t("zh", "notFound")}<br /><span class="muted">{t("en", "notFound")}</span></h1>
+    <p class="muted">{t("zh", "notFoundHint")} · {t("en", "notFoundHint")}</p>
+    <div class="nf-links">
+      <a class="btn btn-primary" href={href("zh/")}>中文首页</a>
+      <a class="btn" href={href("en/")}>English home</a>
+      <a class="btn" href={href("zh/#contents")}>课程目录 / Contents</a>
+    </div>
+  </section>
+</Base>
+<style>
+  .nf { min-height: 70vh; display: grid; place-content: center; justify-items: center; gap: 1rem; text-align: center; }
+  .nf-code { margin: 0; font: 800 clamp(5rem, 22vw, 12rem)/1 var(--mono); color: transparent; -webkit-text-stroke: 2px var(--accent); }
+  .nf-title { margin: 0; font-size: clamp(1.4rem, 3.5vw, 2.2rem); }
+  .nf-links { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
+</style>
