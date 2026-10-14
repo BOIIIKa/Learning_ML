@@ -1,0 +1,191 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import ShallowFit from "../../components/chapters/ch14/ShallowFit";
+import ReluRegions from "../../components/chapters/ch14/ReluRegions";
+import DepthFolding from "../../components/chapters/ch14/DepthFolding";
+
+<Section lang="en" k="scenario">
+
+Back to the teacher and her students. Scores rise quickly with weekly study time and then level off: an S-shaped curve. The straight line of chapter 03 cannot bend; the high-degree polynomials of chapter 02 bend but swing wildly at the ends; the splines of chapter 06 piece the curve together from polynomials, but we have to choose the knots ourselves.
+
+Neural networks try something else: take a supply of the simplest possible "hinge" functions $\max(0, x - k)$, each with a single bend, and add them up with weights. Drag the slider and see how good a curve a few hinges can build:
+
+<ShallowFit client:visible lang="en" />
+
+This chapter answers:
+
+1. What kind of function does a ReLU network actually compute? (Piecewise-linear functions, and how many pieces they have)
+2. What does "neural networks can approximate any function" say, and what does it not say? (The universal approximation theorem)
+3. If one hidden layer can approximate anything, why go deep? (Depth as folding)
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Shallow networks
+
+<Box kind="definition" title="One-hidden-layer (shallow) network">
+
+Input $x \in \mathbb R^{D_i}$, $D$ hidden units, output $y \in \mathbb R^{D_o}$:
+
+$$
+h_d = a\!\left(\theta_{d0} + \sum_{i} \theta_{di}\, x_i\right), \qquad y_j = \phi_{j0} + \sum_{d=1}^{D} \phi_{jd}\, h_d .
+$$
+
+$a$ is an element-wise **activation function**; in this chapter it is the **ReLU** $a(z) = \max(0, z)$. Together $\theta$ and $\phi$ are the parameters, $D(D_i + 1) + D_o(D + 1)$ of them.
+
+</Box>
+
+Each hidden unit $h_d$ applies an affine map and then cuts off the negative part: it is $0$ ("off") on one side of the hyperplane $\theta_{d0} + \theta_d^\top x = 0$ and grows linearly ("on") on the other. With a single input it is a hinge that bends at $x = -\theta_{d0}/\theta_{d1}$ (derivation exercise 1).
+
+The output is a weighted sum of these hinges. For a given input every unit is either on or off, and once the **on/off pattern** is fixed the network is an ordinary linear function. So a ReLU network is a **piecewise-linear function**: input space is cut into **linear regions**, there is one linear function on each, and neighbouring pieces join continuously.
+
+With two inputs, each unit draws a line on the plane, and together the lines cut the plane into polygons:
+
+<ReluRegions client:visible lang="en" />
+
+### Deep networks
+
+<Box kind="definition" title="Deep network">
+
+Feed the output of a shallow network into the next layer, $K$ times:
+
+$$
+h_1 = a(\beta_0 + \Omega_0 x), \qquad h_k = a(\beta_{k-1} + \Omega_{k-1} h_{k-1}),\ k = 2, \dots, K, \qquad y = \beta_K + \Omega_K h_K .
+$$
+
+$K$ is the **depth** (number of hidden layers) and the number of units per layer is the **width**. With width $W$ throughout, the parameter count is $(D_i + 1)W + (K - 1)(W + 1)W + (W + 1)D_o$ (derivation exercise 3).
+
+</Box>
+
+A deep network is still piecewise linear, since compositions of affine maps and ReLUs are piecewise linear. What changes is **how the number of regions grows with the parameters**. In the example below each layer has just two units, yet it folds the interval again and again:
+
+<DepthFolding client:visible lang="en" />
+
+<Box kind="insight" title="The triad">
+
+**Model**: compositions of affine maps and element-wise non-linearities. The **strategy** (loss function) comes in chapter 15 and the **algorithm** (gradient descent and backpropagation) in chapters 16 and 17. This chapter asks only which functions the model family can represent, and how depth and width shape that.
+
+</Box>
+
+</Section>
+
+<Section lang="en" k="math">
+
+### One input: $D$ hidden units give at most $D + 1$ pieces
+
+With one input, unit $d$, $a(\theta_{d0} + \theta_{d1} x)$, changes slope only at $x_d = -\theta_{d0}/\theta_{d1}$ (it is constant if $\theta_{d1} = 0$). The output is a linear combination of the units, so its slope can only change at the points $x_1, \dots, x_D$, and $D$ points cut the real line into at most $D + 1$ pieces:
+
+<Box kind="theorem" title="Pieces of a shallow ReLU network">
+
+A one-hidden-layer network with one input and $D$ ReLU units is a continuous piecewise-linear function with at most $D + 1$ pieces. Conversely, any continuous piecewise-linear function with $D + 1$ pieces on an interval $[a, b]$ is exactly such a network with $D + 1$ units ($D$ suffice if the leftmost piece is flat).
+
+</Box>
+
+**The converse, constructed**: let the kinks be $a \lt x_1 \lt \dots \lt x_D \lt b$ and the slopes $s_0, s_1, \dots, s_D$. On $[a, b]$ we have $x - a = \max(0, x - a)$, so
+
+$$
+f(x) = f(a) + s_0 \max(0, x - a) + \sum_{d=1}^{D} (s_d - s_{d-1})\, \max(0, x - x_d).
+$$
+
+One unit per kink, plus one unit for the slope of the leftmost piece, which is not needed when $s_0 = 0$. The output weights are exactly the **changes of slope** at the kinks.
+
+### Two inputs: regions grow quadratically with the units
+
+With two inputs, each unit switches on and off across a line. $D$ lines in general position (no two parallel, no three through one point) cut the plane into
+
+$$
+1 + D + \binom{D}{2}
+$$
+
+regions. **Proof**: add the lines one at a time. Line $k$ crosses the previous $k - 1$ lines at $k - 1$ distinct points, which split it into $k$ segments; each segment cuts the region it passes through in two, adding $k$ regions. Starting from one region, the total is $1 + \sum_{k=1}^{D} k = 1 + D + \binom{D}{2}$ (derivation exercise 4). With $D_i$ inputs the count is $\sum_{j=0}^{D_i} \binom{D}{j}$ (Zaslavsky's theorem): the higher the input dimension, the more regions the same units can carve out.
+
+### The universal approximation theorem
+
+<Box kind="theorem" title="Universal approximation (constructive, one input)">
+
+Let $f$ be continuous on $[a, b]$. For every $\varepsilon \gt 0$ there is a one-hidden-layer ReLU network $g$ with $\max_{x \in [a, b]} |f(x) - g(x)| \lt \varepsilon$. If $f$ is $L$-Lipschitz, $D$ units with equally spaced knots, spacing $h = (b - a)/D$, give error at most $Lh/2$.
+
+</Box>
+
+**Proof**: take the piecewise-linear interpolant $p$ of $f$ at equally spaced knots $x_0, \dots, x_D$. By the construction above, $p$ is a one-hidden-layer ReLU network. On a piece $[u, v]$ with $v - u = h$, $p(x)$ is the convex combination of $f(u)$ and $f(v)$ with weights $\lambda = (v - x)/h$ and $1 - \lambda$, so
+
+$$
+|f(x) - p(x)| \le \lambda\, |f(x) - f(u)| + (1 - \lambda)\, |f(x) - f(v)| \le \frac{2L (x - u)(v - x)}{h} \le \frac{Lh}{2}.
+$$
+
+A continuous function on a closed interval is uniformly continuous, and the same argument with its modulus of continuity in place of $Lh$ gives the general case. For several inputs the same conclusion was proved by Cybenko (1989) and Hornik (1991), and Leshno et al. (1993) showed it holds for any activation that is not a polynomial.
+
+<Box kind="insight" title="What the theorem does not say">
+
+- **How many units**: each piece has error at most $Lh/2$, so error $\varepsilon$ needs $D \approx L(b - a)/(2\varepsilon)$ units. With $D_i$ inputs the same grid idea needs on the order of $(1/\varepsilon)^{D_i}$ units: the curse of dimensionality from chapter 06 is back.
+- **How to find the parameters**: an existence proof says nothing about whether gradient descent will find them (chapters 16 and 17).
+- **Generalization**: fitting the training data and doing well on new data are different things (chapters 02 and 18).
+
+</Box>
+
+### Depth as folding
+
+The tent map uses just two ReLU units:
+
+$$
+t(x) = 2\max(0, x) - 4\max\!\left(0, x - \tfrac12\right) = \begin{cases} 2x, & 0 \le x \le \tfrac12, \\ 2 - 2x, & \tfrac12 \le x \le 1. \end{cases}
+$$
+
+It maps $[0, \tfrac12]$ and $[\tfrac12, 1]$ **each** linearly and one-to-one onto all of $[0, 1]$: it folds the sheet once.
+
+<Box kind="theorem" title="L folds">
+
+$t^{(L)} = t \circ \dots \circ t$ ($L$ times) has exactly $2^L$ pieces on $[0, 1]$. A deep network with $L$ hidden layers of 2 ReLUs computes it exactly, using $6L + 1$ parameters.
+
+</Box>
+
+**Proof** (induction): for $L = 1$ there are 2 pieces. $t^{(L)} = t^{(L-1)} \circ t$, and on each half of the interval $t$ is an affine bijection onto $[0, 1]$, so every piece of $t^{(L-1)}$ appears once on each half and the count doubles: $2 \cdot 2^{L-1} = 2^L$.
+
+**Against a shallow network**: a shallow network with the same $6L + 1$ parameters has $2L$ units, hence at most $2L + 1$ pieces. At $L = 3$ the deep network already wins, $8 \gt 7$; at $L = 5$ it is $32$ against $11$. Conversely, a shallow network needs at least $2^L - 1$ units to represent $t^{(L)}$: **depth buys exponential expressive efficiency**. Montúfar et al. (2014) extended the construction to many inputs and width $W$: the number of regions a $K$-layer network can carve out can grow exponentially in $K$, whereas a shallow network with the same parameters grows only polynomially.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Example 1: reading off a small network
+
+<Box kind="example" title="f(x) = 1 + 2·ReLU(x) − 3·ReLU(x − 1) + 2·ReLU(x − 2)">
+
+Three hidden units with kinks at $0, 1, 2$. Accumulate the slopes from left to right:
+
+| Interval | Units on | Slope | Values |
+|---|---|---|---|
+| $x \lt 0$ | none | $0$ | $f = 1$ |
+| $0 \le x \le 1$ | $h_1$ | $2$ | $f(0) = 1,\ f(1) = 3$ |
+| $1 \le x \le 2$ | $h_1, h_2$ | $2 - 3 = -1$ | $f(2) = 2$ |
+| $x \ge 2$ | $h_1, h_2, h_3$ | $-1 + 2 = 1$ | $f(3) = 3$ |
+
+$4 = D + 1$ pieces, the maximum. Each output weight $\phi_d$ is the **change of slope** at kink $d$.
+
+</Box>
+
+### Example 2: the same parameters, deep and shallow
+
+<Box kind="example" title="The tent network against a shallow network of equal size">
+
+| Layers $L$ | Deep parameters $6L + 1$ | Deep pieces $2^L$ | Shallow units $2L$ | Shallow pieces at most $2L + 1$ |
+|---|---|---|---|---|
+| 1 | 7 | 2 | 2 | 3 |
+| 2 | 13 | 4 | 4 | 5 |
+| 3 | 19 | 8 | 6 | 7 |
+| 4 | 25 | 16 | 8 | 9 |
+| 5 | 31 | 32 | 10 | 11 |
+
+In the shallow network each parameter "buys" about a third of a kink; in the deep one every 6 extra parameters double the number of pieces. Check: $t(0.25) = 0.5$ and $t^{(2)}(0.25) = t(0.5) = 1$.
+
+</Box>
+
+### Further
+
+- **Other activations**: sigmoid and tanh are smooth but saturate, which makes gradients vanish (chapter 17); GELU and SiLU are smooth relatives of the ReLU, common in Transformers (chapter 21).
+- **Regions in practice**: trained networks use far fewer regions than the theoretical bound (Hanin and Rolnick, 2019); "what a model can express" and "what it learns" are separate questions.
+- **The infinite-width limit**: a randomly initialised network becomes a Gaussian process as the width grows, and training behaves like a kernel method (the neural tangent kernel; the kernels of chapter 07 return).
+- **Depth separation**: some functions are represented by depth-3 networks but need exponentially many units at depth 2 (Eldan and Shamir, 2016).
+
+</Section>

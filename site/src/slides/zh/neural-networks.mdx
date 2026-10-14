@@ -1,0 +1,214 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import ShallowFit from "../../components/chapters/ch14/ShallowFit";
+import ReluRegions from "../../components/chapters/ch14/ReluRegions";
+import DepthFolding from "../../components/chapters/ch14/DepthFolding";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 14 章 · 动画课程" title="从浅层到深层网络" say="神经网络到底在算什么？答案出奇地朴素：一堆折线。而深度，让折线以指数速度变复杂。">
+
+铰链 · 线性区域 · 万能逼近 · 深度即折叠
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="用铰链拼出一条曲线" say="老师的学生：成绩随学习时间先上升，后饱和。直线画不出这种弯。">
+
+<Step drive="s1=1/0.6" say="一个隐单元，就是一个在某处拐弯的铰链。只有一个，我们只能得到一条斜线。">$D = 1$：一个铰链，一条斜线</Step>
+
+<Step drive="s1=3/2" say="三个铰链，三处拐弯，加权叠在一起，折线开始弯向饱和。">$D = 3$：三处拐弯，至多 $4$ 段</Step>
+
+<Step drive="s1=12/4" say="十二个铰链，折线已经贴住了弯曲的趋势。">$D = 12$：折线贴住曲线</Step>
+
+<Step drive="click:chip1; wait:1.2; click:chip1" say="虚线是每个单元各自的贡献，输出就是它们的加权和。">输出 = 各个铰链的加权和</Step>
+
+<div slot="visual"><ShallowFit client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="第一，ReLU 网络到底在计算什么样的函数？">
+<p class="big-q sm">ReLU 网络计算的是什么函数？</p>
+</Step>
+
+<Step say="第二，“神经网络能逼近任何函数”，这句话说了什么，没说什么？">万能逼近：说了什么，没说什么？</Step>
+
+<Step say="第三，既然一层就能逼近任何函数，为什么还要深？">一层就够，为什么要深？</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="一个隐单元 = 一个铰链" say="先看一个隐单元。">
+
+<Step say="仿射变换，再截掉负的部分。这就是 ReLU 单元。">$h = \max(0,\ \theta_0 + \theta_1 x)$</Step>
+
+<Step say="它在 theta 零加 theta 一 x 等于零的地方拐弯：一侧关，一侧开。">拐点 $x = -\theta_0/\theta_1$：一侧“关”，一侧“开”</Step>
+
+<Step say="网络的输出是这些单元的加权和。">$y = \phi_0 + \sum_d \phi_d h_d$</Step>
+
+<Step effect="focus" say="开关组合一旦固定，网络就是线性函数。所以 ReLU 网络是分段线性函数。">
+<p class="big-q sm">开关组合固定 ⇒ 线性：ReLU 网络是分段线性的</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="二维：直线切出多边形" say="两个输入时，每个单元在平面上画一条直线。">
+
+<Step drive="s1=1/0.6" say="一个单元，一条直线，两块区域：每块上网络都是一个线性函数。">$D = 1$：两块</Step>
+
+<Step drive="s1=3/2" say="三个单元，三条直线，最多七块。">$D = 3$：至多 $7$ 块</Step>
+
+<Step drive="s1=5/2" say="五个单元，十六块。区域数随单元数平方增长。">$D = 5$：$16$ 块</Step>
+
+<Step drive="click:chip1; wait:1.5" say="换一组权重，有些交点落到窗口外，看到的区域就少一些。上界是一加 D 加 D 选二。">上界 $1 + D + \binom{D}{2}$</Step>
+
+<div slot="visual"><ReluRegions client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="一维：至多 D + 1 段" say="为什么 D 个单元至多 D 加一段？">
+
+<Morph>
+
+<Step effect="morph" say="输出是各个单元的加权和。">
+
+$$
+f(x) = \phi_0 + \sum_{d=1}^{D} \phi_d \max(0,\ \theta_{d0} + \theta_{d1} x)
+$$
+
+</Step>
+
+<Step effect="morph" say="每个单元只在自己的拐点处改变斜率。">
+
+$$
+f'(x) \text{ 只在 } x_d = -\theta_{d0}/\theta_{d1} \text{ 处变化}
+$$
+
+</Step>
+
+<Step effect="morph" say="D 个点把实数轴切成至多 D 加一段。">
+
+$$
+\#\text{段} \le D + 1
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="反过来，任何折线都能这样写出来：输出权重就是拐点处斜率的改变量。">反之：$\phi_d$ = 拐点处斜率的改变量</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="二维：区域数的公式" say="二维的区域数怎么数？一条一条地加直线。">
+
+<Morph>
+
+<Step effect="morph" say="第 k 条直线和前面 k 减一条交于 k 减一个点，被切成 k 段，每段新增一个区域。">
+
+$$
+\#\text{区域} = 1 + \sum_{k=1}^{D} k
+$$
+
+</Step>
+
+<Step effect="morph" say="求和。">
+
+$$
+\#\text{区域} = 1 + D + \frac{D(D-1)}{2}
+$$
+
+</Step>
+
+<Step effect="morph" say="也就是一加 D 加 D 选二。">
+
+$$
+\#\text{区域} = 1 + D + \binom{D}{2}
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="D 维输入时是 D 选 j 对 j 从零到 D i 求和：维数越高，区域越多。">$D_i$ 维：$\sum_{j=0}^{D_i} \binom{D}{j}$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="万能逼近定理" say="单隐层网络能逼近任何连续函数。这是怎么做到的？">
+
+<Step say="在等距节点上做折线插值，它本身就是一个单隐层 ReLU 网络。">折线插值 = 单隐层 ReLU 网络</Step>
+
+<Step say="对 L 利普希茨的函数，节点间距为 h 时，误差不超过 L 乘 h 除以二。">误差 $\le Lh/2$，$h = (b - a)/D$</Step>
+
+<Step effect="focus" say="但它没说要多少单元，高维时需要指数多；没说怎么找到参数；也没说能否泛化。">
+<p class="big-q sm">没说：要多少单元 · 怎么训练 · 能否泛化</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="深度即折叠" say="帐篷函数只用两个 ReLU，把区间对折一次。">
+
+<Step drive="s1=1/0.6" say="一层：对折一次，两段。">$L = 1$：$2$ 段</Step>
+
+<Step drive="s1=2/1.5" say="两层：对折两次，四段。">$L = 2$：$4$ 段</Step>
+
+<Step drive="s1=3/1.5" say="三层：八段。参数一样多的浅网络最多七段，已经落后。">$L = 3$：$8 \gt 7$</Step>
+
+<Step drive="s1=6/3" say="六层：六十四段，而同参数的浅网络最多十三段。">$L = 6$：$64$ 对 $13$</Step>
+
+<div slot="visual"><DepthFolding client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="为什么折叠给出 2^L 段" say="把帐篷函数写清楚。">
+
+<Morph>
+
+<Step effect="morph" say="两个 ReLU 单元。">
+
+$$
+t(x) = 2\max(0, x) - 4\max\!\left(0, x - \tfrac12\right)
+$$
+
+</Step>
+
+<Step effect="morph" say="它把左右两半各自一一地映满整个区间。">
+
+$$
+t:\ [0, \tfrac12] \to [0, 1],\quad [\tfrac12, 1] \to [0, 1]
+$$
+
+</Step>
+
+<Step effect="morph" say="所以每复合一次，段数翻倍。">
+
+$$
+\#\text{段}\big(t^{(L)}\big) = 2 \cdot \#\text{段}\big(t^{(L-1)}\big) = 2^L
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="深网络参数六 L 加一；同参数的浅网络只有二 L 个单元，至多二 L 加一段。">深：$6L + 1$ 参数 → $2^L$ 段；浅：至多 $2L + 1$ 段</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：读出一条折线" say="手算一个三单元的小网络。">
+
+<Step say="三个铰链，拐点在零、一、二。">$f = 1 + 2\,\mathrm{ReLU}(x) - 3\,\mathrm{ReLU}(x - 1) + 2\,\mathrm{ReLU}(x - 2)$</Step>
+
+<Step say="从左往右累加斜率：零、二、负一、一。">斜率：$0 \to 2 \to -1 \to 1$</Step>
+
+<Step say="在零、一、二、三处的值是一、三、二、三。四段，正好是 D 加一。">$f(0, 1, 2, 3) = 1, 3, 2, 3$：$4 = D + 1$ 段</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现 ReLU 网络、激活模式和帐篷网络，再用 scikit-learn 训练一个 MLP，数它用了多少个线性区域。">
+
+<Step say="代码运行后，可以回放：每加一层，决策区域就对折一次。">✎ 4 道推导 · ⌨ 前向传播 + 折叠 + 铰链 · ⚙ MLPClassifier + 区域计数</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/neural-networks/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

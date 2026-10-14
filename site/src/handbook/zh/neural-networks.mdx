@@ -1,0 +1,39 @@
+---
+title: "MLP 实战：架构、缩放与 scikit-learn / PyTorch 的常用写法"
+summary: "怎样选宽度和深度、为什么必须标准化输入、怎样数参数，以及 scikit-learn 与 PyTorch 里最常见的坑。"
+chapters: ["14"]
+---
+
+### 常用代码
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+
+mlp = make_pipeline(StandardScaler(),
+                    MLPClassifier(hidden_layer_sizes=(64, 64), activation="relu",
+                                  alpha=1e-4, early_stopping=True, random_state=0))
+
+# PyTorch 里同样的网络
+import torch.nn as nn
+net = nn.Sequential(nn.Linear(d_in, 64), nn.ReLU(), nn.Linear(64, 64), nn.ReLU(), nn.Linear(64, d_out))
+n_params = sum(p.numel() for p in net.parameters())
+```
+
+### 容易踩的坑
+
+- **一定要标准化输入**：ReLU 的拐点位置由 $-\theta_0/\theta_1$ 决定，特征尺度差几个数量级时，初始化后大量单元要么全开要么全关，训练很慢。
+- **参数要用关键字传**：scikit-learn 1.7 起 `MLPRegressor` 的第一个位置参数是 `loss`，写 `MLPRegressor((64, 64))` 会报错，要写 `hidden_layer_sizes=(64, 64)`。
+- **先加深度，再加宽度**：表格数据上 2–4 层、每层 64–256 个单元通常就够；加深比加宽更省参数，但太深需要残差连接和归一化（第 17、18 章）。
+- **表格数据上先试树模型**：梯度提升（第 08 章）在中小规模表格数据上往往仍胜过 MLP；神经网络的优势在图像、文本、语音等有结构的数据。
+- **“死 ReLU”**：学习率过大时一些单元永远关闭（对所有样本都输出 0），梯度为零再也学不回来。可调小学习率，或换用 Leaky ReLU / GELU。
+- **万能逼近 ≠ 好用**：能表示不代表能学到，也不代表能泛化；验证集和早停（`early_stopping=True`）不能省。
+
+### 前沿阅读
+
+- Montúfar、Pascanu、Cho、Bengio（2014）：深度网络线性区域数的理论分析。
+- Hanin 与 Rolnick（2019）：训练后的网络实际用到的区域远少于理论上界。
+- Eldan 与 Shamir（2016）：深度分离——深度 3 能表示、深度 2 需要指数多单元的函数。
+- Telgarsky（2016）：用帐篷映射的复合证明深度带来的表达优势。
+- Jacot、Gabriel、Hongler（2018）：神经正切核与无限宽网络。
