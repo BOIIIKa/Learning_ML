@@ -1,0 +1,71 @@
+# 第 06 章 非参数方法与基函数扩展 —— 课后练习 / Chapter 06 exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+
+derivation:
+  - id: cover-hart
+    title: {zh: "1-NN 的渐近条件误差", en: "The asymptotic conditional error of 1-NN"}
+    prompt:
+      zh: "二分类中，设在点 $x$ 处 $P(Y=1\\mid X=x) = \\eta$。当 $n\\to\\infty$ 时，$x$ 的最近邻 $x'$ 趋于 $x$，它的标签与 $x$ 的标签独立、且服从同一个条件分布。写出 1-NN 在 $x$ 处的渐近误判概率。可用变量：`eta`。"
+      en: "In binary classification let $P(Y=1\\mid X=x) = \\eta$ at a point $x$. As $n\\to\\infty$ the nearest neighbour $x'$ of $x$ tends to $x$, and its label is independent of $x$'s label with the same conditional distribution. Write the asymptotic probability that 1-NN errs at $x$. Variable: `eta`."
+    answer: "2*eta*(1 - eta)"
+    vars: {eta: [0, 1]}
+    solution:
+      zh: "1-NN 把邻居的标签 $Y'$ 当作预测，犯错当且仅当 $Y \\ne Y'$。两者独立同分布，所以 $P(Y\\ne Y') = \\eta(1-\\eta) + (1-\\eta)\\eta = 2\\eta(1-\\eta)$。在 $x$ 处贝叶斯误差是 $r^* = \\min(\\eta, 1-\\eta)$，而 $2\\eta(1-\\eta) = 2r^*(1-r^*) \\le 2r^*$。对 $x$ 取期望并用 $\\mathbb E[(r^*)^2] \\ge (R^*)^2$（Jensen）得 Cover–Hart 界：$R_{1\\text{NN}} \\le 2R^*(1-R^*) \\le 2R^*$。例如处处 $\\eta = 0.1$ 时，贝叶斯误差 $0.1$，1-NN 误差 $0.18$。"
+      en: "1-NN predicts the neighbour's label $Y'$ and errs exactly when $Y \\ne Y'$. The two are i.i.d., so $P(Y\\ne Y') = \\eta(1-\\eta) + (1-\\eta)\\eta = 2\\eta(1-\\eta)$. The Bayes error at $x$ is $r^* = \\min(\\eta, 1-\\eta)$, and $2\\eta(1-\\eta) = 2r^*(1-r^*) \\le 2r^*$. Averaging over $x$ and using $\\mathbb E[(r^*)^2] \\ge (R^*)^2$ (Jensen) gives the Cover–Hart bound $R_{1\\text{NN}} \\le 2R^*(1-R^*) \\le 2R^*$. For instance, with $\\eta = 0.1$ everywhere the Bayes error is $0.1$ and the 1-NN error is $0.18$."
+
+  - id: shell
+    title: {zh: "高维球的体积集中在表皮", en: "A high-dimensional ball's volume sits in its skin"}
+    prompt:
+      zh: "$d$ 维半径为 $r$ 的球体积为 $V_d(r) = C_d\\,r^d$。单位球中，与球面距离不超过 $\\varepsilon$ 的外壳占整个球体积的比例是多少？可用变量：`eps, d`。"
+      en: "The volume of a $d$-dimensional ball of radius $r$ is $V_d(r) = C_d\\,r^d$. In the unit ball, what fraction of the volume lies within $\\varepsilon$ of the surface? Variables: `eps, d`."
+    answer: "1 - (1 - eps)^d"
+    vars: {eps: [0.01, 0.5], d: [1, 60]}
+    solution:
+      zh: "外壳是单位球减去半径 $1-\\varepsilon$ 的同心球：$\\dfrac{C_d - C_d(1-\\varepsilon)^d}{C_d} = 1 - (1-\\varepsilon)^d$，常数 $C_d$ 约掉了。$d$ 固定时它随 $\\varepsilon$ 增大；$\\varepsilon$ 固定时它随 $d$ 指数地趋于 1：$\\varepsilon = 0.05$ 时，$d = 10$ 约 40%，$d = 100$ 已超过 99.4%。均匀撒在高维球里的点几乎都贴着表面，彼此的距离也就差不多——这正是“最近邻不再近”的几何原因。"
+      en: "The shell is the unit ball minus the concentric ball of radius $1-\\varepsilon$: $\\dfrac{C_d - C_d(1-\\varepsilon)^d}{C_d} = 1 - (1-\\varepsilon)^d$, the constant $C_d$ cancelling. For fixed $d$ it grows with $\\varepsilon$; for fixed $\\varepsilon$ it tends to 1 exponentially fast in $d$: with $\\varepsilon = 0.05$ it is about 40% at $d = 10$ and above 99.4% at $d = 100$. Points spread uniformly in a high-dimensional ball almost all hug the surface, so their distances are all much alike — the geometric reason why the “nearest” neighbour stops being near."
+
+  - id: edge
+    title: {zh: "高维里的“邻域”有多大", en: "How large is a “neighbourhood” in high dimensions"}
+    prompt:
+      zh: "数据在 $[0,1]^d$ 中均匀分布。想用一个以查询点为中心的小立方体（忽略边界）圈住比例为 $p$ 的数据，立方体的边长要多大？可用变量：`p, d`。"
+      en: "Data are uniform on $[0,1]^d$. To capture a fraction $p$ of the data with a small cube around the query point (ignore the boundary), how long must the cube's edge be? Variables: `p, d`."
+    answer: "p^(1/d)"
+    vars: {p: [0.001, 0.5], d: [1, 50]}
+    solution:
+      zh: "均匀分布下数据比例等于体积，边长为 $\\ell$ 的立方体体积是 $\\ell^d$，令 $\\ell^d = p$ 得 $\\ell = p^{1/d}$。$p = 1\\%$ 时：$d=1$ 只需 $0.01$，$d = 10$ 却要 $0.63$——每个坐标都要覆盖 63% 的取值范围，“局部”平均已经一点也不局部了。要让邻域保持小，样本量必须随 $d$ 指数增长。"
+      en: "Under the uniform distribution the fraction of data equals volume, and a cube of edge $\\ell$ has volume $\\ell^d$, so $\\ell^d = p$ gives $\\ell = p^{1/d}$. For $p = 1\\%$: at $d = 1$ the edge is $0.01$, but at $d = 10$ it is $0.63$ — each coordinate must span 63% of its range, and the “local” average is not local at all. Keeping neighbourhoods small would need a sample size exponential in $d$."
+
+  - id: spline-df
+    title: {zh: "样条的自由度", en: "Degrees of freedom of a spline"}
+    prompt:
+      zh: "在 $K$ 个内部节点处把 $K+1$ 段 $M$ 次多项式拼起来，要求在每个节点处函数值及 $1, \\dots, M-1$ 阶导数都连续。这样的样条一共有多少个自由参数？可用变量：`M, K`。"
+      en: "Glue $K+1$ polynomial pieces of degree $M$ together at $K$ interior knots, requiring the function and its derivatives of order $1, \\dots, M-1$ to be continuous at every knot. How many free parameters does such a spline have? Variables: `M, K`."
+    answer: "M + 1 + K"
+    vars: {M: [0, 5], K: [1, 20]}
+    solution:
+      zh: "每段 $M$ 次多项式有 $M+1$ 个系数，共 $(K+1)(M+1)$ 个；每个节点施加 $M$ 个连续性约束（$0$ 到 $M-1$ 阶），共 $KM$ 个。相减：$(K+1)(M+1) - KM = M + 1 + K$。这恰好是截断幂基 $1, x, \\dots, x^M, (x-\\xi_1)_+^M, \\dots, (x-\\xi_K)_+^M$ 的个数。三次样条（$M=3$）有 $K+4$ 个自由度；自然三次样条再要求两端外侧是直线，多出 4 个约束，只剩 $K$ 个（此时 $K$ 计入两个边界节点）。"
+      en: "Each degree-$M$ piece has $M+1$ coefficients, $(K+1)(M+1)$ in total; each knot imposes $M$ continuity constraints (orders $0$ to $M-1$), $KM$ in total. Subtracting, $(K+1)(M+1) - KM = M + 1 + K$, exactly the number of truncated power basis functions $1, x, \\dots, x^M, (x-\\xi_1)_+^M, \\dots, (x-\\xi_K)_+^M$. A cubic spline ($M=3$) has $K+4$ degrees of freedom; a natural cubic spline also forces linearity beyond the two boundary knots, 4 more constraints, leaving $K$ (now counting the two boundary knots among the $K$)."
+
+code:
+  - id: knn
+    kind: implement
+    file: knn.py
+    packages: [numpy]
+    title: {zh: "从零实现 kNN 并用留一法选 k", en: "kNN from scratch, with k chosen by leave-one-out"}
+    intro:
+      zh: "补全 L1 / L2 / L∞ 距离矩阵、多数表决、留一法误差和选 k 的比较。测试会用讲义里的例题核对你的投票结果。运行后在双月牙数据上回放 k 从 1 到 61 的决策场：右侧曲线对比训练误差（k = 1 时为 0）与留一法误差。"
+      en: "Fill in the L1 / L2 / L∞ distance matrix, the majority vote, the leave-one-out error and the comparison that picks k. The tests check your votes against the worked example in the notes. Then replay the decision field on two moons as k goes from 1 to 61; the chart compares training error (zero at k = 1) with the leave-one-out error."
+    metrics:
+      - {key: train, label: {zh: "训练误差", en: "Training error"}}
+      - {key: loo, label: {zh: "留一法误差", en: "Leave-one-out error"}}
+  - id: spline-library
+    kind: library
+    file: spline_library.py
+    packages: [numpy, scikit-learn, scipy]
+    title: {zh: "用 SplineTransformer + Ridge 拟合样条与 GAM", en: "Splines and GAMs with SplineTransformer + Ridge"}
+    intro:
+      zh: "搭建“三次 B 样条特征 + 岭回归”的流水线，用 5 折交叉验证选节点数，再把同一条流水线用在“距离 + 下单时刻”两列上——每列各自展开成样条基，这就是一个加性模型（GAM）。注意 scikit-learn 的 `n_knots` 包含两个边界节点，所以基函数个数是 `n_knots + 2`。回放中，发光的曲线是拟合结果，可以看到节点太少时欠拟合、太多时开始追噪声。"
+      en: "Build a “cubic B-spline features + ridge” pipeline, choose the number of knots by 5-fold cross-validation, then apply the same pipeline to two columns, distance and hour of day: each column gets its own spline basis, which is exactly an additive model (GAM). Note that scikit-learn's `n_knots` includes the two boundary knots, so there are `n_knots + 2` basis functions. In the replay the glowing curve is the fit: too few knots underfit, too many start chasing noise."
+    metrics:
+      - {key: train, label: {zh: "训练 RMSE", en: "Training RMSE"}}
+      - {key: cv, label: {zh: "交叉验证 RMSE", en: "Cross-validated RMSE"}}
