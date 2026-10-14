@@ -1,7 +1,24 @@
 ---
-// A fragment revealed on the next "advance"; `say` is its narration.
-// `as="span"` keeps it inline; `effect` picks the entrance animation.
-interface Props { say?: string; as?: "div" | "span"; effect?: "up" | "pop" | "draw" | "focus" }
-const { say = "", as: Tag = "div", effect = "up" } = Astro.props;
+// One beat of the animated course. It appears when the timeline reaches it, while `say` is
+// shown as a subtitle (and optionally read aloud). The next beat starts once the narration,
+// the entrance and any `drive` script have all finished.
+//
+//   effect  write  (default) glyphs drawn as outlines, then filled — manim Write
+//           fade   FadeIn with a small upward shift
+//           pop    FadeIn from 80 % scale (buttons, call-to-action)
+//           focus  Write, then Indicate the whole beat (key statements)
+//           morph  inside <Morph>: TransformMatchingTex from the previous beat of the group
+//   drive   script that operates the slide's widget, e.g. "s1=11/4; click:chip2" (manim/drive.ts)
+//   hold    extra seconds to linger after the beat
+interface Props {
+  say?: string;
+  as?: "div" | "span";
+  effect?: "write" | "fade" | "pop" | "focus" | "morph" | "up" | "draw";
+  drive?: string;
+  hold?: number;
+}
+const { say = "", as: Tag = "div", effect = "write", drive, hold } = Astro.props;
+// Legacy names from the first version of the decks.
+const fx = effect === "up" ? "fade" : effect === "draw" ? "write" : effect;
 ---
-<Tag class={`step fx-${effect}`} data-say={say}><slot /></Tag>
+<Tag class={`step fx-${fx}`} data-say={say} data-fx={fx} data-drive={drive} data-hold={hold}><slot /></Tag>

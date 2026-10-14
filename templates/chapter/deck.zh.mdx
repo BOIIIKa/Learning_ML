@@ -1,0 +1,75 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import {{Widget}} from "../../components/chapters/{{CH}}/{{Widget}}";
+
+{/* 3B1B 式动画课程：每个 Step 是一拍，say 是旁白（约 15–60 字），drive 让动画自己操作图形。
+    写法见 .claude/skills/course-deck/SKILL.md。 */}
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 {{ID}} 章 · 动画课程" title="{{TITLE_ZH}}" say="TODO(scaffold) 一句话说清本章要解决的问题。">
+
+TODO(scaffold) 副标题
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="TODO(scaffold) 情景" say="TODO(scaffold) 情景旁白。">
+
+<Step say="TODO(scaffold) 指着图说一件事。" drive="s1=80%/3">TODO(scaffold) 一行要点 →</Step>
+
+<Step effect="focus" say="TODO(scaffold) 抛出本章的问题。">
+<p class="big-q sm">TODO(scaffold) 本章问题</p>
+</Step>
+
+<div slot="visual"><{{Widget}} client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="TODO(scaffold) 方法" say="TODO(scaffold)">
+
+<Step say="TODO(scaffold)">**模型**：TODO(scaffold)</Step>
+
+<Step say="TODO(scaffold)">**策略**：TODO(scaffold)</Step>
+
+<Step say="TODO(scaffold)">**算法**：TODO(scaffold)</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="TODO(scaffold) 推导" say="TODO(scaffold)">
+
+<Morph>
+
+<Step effect="morph" say="TODO(scaffold) 第一行。">
+
+$$
+TODO(scaffold)
+$$
+
+</Step>
+
+<Step effect="morph" say="TODO(scaffold) 变形一步。">
+
+$$
+TODO(scaffold)
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：TODO(scaffold)" say="TODO(scaffold)">
+
+<Step say="TODO(scaffold)">TODO(scaffold)</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：TODO(scaffold)。">
+
+<Step say="TODO(scaffold)">✎ 4 道推导 · ⌨ TODO(scaffold) · ⚙ TODO(scaffold)</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/{{SLUG}}/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

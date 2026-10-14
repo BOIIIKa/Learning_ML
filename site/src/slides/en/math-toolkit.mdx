@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import Box from "../../components/astro/Box.astro";
 import GaussianFit from "../../components/chapters/ch00/GaussianFit";
 import LinearMap from "../../components/chapters/ch00/LinearMap";
@@ -17,7 +18,7 @@ Linear algebra · probability · optimization: only what the course actually use
 
 <Step say="Plotted, it is a tilted cloud of points. Click empty space on the right to add your own samples.">The data: a tilted cloud of points →</Step>
 
-<Step say="Question one: in which direction does it spread most? That needs linear algebra.">① **Shape**: which way does it spread? → linear algebra</Step>
+<Step drive="click:check1; wait:0.8; click:check1" say="Question one: in which direction does it spread most? That needs linear algebra.">① **Shape**: which way does it spread? → linear algebra</Step>
 
 <Step say="Question two: which distribution describes it, and with which parameters? That needs probability.">② **Description**: which distribution, which parameters? → probability</Step>
 
@@ -29,9 +30,9 @@ Linear algebra · probability · optimization: only what the course actually use
 
 <Slide lang="en" part="method" title="A matrix is a transformation" say="First, a new way to see a matrix: not a table of numbers, but a transformation of the whole plane.">
 
-<Step say="Drag the four entries and watch the grid stretch, shear and rotate. The unit circle always becomes an ellipse.">Unit circle → ellipse, semi-axes = singular values</Step>
+<Step drive="click:chip1; wait:1.6; click:chip5" say="Drag the four entries and watch the grid stretch, shear and rotate. The unit circle always becomes an ellipse.">Unit circle → ellipse, semi-axes = singular values</Step>
 
-<Step say="Press 'decompose': any matrix splits into three simple moves, rotate, stretch along the axes, rotate again. That is the SVD.">
+<Step drive="click:btn1; wait:4.5" say="Press 'decompose': any matrix splits into three simple moves, rotate, stretch along the axes, rotate again. That is the SVD.">
 
 $$
 A = U\,\Sigma\,V^\top
@@ -63,9 +64,9 @@ $$
 
 <Step say="Gradient descent takes a small step against the gradient.">$w \leftarrow w - \eta\,\nabla f(w)$</Step>
 
-<Step say="The Hessian describes curvature. The more its eigenvalues differ, the larger the condition number and the flatter the bowl.">Condition number $\kappa = \lambda_{\max}/\lambda_{\min}$: how flat the bowl is</Step>
+<Step drive="s1=2/2" say="The Hessian describes curvature. The more its eigenvalues differ, the larger the condition number and the flatter the bowl.">Condition number $\kappa = \lambda_{\max}/\lambda_{\min}$: how flat the bowl is</Step>
 
-<Step say="Raise the condition number on the right and the path zig-zags while the step count shoots up. With a step size above two over the largest eigenvalue, it diverges.">Raise $\kappa$ → zig-zag; $\eta > 2/\lambda_{\max}$ → divergence →</Step>
+<Step drive="s1=25/3; wait:1; s2=1.05/3" say="Raise the condition number on the right and the path zig-zags while the step count shoots up. With a step size above two over the largest eigenvalue, it diverges.">Raise $\kappa$ → zig-zag; $\eta > 2/\lambda_{\max}$ → divergence →</Step>
 
 <div slot="visual"><GradientBowl client:visible lang="en" /></div>
 
@@ -83,7 +84,41 @@ $$
 
 <Slide lang="en" part="math" title="Maximum likelihood for a Gaussian" say="Differentiate the multivariate Gaussian log-likelihood.">
 
-<Step say="Differentiating in the mean gives the sample average.">$\hat\mu = \frac1n\sum_i x_i$</Step>
+<Morph>
+
+<Step effect="morph" say="The 1-D case shows it best: the log-likelihood is minus a sum of squares, plus a constant.">
+
+$$
+\ell(\mu) = -\frac{1}{2\sigma^2}\sum_i (x_i-\mu)^2 + C
+$$
+
+</Step>
+
+<Step effect="morph" say="Differentiate in μ and set the derivative to zero.">
+
+$$
+\ell'(\mu) = \frac{1}{\sigma^2}\sum_i (x_i-\mu) = 0
+$$
+
+</Step>
+
+<Step effect="morph" say="Cancel the constant and expand the sum.">
+
+$$
+\sum_i x_i - n\mu = 0
+$$
+
+</Step>
+
+<Step effect="morph" say="Solving gives the sample mean; in many dimensions, the mean vector.">
+
+$$
+\hat\mu = \frac1n\sum_i x_i
+$$
+
+</Step>
+
+</Morph>
 
 <Step say="Differentiating in the inverse covariance gives the average outer product. Note the denominator is n, not n minus one.">$\hat\Sigma = \frac1n\sum_i (x_i-\hat\mu)(x_i-\hat\mu)^\top$ (divide by $n$)</Step>
 
@@ -95,7 +130,7 @@ $$
 
 <Slide lang="en" part="math" title="Jensen's inequality and KL" say="A chord of a convex function always lies above the curve.">
 
-<Step say="That is Jensen's inequality. Try dragging the two points and the weight on the right.">$f(\mathbb E X) \le \mathbb E f(X)$ for convex $f$</Step>
+<Step drive="s1=0.3/1.5; s2=3/2; s3=0.25/2.5" say="That is Jensen's inequality. Try dragging the two points and the weight on the right.">$f(\mathbb E X) \le \mathbb E f(X)$ for convex $f$</Step>
 
 <Step say="Apply it to the convex function minus log, and KL divergence comes out non-negative.">
 

@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import Box from "../../components/astro/Box.astro";
 import ScenarioLines from "../../components/chapters/ch07/ScenarioLines";
 import SvmPlayground from "../../components/chapters/ch07/SvmPlayground";
@@ -17,9 +18,9 @@ import FivePoints from "../../components/chapters/ch07/FivePoints";
 
 <Step say="蓝色是良性，橙色是恶性。在这批训练数据上，两类恰好可以被一条直线分开。">蓝 = 良性，橙 = 恶性</Step>
 
-<Step say="但能分开训练数据的直线有无穷多条。右边画了两条，它们在训练集上都是零错误。">能分开数据的直线**有无穷多条**</Step>
+<Step drive="click:chip1; wait:1.2; click:chip2" say="但能分开训练数据的直线有无穷多条。右边画了两条，它们在训练集上都是零错误。">能分开数据的直线**有无穷多条**</Step>
 
-<Step say="现在点‘来了 40 位新病人’按钮，多点几次，看看哪条线先犯错。">点按钮，让新病人到来 →</Step>
+<Step drive="click:btn1; wait:1.2; click:btn1; wait:1.2; click:btn1; wait:1.2" say="现在点‘来了 40 位新病人’按钮，多点几次，看看哪条线先犯错。">点按钮，让新病人到来 →</Step>
 
 <div slot="visual"><ScenarioLines client:visible lang="zh" /></div>
 
@@ -72,6 +73,38 @@ $$
 
 </Slide>
 
+<Slide lang="zh" part="method" layout="center" title="从最大间隔到二次规划" say="三步变形，把几何直觉变成可解的优化问题。">
+
+<Morph>
+
+<Step effect="morph" say="最大间隔：让离超平面最近的点尽量远。">
+
+$$
+\max_{w,b}\ \min_i\ \frac{y_i(w^\top x_i+b)}{\|w\|}
+$$
+
+</Step>
+
+<Step effect="morph" say="同时缩放 w 和 b，可以让最近的点恰好满足 y 乘 f 等于一。">
+
+$$
+\max_{w,b}\ \frac{1}{\|w\|}\quad\text{s.t. } y_i(w^\top x_i+b)\ge 1
+$$
+
+</Step>
+
+<Step effect="morph" say="最大化一除以范数，就是最小化二分之一范数平方：一个凸二次规划。">
+
+$$
+\min_{w,b}\ \tfrac12\|w\|^2\quad\text{s.t. } y_i(w^\top x_i+b)\ge 1
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
 <Slide lang="zh" part="method" title="软间隔：允许犯一点错" say="真实数据很少能完美分开。">
 
 <Step say="给每个样本一个松弛变量 $\xi_i$，允许它进入间隔，但要付出代价 $C\xi_i$。">
@@ -86,7 +119,7 @@ $$
 
 <Step say="所以软间隔 SVM 就是：合页损失加 L2 正则。模型、策略、算法，三要素一目了然。">软间隔 SVM = 合页损失 + L2 正则</Step>
 
-<Step say="右边可以直接拖动数据点，或者调节 C。C 小，间隔宽、更宽容；C 大，逼近硬间隔。">拖点、调 $C$，看间隔怎样变化 →</Step>
+<Step drive="s1=-2/2.5; s1=2/3.5; s1=0/2" say="右边可以直接拖动数据点，或者调节 C。C 小，间隔宽、更宽容；C 大，逼近硬间隔。">拖点、调 $C$，看间隔怎样变化 →</Step>
 
 <div slot="visual"><SvmPlayground client:visible lang="zh" /></div>
 
@@ -164,7 +197,7 @@ $$
 
 <Step say="固定其余变量，目标变成一元二次函数，直接写出解析解。">$\alpha_j \leftarrow \alpha_j + y_j(E_i-E_j)/\eta$，再裁剪到 $[L,H]$</Step>
 
-<Step say="右边是 SMO 的逐步回放：黄色圈是被选中的一对样本，下方曲线是单调上升的对偶目标。">右侧：逐步回放，对偶目标单调上升 →</Step>
+<Step drive="click:.tp-play; wait:7" say="右边是 SMO 的逐步回放：黄色圈是被选中的一对样本，下方曲线是单调上升的对偶目标。">右侧：逐步回放，对偶目标单调上升 →</Step>
 
 <div slot="visual"><SmoReplay client:visible lang="zh" /></div>
 
@@ -190,9 +223,9 @@ $$
 
 <Step say="回忆对偶问题：数据只以内积出现。">对偶中只有内积 $x_i^\top x_j$</Step>
 
-<Step say="把内积换成核函数，就相当于先映射到高维空间，再在那里找最大间隔超平面——却从不需要显式计算映射。">换成核 $K(x_i,x_j)=\phi(x_i)^\top\phi(x_j)$，SMO 一行不改</Step>
+<Step drive="click:chip1; wait:1.5; click:chip2; wait:1.5; click:chip3" say="把内积换成核函数，就相当于先映射到高维空间，再在那里找最大间隔超平面——却从不需要显式计算映射。">换成核 $K(x_i,x_j)=\phi(x_i)^\top\phi(x_j)$，SMO 一行不改</Step>
 
-<Step say="右边试试线性核、多项式核和 RBF 核。RBF 的 γ 越大，边界越弯曲，也越容易过拟合。">试试 RBF 的 $\gamma$：越大越弯、越易过拟合 →</Step>
+<Step drive="s1=-1/1.5; s1=1.5/4" say="右边试试线性核、多项式核和 RBF 核。RBF 的 γ 越大，边界越弯曲，也越容易过拟合。">试试 RBF 的 $\gamma$：越大越弯、越易过拟合 →</Step>
 
 <div slot="visual"><KernelPlayground client:visible lang="zh" /></div>
 

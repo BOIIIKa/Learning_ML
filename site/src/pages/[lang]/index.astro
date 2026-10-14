@@ -3,7 +3,7 @@ import Base from "../../layouts/Base.astro";
 import HeroCanvas from "../../components/home/HeroCanvas";
 import TocExplorer from "../../components/home/TocExplorer";
 import { LANGS, href, pick, t, type Lang } from "../../i18n/ui";
-import { outline, readyChapters, readySlugs } from "../../lib/data";
+import { courseSlugs, outline, readyChapters, readySlugs } from "../../lib/data";
 import "../../styles/home.css";
 
 export function getStaticPaths() {
@@ -80,6 +80,6 @@ const MODES = {
 
   <section id="contents" class="container contents">
     <h2 class="reveal">{t(lang, "contents")}</h2>
-    <TocExplorer client:visible lang={lang} parts={outline.parts} tags={outline.tags} ready={readySlugs} />
+    <TocExplorer client:visible lang={lang} parts={outline.parts} tags={outline.tags} ready={readySlugs} courses={courseSlugs} />
   </section>
 </Base>

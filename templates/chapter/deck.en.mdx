@@ -1,0 +1,75 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import {{Widget}} from "../../components/chapters/{{CH}}/{{Widget}}";
+
+{/* A 3B1B-style course: each Step is a beat, say is its narration (about 10–40 words), drive lets the animation operate the figure.
+    See .claude/skills/course-deck/SKILL.md. */}
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter {{ID}} · Animated course" title="{{TITLE_EN}}" say="TODO(scaffold) One sentence on the problem this chapter solves.">
+
+TODO(scaffold) Subtitle
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="TODO(scaffold) Scenario" say="TODO(scaffold) Scenario narration.">
+
+<Step say="TODO(scaffold) Point at one thing in the figure." drive="s1=80%/3">TODO(scaffold) One-line point →</Step>
+
+<Step effect="focus" say="TODO(scaffold) Pose the chapter question.">
+<p class="big-q sm">TODO(scaffold) The chapter question</p>
+</Step>
+
+<div slot="visual"><{{Widget}} client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="TODO(scaffold) Method" say="TODO(scaffold)">
+
+<Step say="TODO(scaffold)">**Model**: TODO(scaffold)</Step>
+
+<Step say="TODO(scaffold)">**Strategy**: TODO(scaffold)</Step>
+
+<Step say="TODO(scaffold)">**Algorithm**: TODO(scaffold)</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="TODO(scaffold) Derivation" say="TODO(scaffold)">
+
+<Morph>
+
+<Step effect="morph" say="TODO(scaffold) First line.">
+
+$$
+TODO(scaffold)
+$$
+
+</Step>
+
+<Step effect="morph" say="TODO(scaffold) One rewrite step.">
+
+$$
+TODO(scaffold)
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked example: TODO(scaffold)" say="TODO(scaffold)">
+
+<Step say="TODO(scaffold)">TODO(scaffold)</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: TODO(scaffold).">
+
+<Step say="TODO(scaffold)">✎ 4 derivations · ⌨ TODO(scaffold) · ⚙ TODO(scaffold)</Step>
+
+<Step effect="pop" say="Use the button to start practising.">
+<a class="btn btn-primary btn-xl" href="../../chapters/{{SLUG}}/#s-practice">Start practising →</a>
+</Step>
+
+</Slide>

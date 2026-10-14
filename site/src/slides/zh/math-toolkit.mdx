@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import Box from "../../components/astro/Box.astro";
 import GaussianFit from "../../components/chapters/ch00/GaussianFit";
 import LinearMap from "../../components/chapters/ch00/LinearMap";
@@ -17,7 +18,7 @@ import KKTPlayground from "../../components/chapters/ch00/KKTPlayground";
 
 <Step say="画出来是一团斜着的点云。点击右边空白处，可以自己添加样本。">数据：一团斜着的点云 →</Step>
 
-<Step say="第一个问题：它往哪个方向伸展得最开？这需要线性代数。">① **形状**：往哪个方向伸展？→ 线性代数</Step>
+<Step drive="click:check1; wait:0.8; click:check1" say="第一个问题：它往哪个方向伸展得最开？这需要线性代数。">① **形状**：往哪个方向伸展？→ 线性代数</Step>
 
 <Step say="第二个问题：用什么分布描述它，参数取多少？这需要概率。">② **描述**：用什么分布、参数取多少？→ 概率</Step>
 
@@ -29,9 +30,9 @@ import KKTPlayground from "../../components/chapters/ch00/KKTPlayground";
 
 <Slide lang="zh" part="method" title="矩阵是一个变换" say="先换个角度看矩阵：它不是一张数表，而是对整个平面的变换。">
 
-<Step say="拖动四个元素，看网格怎样被拉伸、剪切、旋转。单位圆总是变成椭圆。">单位圆 → 椭圆，半轴长 = 奇异值</Step>
+<Step drive="click:chip1; wait:1.6; click:chip5" say="拖动四个元素，看网格怎样被拉伸、剪切、旋转。单位圆总是变成椭圆。">单位圆 → 椭圆，半轴长 = 奇异值</Step>
 
-<Step say="点‘分解’：任何矩阵都可以拆成三个简单动作——旋转、沿坐标轴拉伸、再旋转。这就是 SVD。">
+<Step drive="click:btn1; wait:4.5" say="点‘分解’：任何矩阵都可以拆成三个简单动作——旋转、沿坐标轴拉伸、再旋转。这就是 SVD。">
 
 $$
 A = U\,\Sigma\,V^\top
@@ -63,9 +64,9 @@ $$
 
 <Step say="梯度下降：沿负梯度走一小步。">$w \leftarrow w - \eta\,\nabla f(w)$</Step>
 
-<Step say="Hessian 描述曲面的弯曲。特征值相差越大，条件数越大，碗越扁。">条件数 $\kappa = \lambda_{\max}/\lambda_{\min}$：碗有多“扁”</Step>
+<Step drive="s1=2/2" say="Hessian 描述曲面的弯曲。特征值相差越大，条件数越大，碗越扁。">条件数 $\kappa = \lambda_{\max}/\lambda_{\min}$：碗有多“扁”</Step>
 
-<Step say="右边拉大条件数：路径变成之字形，步数急剧增加。步长超过二除以最大特征值时，就会发散。">拉大 $\kappa$ → 之字形；$\eta > 2/\lambda_{\max}$ → 发散 →</Step>
+<Step drive="s1=25/3; wait:1; s2=1.05/3" say="右边拉大条件数：路径变成之字形，步数急剧增加。步长超过二除以最大特征值时，就会发散。">拉大 $\kappa$ → 之字形；$\eta > 2/\lambda_{\max}$ → 发散 →</Step>
 
 <div slot="visual"><GradientBowl client:visible lang="zh" /></div>
 
@@ -83,7 +84,41 @@ $$
 
 <Slide lang="zh" part="math" title="高斯的极大似然" say="对多元高斯的对数似然求导。">
 
-<Step say="对均值求导，得到样本平均。">$\hat\mu = \frac1n\sum_i x_i$</Step>
+<Morph>
+
+<Step effect="morph" say="一维情形最清楚：对数似然是负的平方和，再加一个与 μ 无关的常数。">
+
+$$
+\ell(\mu) = -\frac{1}{2\sigma^2}\sum_i (x_i-\mu)^2 + C
+$$
+
+</Step>
+
+<Step effect="morph" say="对 μ 求导，令导数为零。">
+
+$$
+\ell'(\mu) = \frac{1}{\sigma^2}\sum_i (x_i-\mu) = 0
+$$
+
+</Step>
+
+<Step effect="morph" say="约去常数，把求和展开。">
+
+$$
+\sum_i x_i - n\mu = 0
+$$
+
+</Step>
+
+<Step effect="morph" say="解出来就是样本平均；多维时同样得到均值向量。">
+
+$$
+\hat\mu = \frac1n\sum_i x_i
+$$
+
+</Step>
+
+</Morph>
 
 <Step say="对协方差的逆求导，得到平均外积。注意分母是 n，不是 n 减 1。">$\hat\Sigma = \frac1n\sum_i (x_i-\hat\mu)(x_i-\hat\mu)^\top$ （除以 $n$）</Step>
 
@@ -95,7 +130,7 @@ $$
 
 <Slide lang="zh" part="math" title="Jensen 不等式与 KL 散度" say="凸函数的弦，永远在曲线上方。">
 
-<Step say="这就是 Jensen 不等式。右边拖动两个点和权重试试。">$f(\mathbb E X) \le \mathbb E f(X)$（$f$ 凸）</Step>
+<Step drive="s1=0.3/1.5; s2=3/2; s3=0.25/2.5" say="这就是 Jensen 不等式。右边拖动两个点和权重试试。">$f(\mathbb E X) \le \mathbb E f(X)$（$f$ 凸）</Step>
 
 <Step say="取负对数这个凸函数，就能证明 KL 散度永远非负。">
 

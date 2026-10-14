@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import Box from "../../components/astro/Box.astro";
 import ScenarioLines from "../../components/chapters/ch07/ScenarioLines";
 import SvmPlayground from "../../components/chapters/ch07/SvmPlayground";
@@ -17,9 +18,9 @@ From "which line can we trust?" to maximum margins, duality and the kernel trick
 
 <Step say="Blue is benign and orange is malignant. On this training data, one straight line can separate the two classes.">Blue = benign, orange = malignant</Step>
 
-<Step say="But infinitely many lines separate the training data. Two of them are drawn on the right, and both make zero training mistakes.">**Infinitely many** lines separate the data</Step>
+<Step drive="click:chip1; wait:1.2; click:chip2" say="But infinitely many lines separate the training data. Two of them are drawn on the right, and both make zero training mistakes.">**Infinitely many** lines separate the data</Step>
 
-<Step say="Now press the 'new patients' button a few times and watch which line makes the first mistake.">Press the button to bring in new patients →</Step>
+<Step drive="click:btn1; wait:1.2; click:btn1; wait:1.2; click:btn1; wait:1.2" say="Now press the 'new patients' button a few times and watch which line makes the first mistake.">Press the button to bring in new patients →</Step>
 
 <div slot="visual"><ScenarioLines client:visible lang="en" /></div>
 
@@ -72,6 +73,38 @@ $$
 
 </Slide>
 
+<Slide lang="en" part="method" layout="center" title="From maximum margin to a quadratic program" say="Three rewrites turn the geometric idea into a solvable optimization problem.">
+
+<Morph>
+
+<Step effect="morph" say="Maximum margin: push the point closest to the hyperplane as far away as possible.">
+
+$$
+\max_{w,b}\ \min_i\ \frac{y_i(w^\top x_i+b)}{\|w\|}
+$$
+
+</Step>
+
+<Step effect="morph" say="Rescale w and b together so that the closest point has y times f exactly one.">
+
+$$
+\max_{w,b}\ \frac{1}{\|w\|}\quad\text{s.t. } y_i(w^\top x_i+b)\ge 1
+$$
+
+</Step>
+
+<Step effect="morph" say="Maximizing one over the norm is minimizing half the squared norm: a convex quadratic program.">
+
+$$
+\min_{w,b}\ \tfrac12\|w\|^2\quad\text{s.t. } y_i(w^\top x_i+b)\ge 1
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
 <Slide lang="en" part="method" title="Soft margin: allowing a few mistakes" say="Real data is rarely perfectly separable.">
 
 <Step say="Give each sample a slack variable $\xi_i$ that lets it enter the margin, at a cost of $C\xi_i$.">
@@ -86,7 +119,7 @@ $$
 
 <Step say="So the soft-margin SVM is hinge loss plus L2 regularization. Model, strategy and algorithm are all in plain view.">Soft-margin SVM = hinge loss + L2 regularization</Step>
 
-<Step say="On the right you can drag the points or tune C. A small C gives a wide, tolerant margin; a large C approaches the hard margin.">Drag points and tune $C$ to see the margin change →</Step>
+<Step drive="s1=-2/2.5; s1=2/3.5; s1=0/2" say="On the right you can drag the points or tune C. A small C gives a wide, tolerant margin; a large C approaches the hard margin.">Drag points and tune $C$ to see the margin change →</Step>
 
 <div slot="visual"><SvmPlayground client:visible lang="en" /></div>
 
@@ -164,7 +197,7 @@ $$
 
 <Step say="With every other variable frozen, the objective is a one-dimensional quadratic, so the update has a closed form.">$\alpha_j \leftarrow \alpha_j + y_j(E_i-E_j)/\eta$, then clip into $[L,H]$</Step>
 
-<Step say="On the right is an SMO replay: the yellow rings mark the chosen pair, and the curve below is the dual objective rising monotonically.">Right: step-by-step replay; the dual objective only goes up →</Step>
+<Step drive="click:.tp-play; wait:7" say="On the right is an SMO replay: the yellow rings mark the chosen pair, and the curve below is the dual objective rising monotonically.">Right: step-by-step replay; the dual objective only goes up →</Step>
 
 <div slot="visual"><SmoReplay client:visible lang="en" /></div>
 
@@ -190,9 +223,9 @@ $$
 
 <Step say="Recall the dual: the data appears only through inner products.">The dual only uses inner products $x_i^\top x_j$</Step>
 
-<Step say="Replacing the inner product with a kernel is like mapping into a high-dimensional space and finding the max-margin hyperplane there, without ever computing the map.">Swap in $K(x_i,x_j)=\phi(x_i)^\top\phi(x_j)$; SMO does not change a line</Step>
+<Step drive="click:chip1; wait:1.5; click:chip2; wait:1.5; click:chip3" say="Replacing the inner product with a kernel is like mapping into a high-dimensional space and finding the max-margin hyperplane there, without ever computing the map.">Swap in $K(x_i,x_j)=\phi(x_i)^\top\phi(x_j)$; SMO does not change a line</Step>
 
-<Step say="Try the linear, polynomial and RBF kernels on the right. The larger the RBF gamma, the more the boundary bends, and the easier it is to overfit.">Try the RBF $\gamma$: more bend, more overfitting →</Step>
+<Step drive="s1=-1/1.5; s1=1.5/4" say="Try the linear, polynomial and RBF kernels on the right. The larger the RBF gamma, the more the boundary bends, and the easier it is to overfit.">Try the RBF $\gamma$: more bend, more overfitting →</Step>
 
 <div slot="visual"><KernelPlayground client:visible lang="en" /></div>
 

@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import OverfitDegree from "../../components/chapters/ch02/OverfitDegree";
 import BiasVarianceViz from "../../components/chapters/ch02/BiasVarianceViz";
 import CVFolds from "../../components/chapters/ch02/CVFolds";
@@ -13,9 +14,9 @@ Why the training error lies, and how to catch it
 
 <Slide lang="en" part="scenario" title="Which degree?" say="Scores rise fast and then level off, so the teacher tries polynomials instead of a line. But of which degree?">
 
-<Step say="Drag the degree up. The training error only goes down; at degree eleven the curve passes through every point.">Higher degree → training error ↓ to 0</Step>
+<Step drive="s1=0/1.2; s1=11/5" say="Drag the degree up. The training error only goes down; at degree eleven the curve passes through every point.">Higher degree → training error ↓ to 0</Step>
 
-<Step say="Now show next year's students. The high-degree curve swings between the points, and the test error explodes.">Turn on next year's students: test error ↑↑</Step>
+<Step drive="click:check1; wait:1; s1=3/3" say="Now show next year's students. The high-degree curve swings between the points, and the test error explodes.">Turn on next year's students: test error ↑↑</Step>
 
 <Step effect="focus" say="So the training error cannot tell us which degree to use. We need another way to estimate the error on new data.">
 <p class="big-q sm">The training error can't choose the model</p>
@@ -27,13 +28,13 @@ Why the training error lies, and how to catch it
 
 <Slide lang="en" part="method" title="k-fold cross-validation" say="The most widely used fix is cross-validation.">
 
-<Step say="Split the data into k folds. Each round holds one fold out as next year's students and fits on the rest.">Each fold takes a turn as "next year's students"</Step>
+<Step drive="click:chip2; wait:1.5" say="Split the data into k folds. Each round holds one fold out as next year's students and fits on the rest.">Each fold takes a turn as "next year's students"</Step>
 
 <Step say="Average the k held-out errors. That is the CV error, an estimate of the test error.">Average the $k$ held-out errors = $\mathrm{CV}_k$</Step>
 
-<Step say="Repeat for every degree and pick the minimum. Try different k on the right.">Repeat for each degree, pick the minimum →</Step>
+<Step drive="s1=0/1.2; s1=10/5; s1=3/2" say="Repeat for every degree and pick the minimum. Try different k on the right.">Repeat for each degree, pick the minimum →</Step>
 
-<Step say="One rule: anything that learns from data, even standardization, must happen inside the loop, or the validation folds leak into training.">Every data-dependent step goes inside the loop</Step>
+<Step drive="click:chip4; wait:1.5" say="One rule: anything that learns from data, even standardization, must happen inside the loop, or the validation folds leak into training.">Every data-dependent step goes inside the loop</Step>
 
 <div slot="visual"><CVFolds client:visible lang="en" /></div>
 
@@ -51,17 +52,53 @@ Why the training error lies, and how to catch it
 
 <Slide lang="en" part="math" title="Bias–variance decomposition" say="Why is there a U at all? Split the expected test error at one point into three parts.">
 
-<Step say="Noise is the floor. Bias is how far the average fit is from the truth. Variance is how much the fit moves between training sets.">
+<Morph>
+
+<Step effect="morph" say="Take the expected test error at one point apart.">
 
 $$
-\mathbb E(Y - \hat f)^2 = \sigma^2 + \text{bias}^2 + \text{variance}
+\mathbb E(Y-\hat f)^2
 $$
 
 </Step>
 
-<Step say="On the right, thirty training sets. At low degree the curves agree but miss the truth.">Low degree: lines agree (low variance) but miss (high bias)</Step>
+<Step effect="morph" say="Y is the true function plus noise.">
 
-<Step say="At high degree the average is right, but the individual curves scatter everywhere.">High degree: average is right (low bias), lines scatter (high variance)</Step>
+$$
+\mathbb E(f+\varepsilon-\hat f)^2
+$$
+
+</Step>
+
+<Step effect="morph" say="The noise is independent of the fit, so the cross term vanishes and the noise variance splits off.">
+
+$$
+\sigma^2 + \mathbb E(f-\hat f)^2
+$$
+
+</Step>
+
+<Step effect="morph" say="Do the same again around the average fit, f-bar.">
+
+$$
+\sigma^2 + (f-\bar f)^2 + \mathbb E(\hat f-\bar f)^2
+$$
+
+</Step>
+
+<Step effect="morph" say="Noise, bias squared, variance. Noise is the floor; bias is how far the average fit is from the truth; variance is how much the fit moves between training sets.">
+
+$$
+\sigma^2 + \text{bias}^2 + \text{variance}
+$$
+
+</Step>
+
+</Morph>
+
+<Step drive="s1=0/1; s1=1/1.5" say="On the right, thirty training sets. At low degree the curves agree but miss the truth.">Low degree: lines agree (low variance) but miss (high bias)</Step>
+
+<Step drive="s1=8/5" say="At high degree the average is right, but the individual curves scatter everywhere.">High degree: average is right (low bias), lines scatter (high variance)</Step>
 
 <div slot="visual"><BiasVarianceViz client:visible lang="en" /></div>
 
@@ -97,11 +134,11 @@ $$
 
 <Slide lang="en" part="cases" title="Double descent" say="Modern models break the U. Here the model fits thirty points with p of a hundred features, using the minimum-norm solution.">
 
-<Step say="Below thirty features, the classical U.">$p \lt n$: the classical U</Step>
+<Step drive="s1=1/1; s1=25/3" say="Below thirty features, the classical U.">$p \lt n$: the classical U</Step>
 
-<Step say="At thirty features the model can just interpolate, and the risk spikes.">$p = n$: just enough to interpolate, risk spikes</Step>
+<Step drive="s1=30/2" say="At thirty features the model can just interpolate, and the risk spikes.">$p = n$: just enough to interpolate, risk spikes</Step>
 
-<Step say="Beyond that, the minimum-norm interpolant spreads out, variance falls, and the risk descends a second time.">$p \gt n$: minimum norm, second descent</Step>
+<Step drive="s1=100/5" say="Beyond that, the minimum-norm interpolant spreads out, variance falls, and the risk descends a second time.">$p \gt n$: minimum norm, second descent</Step>
 
 <Step effect="focus" say="Parameter count is not capacity. What matters is what the algorithm actually uses.">
 <p class="big-q sm">Parameter count ≠ capacity</p>

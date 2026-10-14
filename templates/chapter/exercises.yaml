@@ -1,0 +1,37 @@
+# 第 {{ID}} 章 {{TITLE_ZH}} —— 课后练习 / Chapter {{ID}} exercises
+# 格式见 exercises/ch07/exercises.yaml / Format: see exercises/ch07/exercises.yaml
+# Derivation answers are checked numerically: write them in mathjs syntax using only `vars`.
+
+derivation:
+  - id: TODO-scaffold-1
+    title: {zh: "TODO(scaffold)", en: "TODO(scaffold)"}
+    prompt:
+      zh: "TODO(scaffold) 题面，结尾写“可用变量：`a, b`”。"
+      en: "TODO(scaffold) Prompt, ending with “Variables: `a, b`”."
+    answer: "a*b"
+    vars: {a: [0.5, 3], b: [0.5, 3]}
+    solution:
+      zh: "TODO(scaffold) 完整推导，最后一句说明它和本章哪个组件 / 结论有关。"
+      en: "TODO(scaffold) Full derivation; end by linking it to a widget or result of the chapter."
+
+code:
+  - id: impl
+    kind: implement
+    file: impl.py
+    packages: [numpy]
+    title: {zh: "TODO(scaffold) 从零实现……", en: "TODO(scaffold) … from scratch"}
+    intro:
+      zh: "TODO(scaffold) 要补全哪些函数，运行后能回放什么。"
+      en: "TODO(scaffold) Which functions to complete, and what the replay shows."
+    metrics:
+      - {key: loss, label: {zh: "训练损失", en: "Training loss"}}
+  - id: library
+    kind: library
+    file: library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "TODO(scaffold) 用库组装……", en: "TODO(scaffold) Assemble … with the library"}
+    intro:
+      zh: "TODO(scaffold)"
+      en: "TODO(scaffold)"
+    metrics:
+      - {key: loss, label: {zh: "训练损失", en: "Training loss"}}

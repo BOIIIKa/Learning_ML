@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import Box from "../../components/astro/Box.astro";
 import DrawYourLine from "../../components/chapters/ch01/DrawYourLine";
 import TriadComposer from "../../components/chapters/ch01/TriadComposer";
@@ -18,7 +19,7 @@ import BayesClassifier from "../../components/chapters/ch01/BayesClassifier";
 
 <Step say="拖动两个橙色把手，自己画一条线。黄色竖线是每个学生的误差。">拖把手画线，黄色竖线 = 残差 →</Step>
 
-<Step say="再点两个按钮：按平方误差最优的线被缺考学生拉低了，按绝对误差最优的线几乎不受影响。">两种“最好”：平方误差 vs 绝对误差</Step>
+<Step drive="click:btn1; wait:2.2; click:btn2; wait:1" say="再点两个按钮：按平方误差最优的线被缺考学生拉低了，按绝对误差最优的线几乎不受影响。">两种“最好”：平方误差 vs 绝对误差</Step>
 
 <div slot="visual"><DrawYourLine client:visible lang="zh" /></div>
 
@@ -52,11 +53,11 @@ import BayesClassifier from "../../components/chapters/ch01/BayesClassifier";
 
 <Slide lang="zh" part="method" title="三要素组合器" say="三要素可以自由组合，每一种组合都是一个学习算法。">
 
-<Step say="常数模型配平方损失，得到的是平均数；配绝对值损失，得到的是中位数。">常数 + 平方 = 均值；常数 + 绝对值 = 中位数</Step>
+<Step drive="click:chip1; click:chip4; wait:2; click:chip5; wait:1.5" say="常数模型配平方损失，得到的是平均数；配绝对值损失，得到的是中位数。">常数 + 平方 = 均值；常数 + 绝对值 = 中位数</Step>
 
-<Step say="闭式解只适用于平方损失，其他损失要靠迭代。">闭式解只适用于平方损失</Step>
+<Step drive="click:chip2; click:chip4; click:chip7; wait:1.5" say="闭式解只适用于平方损失，其他损失要靠迭代。">闭式解只适用于平方损失</Step>
 
-<Step say="右边自己组合试试，看看训练过程中经验风险怎样下降。">在右侧自由组合 →</Step>
+<Step drive="click:chip3; click:chip6; click:chip8; wait:3.5" say="右边自己组合试试，看看训练过程中经验风险怎样下降。">在右侧自由组合 →</Step>
 
 <div slot="visual"><TriadComposer client:visible lang="zh" /></div>
 
@@ -64,13 +65,41 @@ import BayesClassifier from "../../components/chapters/ch01/BayesClassifier";
 
 <Slide lang="zh" part="math" title="平方损失下的最优预测" say="如果知道真实分布，最好的预测是什么？">
 
-<Step say="固定 x，用常数 c 预测 Y。期望平方损失可以拆成两项：条件方差，加上均值与 c 的差的平方。">
+<Morph>
+
+<Step effect="morph" say="固定 x，用常数 c 预测 Y，看期望平方损失。">
 
 $$
-\mathbb E[(Y-c)^2\mid x] = \mathrm{Var}(Y\mid x) + (\mu(x) - c)^2
+\mathbb E[(Y-c)^2]
 $$
 
 </Step>
+
+<Step effect="morph" say="在括号里减去再加上均值 μ。">
+
+$$
+\mathbb E[(Y-\mu+\mu-c)^2]
+$$
+
+</Step>
+
+<Step effect="morph" say="展开平方。中间的交叉项里，Y 减 μ 的期望是零。">
+
+$$
+\mathbb E[(Y-\mu)^2] + 2(\mu-c)\,\mathbb E[Y-\mu] + (\mu-c)^2
+$$
+
+</Step>
+
+<Step effect="morph" say="只剩两项：方差，加上均值与 c 之差的平方。">
+
+$$
+\mathrm{Var}(Y) + (\mu-c)^2
+$$
+
+</Step>
+
+</Morph>
 
 <Step say="第一项与 c 无关，是不可约噪声；第二项在 c 等于条件均值时为零。">⇒ $f^*(x) = \mathbb E[Y\mid X = x]$</Step>
 
@@ -84,7 +113,7 @@ $$
 
 <Step say="它的错误率叫贝叶斯错误率，是任何分类器都突破不了的下限。">贝叶斯错误率：任何分类器的下限</Step>
 
-<Step say="右边拖动你的阈值：无论怎么拖，错误率都不会低于贝叶斯阈值处的值。">拖动阈值，永远低不过贝叶斯 →</Step>
+<Step drive="s1=-2/2.5; s1=2.2/4; s1=0.4/2" say="右边拖动你的阈值：无论怎么拖，错误率都不会低于贝叶斯阈值处的值。">拖动阈值，永远低不过贝叶斯 →</Step>
 
 <div slot="visual"><BayesClassifier client:visible lang="zh" /></div>
 
@@ -94,7 +123,7 @@ $$
 
 <Step say="右边：用常数预测指数分布，损失取绝对值。紫色是期望风险，橙色是经验风险。">紫 = 期望风险，橙 = 经验风险 →</Step>
 
-<Step say="样本少时，两者的最小点差得远；样本多时，经验风险最小化的解趋于最优解。">$n$ 增大 ⇒ ERM 的解 → 最优解</Step>
+<Step drive="s1=0.6/1.5; s1=3.2/4.5" say="样本少时，两者的最小点差得远；样本多时，经验风险最小化的解趋于最优解。">$n$ 增大 ⇒ ERM 的解 → 最优解</Step>
 
 <Step effect="focus" say="但要小心：ERM 是看过数据才挑出函数的，所以它的经验风险总是偏乐观。下一章专门处理这个问题。">
 <p class="big-q sm">注意：$\hat R_n(\hat f)$ 偏乐观 → 第 02 章</p>

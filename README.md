@@ -6,6 +6,11 @@
 一套中英双语、交互可视化的机器学习课程，面向有数学基础、希望快速具备科研能力的学生。
 A bilingual, interactive-visual machine learning course for mathematically prepared students who want to build research ability quickly.
 
+在线阅读 / Live: **https://boiiika.github.io/Learning_ML/** —— 每章有竖版讲义（复习）和 3Blue1Brown 式自动播放的横版动画课程（初学）。
+Each chapter comes as notes (for review) and a self-playing, 3Blue1Brown-style animated course (for first-time learners).
+
+项目总结 / Project summary: [docs/PROJECT_SUMMARY.md](docs/PROJECT_SUMMARY.md)
+
 ## 课程大纲 / Outline
 
 - 中文：[curriculum/OUTLINE.zh.md](curriculum/OUTLINE.zh.md)
@@ -31,6 +36,16 @@ npm run dev        # http://localhost:4321 （会先运行 scripts/build_exercis
 npm test           # 算法引擎与判题单元测试 / engine & grading unit tests
 pytest ../tests    # 练习：参考解答全过、骨架全不过 / exercises: solutions pass, skeletons fail
 ```
+
+## 写一章 / Writing a chapter
+
+```bash
+python3 scripts/new_chapter.py 04        # 按模板生成一章的全部文件 / scaffold every file of chapter 04
+cd site && npm run verify:chapter -- linear-classification   # 浏览器检查 / browser check (Playwright)
+```
+
+流程、质量标准和常见坑见 [`CLAUDE.md`](CLAUDE.md) 与 [`.claude/skills/`](.claude/skills)（new-chapter、course-deck、widget、exercise、verify-site）。
+Workflow, quality bar and pitfalls: [`CLAUDE.md`](CLAUDE.md) and [`.claude/skills/`](.claude/skills).
 
 ## 贡献 / Contributing
 

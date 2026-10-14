@@ -72,3 +72,5 @@ kbd { font-family: var(--mono); font-size: 0.72rem; border: 1px solid var(--bord
 .cm-filling { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 35%, transparent), color-mix(in srgb, var(--accent-3) 35%, transparent), color-mix(in srgb, var(--accent-2) 35%, transparent)); background-size: 200% 100%; animation: shimmer 0.6s linear infinite; text-shadow: 0 0 8px var(--accent); border-radius: 3px; }
 .cm-filled { animation: filled-flash 1.4s ease-out both; border-radius: 3px; }
 @keyframes filled-flash { 0% { background: color-mix(in srgb, var(--success) 45%, transparent); text-shadow: 0 0 10px var(--success); } 100% { background: transparent; text-shadow: none; } }
+.ex-placeholder { margin: 1rem 0; background: repeating-linear-gradient(-45deg, transparent 0 10px, color-mix(in srgb, var(--border) 18%, transparent) 10px 11px); animation: ph-pulse 1.4s ease-in-out infinite alternate; }
+@keyframes ph-pulse { from { opacity: 0.5; } to { opacity: 1; } }

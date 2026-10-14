@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import OverfitDegree from "../../components/chapters/ch02/OverfitDegree";
 import BiasVarianceViz from "../../components/chapters/ch02/BiasVarianceViz";
 import CVFolds from "../../components/chapters/ch02/CVFolds";
@@ -13,9 +14,9 @@ import DoubleDescent from "../../components/chapters/ch02/DoubleDescent";
 
 <Slide lang="zh" part="scenario" title="用几次多项式？" say="成绩先涨得快、后来趋于平缓，所以老师把直线换成了多项式。可是用几次？">
 
-<Step say="把次数往上拖。训练误差只降不升，到十一次时曲线穿过了每一个点。">次数越高 → 训练误差 ↓ 到 0</Step>
+<Step drive="s1=0/1.2; s1=11/5" say="把次数往上拖。训练误差只降不升，到十一次时曲线穿过了每一个点。">次数越高 → 训练误差 ↓ 到 0</Step>
 
-<Step say="现在显示明年的学生。高次曲线在点之间剧烈摆动，测试误差爆炸。">打开“明年的学生”：测试误差 ↑↑</Step>
+<Step drive="click:check1; wait:1; s1=3/3" say="现在显示明年的学生。高次曲线在点之间剧烈摆动，测试误差爆炸。">打开“明年的学生”：测试误差 ↑↑</Step>
 
 <Step effect="focus" say="所以训练误差没法告诉我们该用几次。我们需要另一种方法估计新数据上的误差。">
 <p class="big-q sm">训练误差选不出模型</p>
@@ -27,13 +28,13 @@ import DoubleDescent from "../../components/chapters/ch02/DoubleDescent";
 
 <Slide lang="zh" part="method" title="k 折交叉验证" say="最常用的办法是交叉验证。">
 
-<Step say="把数据分成 k 折。每一轮留出一折当明年的学生，用其余数据拟合。">每一折轮流当“明年的学生”</Step>
+<Step drive="click:chip2; wait:1.5" say="把数据分成 k 折。每一轮留出一折当明年的学生，用其余数据拟合。">每一折轮流当“明年的学生”</Step>
 
 <Step say="把 k 个留出误差取平均，就是 CV 误差，它估计的是测试误差。">$k$ 个留出误差的平均 = $\mathrm{CV}_k$</Step>
 
-<Step say="对每个次数都做一遍，选最小的。右边可以换不同的 k 试试。">对每个次数重复，选最小 →</Step>
+<Step drive="s1=0/1.2; s1=10/5; s1=3/2" say="对每个次数都做一遍，选最小的。右边可以换不同的 k 试试。">对每个次数重复，选最小 →</Step>
 
-<Step say="一条规矩：任何从数据中学习的步骤，哪怕只是标准化，都必须放进循环里，否则验证折会泄漏到训练中。">所有依赖数据的步骤都放进循环</Step>
+<Step drive="click:chip4; wait:1.5" say="一条规矩：任何从数据中学习的步骤，哪怕只是标准化，都必须放进循环里，否则验证折会泄漏到训练中。">所有依赖数据的步骤都放进循环</Step>
 
 <div slot="visual"><CVFolds client:visible lang="zh" /></div>
 
@@ -51,17 +52,53 @@ import DoubleDescent from "../../components/chapters/ch02/DoubleDescent";
 
 <Slide lang="zh" part="math" title="偏差–方差分解" say="为什么会有 U 形？把某一点上的期望测试误差拆成三部分。">
 
-<Step say="噪声是下限。偏差是平均拟合离真相有多远。方差是换训练集时拟合晃动多大。">
+<Morph>
+
+<Step effect="morph" say="把某一点上的期望测试误差拆开。">
 
 $$
-\mathbb E(Y - \hat f)^2 = \sigma^2 + \text{偏差}^2 + \text{方差}
+\mathbb E(Y-\hat f)^2
 $$
 
 </Step>
 
-<Step say="右边是三十份训练集。次数低时，曲线彼此一致，却都偏离真相。">低次：曲线一致（方差小），但都偏（偏差大）</Step>
+<Step effect="morph" say="Y 等于真实函数加噪声。">
 
-<Step say="次数高时，平均是对的，但每条曲线四处乱飞。">高次：平均是对的（偏差小），曲线四散（方差大）</Step>
+$$
+\mathbb E(f+\varepsilon-\hat f)^2
+$$
+
+</Step>
+
+<Step effect="morph" say="噪声与拟合无关，交叉项为零，噪声方差单独分出来。">
+
+$$
+\sigma^2 + \mathbb E(f-\hat f)^2
+$$
+
+</Step>
+
+<Step effect="morph" say="再以平均拟合 f-bar 为中心，同样拆一次。">
+
+$$
+\sigma^2 + (f-\bar f)^2 + \mathbb E(\hat f-\bar f)^2
+$$
+
+</Step>
+
+<Step effect="morph" say="噪声、偏差平方、方差。噪声是下限；偏差是平均拟合离真相多远；方差是换训练集时拟合晃动多大。">
+
+$$
+\sigma^2 + \text{偏差}^2 + \text{方差}
+$$
+
+</Step>
+
+</Morph>
+
+<Step drive="s1=0/1; s1=1/1.5" say="右边是三十份训练集。次数低时，曲线彼此一致，却都偏离真相。">低次：曲线一致（方差小），但都偏（偏差大）</Step>
+
+<Step drive="s1=8/5" say="次数高时，平均是对的，但每条曲线四处乱飞。">高次：平均是对的（偏差小），曲线四散（方差大）</Step>
 
 <div slot="visual"><BiasVarianceViz client:visible lang="zh" /></div>
 
@@ -97,11 +134,11 @@ $$
 
 <Slide lang="zh" part="cases" title="双下降" say="现代模型打破了 U 形。这里用一百个特征中的前 p 个、以最小范数解拟合三十个点。">
 
-<Step say="特征少于三十个时，是经典的 U 形。">$p \lt n$：经典 U 形</Step>
+<Step drive="s1=1/1; s1=25/3" say="特征少于三十个时，是经典的 U 形。">$p \lt n$：经典 U 形</Step>
 
-<Step say="恰好三十个时，模型刚好能插值，风险冲到峰值。">$p = n$：刚好能插值，风险冲顶</Step>
+<Step drive="s1=30/2" say="恰好三十个时，模型刚好能插值，风险冲到峰值。">$p = n$：刚好能插值，风险冲顶</Step>
 
-<Step say="再往上，最小范数解把拟合摊开，方差下降，风险第二次下降。">$p \gt n$：最小范数，第二次下降</Step>
+<Step drive="s1=100/5" say="再往上，最小范数解把拟合摊开，方差下降，风险第二次下降。">$p \gt n$：最小范数，第二次下降</Step>
 
 <Step effect="focus" say="参数个数不等于容量。真正起作用的是算法实际用到的容量。">
 <p class="big-q sm">参数个数 ≠ 容量</p>

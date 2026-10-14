@@ -15,11 +15,13 @@ interface Ch {
 type View = "part" | "task" | "strategy" | "algorithm";
 
 /** The course map. Same chapters, regrouped by part or by the triad tags. */
-export default function TocExplorer({ lang, parts, tags, ready }: {
+export default function TocExplorer({ lang, parts, tags, ready, courses = [] }: {
   lang: Lang;
   parts: { id: string; title: Bilingual; summary: Bilingual; chapters: Ch[] }[];
   tags: Record<"task" | "strategy" | "algorithm", Record<string, Bilingual>>;
   ready: string[];
+  /** Slugs that also have an animated course. */
+  courses?: string[];
 }) {
   const [view, setView] = useState<View>("part");
   const chapters = parts.flatMap((p) => p.chapters);
@@ -61,7 +63,13 @@ export default function TocExplorer({ lang, parts, tags, ready }: {
                   </>
                 );
                 return isReady ? (
-                  <a key={c.id} className="toc-card ready" href={href(`${lang}/chapters/${c.slug}/`)}>{body}</a>
+                  <div key={c.id} className="toc-card ready">
+                    <a className="toc-main" href={href(`${lang}/chapters/${c.slug}/`)} aria-label={pick(c.title, lang)} />
+                    {body}
+                    {courses.includes(c.slug) && (
+                      <a className="toc-course" href={href(`${lang}/course/${c.slug}/`)} title={t(lang, "course")}>▶ {t(lang, "course")}</a>
+                    )}
+                  </div>
                 ) : (
                   <div key={c.id} className="toc-card">{body}</div>
                 );

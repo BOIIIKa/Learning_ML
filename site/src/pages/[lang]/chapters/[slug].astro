@@ -30,7 +30,7 @@ const L = {
   recap: { zh: "本章一页纸 · 复习用", en: "The chapter on one page · for review" },
 }
 ---
-<Base lang={lang} title={`${chapter.id} ${pick(chapter.title, lang)} · ${t(lang, "siteName")}`} path={`chapters/${slug}/`}>
+<Base lang={lang} title={`${chapter.id} ${pick(chapter.title, lang)} · ${t(lang, "siteName")}`} description={chapter.goals.map((g) => g[lang].replace(/\$[^$]*\$/g, "").trim()).join(lang === "zh" ? "；" : "; ")} path={`chapters/${slug}/`}>
   <header class="ch-hero">
     <div class="ch-hero-inner container">
       <div class="ch-num" aria-hidden="true">{chapter.id}</div>

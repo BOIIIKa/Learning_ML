@@ -1,5 +1,6 @@
 import Slide from "../../components/course/Slide.astro";
 import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
 import Box from "../../components/astro/Box.astro";
 import ManualSplit from "../../components/chapters/ch08/ManualSplit";
 import TreeGrow from "../../components/chapters/ch08/TreeGrow";
@@ -19,9 +20,9 @@ From "a chain of questions" to random forests, AdaBoost and gradient boosting
 
 <Step say="Doctors reason like a consultation: a chain of yes-or-no questions, each about a single measurement.">What doctors want: a chain of yes/no questions, one measurement each ✓</Step>
 
-<Step say="On the right, pick a feature and drag the threshold to make the first cut yourself. The curve below scans every threshold.">Make the first cut yourself and watch the impurity drop →</Step>
+<Step drive="s1=15%/1.5; s1=85%/4" say="On the right, pick a feature and drag the threshold to make the first cut yourself. The curve below scans every threshold.">Make the first cut yourself and watch the impurity drop →</Step>
 
-<Step say="Then press 'let the algorithm find the best cut'. All the algorithm does is take the highest point of that curve.">The algorithm simply takes the curve's peak</Step>
+<Step drive="click:btn1; wait:1.5" say="Then press 'let the algorithm find the best cut'. All the algorithm does is take the highest point of that curve.">The algorithm simply takes the curve's peak</Step>
 
 <div slot="visual"><ManualSplit client:visible lang="en" /></div>
 
@@ -45,7 +46,7 @@ From "a chain of questions" to random forests, AdaBoost and gradient boosting
 
 <Step say="Algorithm: split greedily and recursively from the root, then prune. The global optimum is NP-hard; each greedy step costs only n log n.">**Algorithm**: greedy recursion + pruning (the global optimum is NP-hard)</Step>
 
-<Step say="Drag the maximum depth on the right: training accuracy keeps rising, but test accuracy rises and then falls. That is overfitting.">Drag the depth: training ↑, test ↑ then ↓ →</Step>
+<Step drive="s1=1/1; s1=100%/5" say="Drag the maximum depth on the right: training accuracy keeps rising, but test accuracy rises and then falls. That is overfitting.">Drag the depth: training ↑, test ↑ then ↓ →</Step>
 
 <div slot="visual"><TreeGrow client:visible lang="en" /></div>
 
@@ -57,7 +58,7 @@ From "a chain of questions" to random forests, AdaBoost and gradient boosting
 
 <Step say="A random forest also considers only a random subset of features at each split, which makes the trees less correlated.">**Random forest**: add random features to decorrelate the trees</Step>
 
-<Step say="On the right, keep drawing new training data: the single tree's boundary jumps around, while the forest barely moves.">Keep redrawing the data: the tree jumps, the forest holds →</Step>
+<Step drive="click:chip1; click:btn1; wait:1; click:btn1; wait:1; click:chip2; click:btn1; wait:1; click:btn1; wait:1" say="On the right, keep drawing new training data: the single tree's boundary jumps around, while the forest barely moves.">Keep redrawing the data: the tree jumps, the forest holds →</Step>
 
 <div slot="visual"><ForestPlayground client:visible lang="en" /></div>
 
@@ -103,19 +104,37 @@ $$
 
 <Slide lang="en" part="math" title="What AdaBoost really is" say="Write the ensemble as an additive model, add one term per round, and optimize under the exponential loss.">
 
-<Step say="The effect of all earlier rounds is folded into the sample weights.">
+<Morph>
+
+<Step effect="morph" say="All earlier rounds are folded into the sample weights.">
 
 $$
-\min_{\alpha,G}\sum_i w_{mi}\,e^{-\alpha y_iG(x_i)},\quad w_{mi}=e^{-y_iF_{m-1}(x_i)}
+\sum_i w_{mi}\, e^{-\alpha y_i G(x_i)}
 $$
 
 </Step>
 
-<Step say="Split it into correct and incorrect samples and it becomes a simple function of the weighted error e.">$= e^{-\alpha}(1-e_m) + e^{\alpha}e_m$</Step>
+<Step effect="morph" say="Split the sum into correct and wrong predictions.">
+
+$$
+e^{-\alpha}\sum_{y_i = G(x_i)} w_{mi} + e^{\alpha}\sum_{y_i \ne G(x_i)} w_{mi}
+$$
+
+</Step>
+
+<Step effect="morph" say="The two groups weigh one minus e and e: a simple function of the weighted error e.">
+
+$$
+e^{-\alpha}(1-e_m) + e^{\alpha}e_m
+$$
+
+</Step>
+
+</Morph>
 
 <Step say="In G: pick the classifier with the smallest weighted error. In alpha: the derivative gives half the log-odds.">⇒ $G_m$ minimizes the weighted error, $\alpha_m = \tfrac12\ln\frac{1-e_m}{e_m}$</Step>
 
-<Step say="On the right is an AdaBoost replay: misclassified points grow each round, and training error always stays under the theoretical bound.">Right: misclassified points grow; error stays under the bound →</Step>
+<Step drive="click:.tp-play; wait:7" say="On the right is an AdaBoost replay: misclassified points grow each round, and training error always stays under the theoretical bound.">Right: misclassified points grow; error stays under the bound →</Step>
 
 <div slot="visual"><AdaBoostReplay client:visible lang="en" /></div>
 
@@ -129,7 +148,7 @@ $$
 
 <Step say="XGBoost and LightGBM add second derivatives, which gives the optimal leaf weight in closed form.">Second-order expansion ⇒ $w^* = -G/(H+\lambda)$</Step>
 
-<Step say="On the right, watch gradient boosting eat away the residuals round by round.">Right: the residuals get eaten away round by round →</Step>
+<Step drive="s1=1/1; s1=100%/6" say="On the right, watch gradient boosting eat away the residuals round by round.">Right: the residuals get eaten away round by round →</Step>
 
 <div slot="visual"><ResidualBoost client:visible lang="en" /></div>
 
