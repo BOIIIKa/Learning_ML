@@ -1,0 +1,161 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import DeepStall from "../../components/chapters/ch17/DeepStall";
+import BackpropGraph from "../../components/chapters/ch17/BackpropGraph";
+import InitVariance from "../../components/chapters/ch17/InitVariance";
+import AutodiffModes from "../../components/chapters/ch17/AutodiffModes";
+
+<Section lang="en" k="scenario">
+
+The optimizers of chapter 16 all assume the gradient is already there. Chapter 14 said a deep network can build far more linear regions from the same number of parameters. So the teacher deepens the two-moons classifier from 2 layers to 8 and, out of habit, initialises the weights as small random numbers. The training curve turns into a flat line: the loss sits at $\ln 2$, as good as guessing. Drag the depth:
+
+<DeepStall client:visible lang="en" />
+
+Change nothing but the initialisation, and the 8-layer network trains as well as the 2-layer one. This chapter answers:
+
+1. How are the gradients of hundreds of thousands of parameters computed in one go? (Backpropagation.)
+2. Why do gradients vanish or explode as the network gets deeper?
+3. How large should the initial weights be? (He and Xavier initialisation.)
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Computational graphs and reverse-mode automatic differentiation
+
+Any function built from elementary operations can be drawn as a **computational graph**: nodes are intermediate quantities, edges say "who uses whom". Differentiating it needs only the **local derivative** of each elementary operation, strung together by the chain rule.
+
+<Box kind="definition" title="Backpropagation (reverse-mode automatic differentiation)">
+
+1. **Forward**: compute every node's value $v$ in topological order, and keep them.
+2. **Backward**: set the output's adjoint $\bar L = \partial L / \partial L = 1$, then, in **reverse** topological order, compute for every node $v$
+
+$$
+\bar v = \frac{\partial L}{\partial v} = \sum_{c\,:\,v \to c} \bar c \, \frac{\partial c}{\partial v},
+$$
+
+summing "downstream gradient × local derivative" over every node $c$ that uses $v$.
+
+</Box>
+
+Here is the graph of one neuron, $L = \frac12(\sigma(w_1 x_1 + w_2 x_2 + b) - y)^2$. Step through it: values go forward, then gradients come back.
+
+<BackpropGraph client:visible lang="en" />
+
+<Box kind="insight" title="Chain rule + dynamic programming">
+
+Everyone knows the chain rule; the point of backpropagation is **reuse**. Both $\partial L / \partial w_1$ and $\partial L / \partial w_2$ pass through $\partial L / \partial s$. Working in reverse topological order computes every node's adjoint once and hands it to all its inputs. So one backward pass costs the same order as one forward pass (typically 2–3×), whatever the number of parameters. The price is storing every intermediate value of the forward pass.
+
+</Box>
+
+**The triad**: the model is a computational graph; there is no new strategy; the algorithm is the chain rule plus dynamic programming, that is, reverse mode.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### The gradient recursion of a multilayer perceptron
+
+Write $z_l = W_l h_{l-1} + b_l$, $h_l = \varphi(z_l)$, $h_0 = x$, and define the **error signal** $\delta_l = \partial L / \partial z_l$.
+
+<Box kind="theorem" title="The backpropagation equations">
+
+$$
+\delta_l = \varphi'(z_l) \odot \big(W_{l+1}^\top \delta_{l+1}\big), \qquad \frac{\partial L}{\partial W_l} = \delta_l\, h_{l-1}^\top, \qquad \frac{\partial L}{\partial b_l} = \delta_l.
+$$
+
+It starts at the output layer: for binary cross-entropy with a sigmoid, $\delta_L = p - y$ (chapter 15).
+
+</Box>
+
+**Derivation**: $z_{l+1, i} = \sum_j W_{l+1, ij}\, \varphi(z_{l, j}) + b_{l+1, i}$. $z_{l,j}$ affects $L$ only through $z_{l+1}$, so the chain rule gives $\delta_{l,j} = \sum_i \delta_{l+1, i}\, W_{l+1, ij}\, \varphi'(z_{l,j})$, which is the formula in matrix form. $W_{l, ij}$ appears only in $z_{l,i}$, with coefficient $h_{l-1, j}$, so $\partial L / \partial W_{l, ij} = \delta_{l, i}\, h_{l-1, j}$. (Derivation exercise 1 walks through a single neuron.)
+
+### Why gradients vanish or explode
+
+Unroll the recursion:
+
+$$
+\delta_1 = \mathrm{diag}\big(\varphi'(z_1)\big) W_2^\top \mathrm{diag}\big(\varphi'(z_2)\big) W_3^\top \cdots \delta_L.
+$$
+
+That is a product of $L$ matrices. If each layer multiplies a vector's length by $\rho$ on average, the first layer receives a factor $\rho^{L}$: exponential vanishing for $\rho \lt 1$, exponential explosion for $\rho \gt 1$. The sigmoid's derivative is at most $\frac14$, so with moderate weights $\rho \le \frac14 \lVert W \rVert$, which is why early deep networks would not train. ReLU has derivative 1 on the positive side, so the problem moves to the scale of the weights.
+
+### Variance from layer to layer, and He initialisation
+
+Let every layer have width $n$, with independent weights of mean 0 and variance $\sigma_w^2$, independent of the inputs. Then
+
+$$
+\mathrm{Var}(z_{l+1, i}) = \sum_{j=1}^{n} \mathrm{Var}(W_{ij})\, \mathbb E\big[h_{l,j}^2\big] = n\, \sigma_w^2\, \mathbb E\big[h_l^2\big].
+$$
+
+A ReLU's input $z_l$ is symmetric about 0, half positive and half negative, so $\mathbb E[\mathrm{ReLU}(z_l)^2] = \frac12 \mathrm{Var}(z_l)$:
+
+$$
+\mathrm{Var}(z_{l+1}) = \frac{n \sigma_w^2}{2}\, \mathrm{Var}(z_l).
+$$
+
+(Derivation exercise 2.) To keep the variance level from layer to layer, take $\sigma_w^2 = 2/n$: this is **He initialisation**. The backward $\delta$ obeys the same kind of recursion with $n$ replaced by the output width. For activations like tanh with slope 1 at zero there is no "half cut off" factor: the forward pass wants $\sigma_w^2 = 1/n_{\text{in}}$ and the backward pass $1/n_{\text{out}}$, and **Xavier initialisation** compromises on $2/(n_{\text{in}} + n_{\text{out}})$ (derivation exercise 3).
+
+<InitVariance client:visible lang="en" />
+
+### Forward mode and reverse mode
+
+For $f: \mathbb R^n \to \mathbb R^m$ the Jacobian is $m \times n$. **Forward mode** carries a "tangent" alongside every intermediate value and gets $J v$, one column, per pass; **reverse mode** gets $u^\top J$, one row, per pass. Each pass costs a constant multiple of one function evaluation. So the full $J$ takes $n$ passes forward or $m$ passes in reverse.
+
+Training has $m = 1$ (a scalar loss) and $n$ = all the parameters: one reverse pass gives the whole gradient. Central differences need $2n$ function evaluations, forward mode $n$ passes (derivation exercise 4). Reverse mode pays in memory instead: the forward values must be kept until the backward pass uses them (gradient checkpointing trades recomputation for memory when they do not fit).
+
+<AutodiffModes client:visible lang="en" />
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Example 1: forward and backward through one neuron
+
+<Box kind="example" title="x = (1.5, −0.5), w = (0.8, −1.2), b = 0.1, y = 0">
+
+| Node | Forward value | Backward: $\partial L / \partial(\cdot)$ |
+|---|---|---|
+| $u_1 = w_1 x_1$ | $1.2$ | $0.0985$ |
+| $u_2 = w_2 x_2$ | $0.6$ | $0.0985$ |
+| $s = u_1 + u_2 + b$ | $1.9$ | $0.0985$ |
+| $p = \sigma(s)$ | $0.8699$ | $0.8699$ |
+| $L = \frac12 (p - y)^2$ | $0.3784$ | $1$ |
+
+$\partial L / \partial s = (p - y)\, p(1 - p) = 0.8699 \times 0.8699 \times 0.1301 = 0.0985$. Hence $\partial L / \partial w_1 = 0.0985 \times 1.5 = 0.1477$, $\partial L / \partial w_2 = 0.0985 \times (-0.5) = -0.0492$, $\partial L / \partial b = 0.0985$ and $\partial L / \partial x_1 = 0.0985 \times 0.8 = 0.0788$. All three parameter gradients share the same $\partial L / \partial s$.
+
+</Box>
+
+### Example 2: why small random numbers fail
+
+<Box kind="example" title="ReLU layers of width 16, w ~ N(0, 0.1²)">
+
+$n\sigma_w^2/2 = 16 \times 0.01 / 2 = 0.08$: every layer multiplies the variance by $0.08$ and the standard deviation by $\sqrt{0.08} \approx 0.28$. After 8 layers the signal is down to $0.08^4 \approx 4 \times 10^{-5}$, and the gradient shrinks the same way going back. In the scenario the first layer of the 8-layer network gets a gradient of about $10^{-6}$, against about $3 \times 10^{-2}$ under He initialisation. He's standard deviation is $\sqrt{2/16} \approx 0.35$, only 3.5× larger than $0.1$, yet over 8 layers that is four orders of magnitude.
+
+</Box>
+
+### Example 3: the sigmoid bound
+
+<Box kind="example" title="A chain of 10 sigmoid units, one per layer, weights 1">
+
+$\sigma'(z) = \sigma(z)(1 - \sigma(z)) \le \frac14$, so $\lvert \partial h_{10} / \partial h_0 \rvert \le (\frac14)^{10} \approx 9.5 \times 10^{-7}$. Even if every unit sits at zero, where the slope is largest, the gradient shrinks a millionfold.
+
+</Box>
+
+### Example 4: the gradient of a million parameters
+
+<Box kind="example" title="n = 10⁶ parameters, one loss">
+
+Central differences: $2 \times 10^6$ forward evaluations. Forward mode: $10^6$ passes. Reverse mode: one forward and one backward pass, about the cost of 3 forward evaluations. More than five orders of magnitude apart: this is what makes training large models possible at all.
+
+</Box>
+
+### Extensions
+
+- **Residual connections**: $h_{l+1} = h_l + F(h_l)$ has Jacobian $I + \partial F / \partial h$, and the product no longer has to decay exponentially (the residual networks of chapter 19 and the Transformers of chapter 20 rely on it).
+- **Normalisation layers**: BatchNorm and LayerNorm keep pulling each layer's scale back during training, making networks far less sensitive to initialisation.
+- **Other initialisations**: orthogonal initialisation makes $W$ preserve lengths; LSUV calibrates the variance layer by layer on data; μP keeps hyperparameters transferable as models get wider.
+- **Gradient clipping**: caps the gradient norm to stop occasional explosions (see chapter 16's handbook).
+- **Autodiff frameworks**: PyTorch and JAX record user code as a computational graph and differentiate it in reverse; JAX also offers forward mode (`jvp`) and combinations of the two (such as Hessian-vector products).
+
+</Section>

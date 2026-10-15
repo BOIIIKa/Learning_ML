@@ -1,0 +1,23 @@
+/* Chapter 17 widgets. Colours only from the theme variables. */
+.bp-sub { font-size: 0.82rem; color: var(--text-muted); margin: 0.3rem 0 0.1rem; }
+.bp-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.6rem; }
+.bp-two > * { min-width: 0; }
+.bp-grid { stroke: var(--border); stroke-width: 0.6; opacity: 0.6; }
+.bp-tick { fill: var(--text-muted); font: 9px var(--mono); }
+.bp-bar.small { fill: var(--danger); }
+.bp-bar.he { fill: var(--success); }
+.bp-graph { max-width: 600px; }
+.bp-edge { stroke: var(--border); stroke-width: 1.4; }
+.bp-edge.back { stroke: var(--accent-2); stroke-width: 2.4; }
+.bp-node circle { fill: var(--surface); stroke: var(--ink); stroke-width: 1.4; }
+.bp-node.leaf circle { stroke: var(--text-muted); stroke-dasharray: 3 2; }
+.bp-node.cur circle { stroke: var(--accent); stroke-width: 3; }
+.bp-op { fill: var(--ink); font: 600 12px var(--mono); }
+.bp-name { fill: var(--text-muted); font: 11px var(--mono); }
+.bp-val { fill: var(--accent); font: 10px var(--mono); }
+.bp-grad { fill: var(--accent-2); font: 600 10px var(--mono); }
+.bp-now { font-size: 0.88rem; color: var(--text-muted); min-height: 1.4em; margin: 0.2rem 0; }
+.bp-now b { color: var(--accent); margin: 0 0.3rem; }
+.ad-cell { fill: none; stroke: var(--border); stroke-width: 1; }
+.ad-cell.pos { fill: var(--accent); stroke: none; }
+.ad-cell.neg { fill: var(--accent-2); stroke: none; }

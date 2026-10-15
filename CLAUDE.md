@@ -47,6 +47,6 @@ python3 scripts/new_chapter.py <id>          # scaffold the next chapter
 
 ## Status
 
-Done: chapters 00–16 (notes, course, recap, widgets, exercises, handbook).
-Next in order: 17 backprop-init (backpropagation and initialization), then 18–21; reuse `site/src/engines/mlp.ts` (forward + backprop, gradient-checked) and `optimization.ts` (optimizers, `detCos`).
+Done: chapters 00–17 (notes, course, recap, widgets, exercises, handbook).
+Next in order: 18 dl-generalization (regularization and the generalization puzzle), then 19–21; reuse `site/src/engines/backprop-init.ts` (fast flat-array ReLU MLP training, `trainDeep`), `optimization.ts` (optimizers, `detCos`) and `mlp.ts`.
 See `docs/PROJECT_SUMMARY.md` for the full picture and roadmap, and `docs/HANDOFF.md` for the user's preferences, environment notes and the concrete plan for the next chapter.

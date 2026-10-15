@@ -1,0 +1,8 @@
+- **Computational graph**: a function split into elementary operations; differentiating it needs only each operation's local derivative.
+- **Reverse mode**: forward, compute and store values in topological order; backward, start at $\bar L = 1$ and apply $\bar v = \sum_c \bar c\, \partial c/\partial v$ in reverse order. Chain rule + dynamic programming, about 2–3× a forward pass, paid for by storing the intermediates.
+- **MLP recursion**: $\delta_l = \varphi'(z_l) \odot (W_{l+1}^\top \delta_{l+1})$, $\partial L/\partial W_l = \delta_l h_{l-1}^\top$, $\partial L/\partial b_l = \delta_l$; with BCE + sigmoid, $\delta_L = p - y$.
+- **Vanishing and exploding**: $\delta_1$ is a product of $L$ matrices, $\times\rho$ per layer gives $\times\rho^L$; the sigmoid's $\sigma' \le \frac14$, so 10 layers give $\le 9.5 \times 10^{-7}$.
+- **He initialisation**: $\mathrm{Var}(z_{l+1}) = \frac{n\sigma_w^2}{2}\mathrm{Var}(z_l)$ (ReLU cuts off half), so take $\sigma_w^2 = 2/n$; **Xavier**: $2/(n_{\text{in}} + n_{\text{out}})$, for tanh.
+- **Scenario**: width 16 and $\sigma_w = 0.1$ multiply the variance by $0.08$ per layer; from 5 layers on the loss sits at $\ln 2$; He initialisation trains at every depth.
+- **Forward vs reverse mode**: for an $m \times n$ Jacobian, forward gives a column per pass ($n$ passes), reverse a row per pass ($m$ passes); a loss has $m = 1$, so one reverse pass gives the whole gradient, against $2n$ evaluations for central differences.
+- **Examples**: the neuron's $\partial L/\partial s = 0.0985$ and $\partial L/\partial w_1 = 0.148$; $0.08^4 \approx 4 \times 10^{-5}$; $10^6$ parameters: $2 \times 10^6$ evaluations vs about 3.

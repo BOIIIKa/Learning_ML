@@ -1,0 +1,161 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import DeepStall from "../../components/chapters/ch17/DeepStall";
+import BackpropGraph from "../../components/chapters/ch17/BackpropGraph";
+import InitVariance from "../../components/chapters/ch17/InitVariance";
+import AutodiffModes from "../../components/chapters/ch17/AutodiffModes";
+
+<Section lang="zh" k="scenario">
+
+第 16 章的优化器都假定梯度已经有了。第 14 章又说，深网络能用同样多的参数拼出多得多的线性区域。于是老师把双月分类的网络从 2 层加到 8 层，按习惯把权重初始化成很小的随机数。结果训练曲线变成一条水平线：损失停在 $\ln 2$，和瞎猜一样。拖动层数试试：
+
+<DeepStall client:visible lang="zh" />
+
+只是换了一种初始化，8 层网络就和 2 层一样能训练。这一章回答：
+
+1. 几十万个参数的梯度，是怎样一次算出来的？（反向传播）
+2. 为什么网络一深，梯度就会消失或爆炸？
+3. 初始权重该取多大？（He 与 Xavier 初始化）
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 计算图与反向模式自动微分
+
+任何由基本运算组成的函数，都可以画成一张**计算图**：节点是中间量，边表示“谁用到了谁”。求导只需要每种基本运算的**局部导数**，再用链式法则把它们串起来。
+
+<Box kind="definition" title="反向传播（反向模式自动微分）">
+
+1. **前向**：按拓扑顺序计算每个节点的值 $v$，并把它们存下来。
+2. **反向**：令输出的伴随量 $\bar L = \partial L / \partial L = 1$，按**逆**拓扑顺序，对每个节点 $v$ 计算
+
+$$
+\bar v = \frac{\partial L}{\partial v} = \sum_{c\,:\,v \to c} \bar c \, \frac{\partial c}{\partial v},
+$$
+
+即对所有用到 $v$ 的下游节点 $c$，把“下游的梯度 × 局部导数”相加。
+
+</Box>
+
+下面是一个神经元 $L = \frac12(\sigma(w_1 x_1 + w_2 x_2 + b) - y)^2$ 的计算图。按步播放：先前向算值，再反向传梯度。
+
+<BackpropGraph client:visible lang="zh" />
+
+<Box kind="insight" title="链式法则 + 动态规划">
+
+链式法则人人会用，反向传播的要点在于**复用**。计算 $\partial L / \partial w_1$ 和 $\partial L / \partial w_2$ 都要经过 $\partial L / \partial s$；按逆拓扑序计算，每个节点的伴随量只算一次，再分给所有上游。所以一次反向的代价和一次前向是同一个量级（通常 2–3 倍），与参数个数无关。代价是要存下前向的所有中间值。
+
+</Box>
+
+**三要素**：模型是计算图；没有新的策略；算法是链式法则加动态规划，即反向模式。
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 多层感知机的梯度递推
+
+记 $z_l = W_l h_{l-1} + b_l$，$h_l = \varphi(z_l)$，$h_0 = x$；定义**误差信号** $\delta_l = \partial L / \partial z_l$。
+
+<Box kind="theorem" title="反向传播公式">
+
+$$
+\delta_l = \varphi'(z_l) \odot \big(W_{l+1}^\top \delta_{l+1}\big), \qquad \frac{\partial L}{\partial W_l} = \delta_l\, h_{l-1}^\top, \qquad \frac{\partial L}{\partial b_l} = \delta_l.
+$$
+
+起点是输出层：二元交叉熵配 sigmoid 时 $\delta_L = p - y$（第 15 章）。
+
+</Box>
+
+**推导**：$z_{l+1, i} = \sum_j W_{l+1, ij}\, \varphi(z_{l, j}) + b_{l+1, i}$。$z_{l,j}$ 只通过 $z_{l+1}$ 影响 $L$，链式法则给出 $\delta_{l,j} = \sum_i \delta_{l+1, i}\, W_{l+1, ij}\, \varphi'(z_{l,j})$，写成矩阵就是上式。$W_{l, ij}$ 只出现在 $z_{l,i}$ 里，系数是 $h_{l-1, j}$，所以 $\partial L / \partial W_{l, ij} = \delta_{l, i}\, h_{l-1, j}$。（推导题 1 用单个神经元走一遍。）
+
+### 梯度为什么会消失或爆炸
+
+把递推展开：
+
+$$
+\delta_1 = \mathrm{diag}\big(\varphi'(z_1)\big) W_2^\top \mathrm{diag}\big(\varphi'(z_2)\big) W_3^\top \cdots \delta_L.
+$$
+
+这是 $L$ 个矩阵的连乘。每一层若把向量的长度平均乘以 $\rho$，传到第 1 层就乘了 $\rho^{L}$：$\rho \lt 1$ 指数消失，$\rho \gt 1$ 指数爆炸。sigmoid 的导数不超过 $\frac14$，权重不大时 $\rho \le \frac14 \lVert W \rVert$，这正是早年深网络训练不动的原因。ReLU 在正半轴导数为 1，问题就落在权重的尺度上。
+
+### 方差的逐层传播与 He 初始化
+
+设各层宽度为 $n$，权重独立、均值 0、方差 $\sigma_w^2$，与输入独立。那么
+
+$$
+\mathrm{Var}(z_{l+1, i}) = \sum_{j=1}^{n} \mathrm{Var}(W_{ij})\, \mathbb E\big[h_{l,j}^2\big] = n\, \sigma_w^2\, \mathbb E\big[h_l^2\big].
+$$
+
+ReLU 的输入 $z_l$ 关于 0 对称，正负各占一半，所以 $\mathbb E[\mathrm{ReLU}(z_l)^2] = \frac12 \mathrm{Var}(z_l)$：
+
+$$
+\mathrm{Var}(z_{l+1}) = \frac{n \sigma_w^2}{2}\, \mathrm{Var}(z_l).
+$$
+
+（推导题 2。）要让方差逐层不变，取 $\sigma_w^2 = 2/n$：这就是 **He 初始化**。反向的 $\delta$ 满足同样形式的递推，只是 $n$ 换成输出宽度。对 tanh 这类在零点斜率为 1 的激活，没有“一半被截掉”的因子，前向要 $\sigma_w^2 = 1/n_{\text{in}}$，反向要 $1/n_{\text{out}}$；**Xavier 初始化**取两者的折中 $2/(n_{\text{in}} + n_{\text{out}})$（推导题 3）。
+
+<InitVariance client:visible lang="zh" />
+
+### 前向模式与反向模式
+
+对 $f: \mathbb R^n \to \mathbb R^m$，雅可比矩阵是 $m \times n$。**前向模式**让每个中间量带着一个“切向量”一起前进，一遍得到 $J v$，即一列；**反向模式**一遍得到 $u^\top J$，即一行。每遍的代价都是一次函数计算的常数倍。所以要得到整个 $J$，前向需要 $n$ 遍，反向需要 $m$ 遍。
+
+训练时 $m = 1$（一个标量损失），$n$ 是全部参数：反向模式一遍就得到整个梯度。用中心差分要 $2n$ 次函数计算，前向模式要 $n$ 遍（推导题 4）。反向模式付出的代价是内存：前向的中间值都要存到反向时再用（显存不够时用梯度检查点，以重算换内存）。
+
+<AutodiffModes client:visible lang="zh" />
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题一：一个神经元的前向与反向
+
+<Box kind="example" title="x = (1.5, −0.5)，w = (0.8, −1.2)，b = 0.1，y = 0">
+
+| 节点 | 前向值 | 反向：$\partial L / \partial(\cdot)$ |
+|---|---|---|
+| $u_1 = w_1 x_1$ | $1.2$ | $0.0985$ |
+| $u_2 = w_2 x_2$ | $0.6$ | $0.0985$ |
+| $s = u_1 + u_2 + b$ | $1.9$ | $0.0985$ |
+| $p = \sigma(s)$ | $0.8699$ | $0.8699$ |
+| $L = \frac12 (p - y)^2$ | $0.3784$ | $1$ |
+
+$\partial L / \partial s = (p - y)\, p(1 - p) = 0.8699 \times 0.8699 \times 0.1301 = 0.0985$。于是 $\partial L / \partial w_1 = 0.0985 \times 1.5 = 0.1477$，$\partial L / \partial w_2 = 0.0985 \times (-0.5) = -0.0492$，$\partial L / \partial b = 0.0985$，$\partial L / \partial x_1 = 0.0985 \times 0.8 = 0.0788$。三个参数的梯度共用同一个 $\partial L / \partial s$。
+
+</Box>
+
+### 例题二：小随机数为什么不行
+
+<Box kind="example" title="宽 16 的 ReLU 层，w ~ N(0, 0.1²)">
+
+$n\sigma_w^2/2 = 16 \times 0.01 / 2 = 0.08$：每层把方差乘以 $0.08$，把标准差乘以 $\sqrt{0.08} \approx 0.28$。8 层后信号只剩 $0.08^4 \approx 4 \times 10^{-5}$，梯度在反方向上同样缩小。场景里 8 层网络第 1 层的梯度约 $10^{-6}$，He 初始化下约 $3 \times 10^{-2}$。He 初始化的标准差是 $\sqrt{2/16} \approx 0.35$，只比 $0.1$ 大 3.5 倍，可乘上 8 层就差了 4 个数量级。
+
+</Box>
+
+### 例题三：sigmoid 的上界
+
+<Box kind="example" title="10 层、每层一个单元、权重为 1 的 sigmoid 链">
+
+$\sigma'(z) = \sigma(z)(1 - \sigma(z)) \le \frac14$，所以 $\lvert \partial h_{10} / \partial h_0 \rvert \le (\frac14)^{10} \approx 9.5 \times 10^{-7}$。即使每层都处在斜率最大的零点，梯度也缩小了一百万倍。
+
+</Box>
+
+### 例题四：一百万个参数的梯度
+
+<Box kind="example" title="n = 10⁶ 个参数，一个损失">
+
+中心差分：$2 \times 10^6$ 次前向计算。前向模式：$10^6$ 遍。反向模式：一次前向 + 一次反向，约等于 3 次前向的代价。差距是 5 个多数量级，这就是深度学习能够训练大模型的前提。
+
+</Box>
+
+### 拓展
+
+- **残差连接**：$h_{l+1} = h_l + F(h_l)$，雅可比是 $I + \partial F / \partial h$，乘积不再必然指数衰减（第 19 章的残差网络、第 20 章的 Transformer 都靠它）。
+- **归一化层**：BatchNorm、LayerNorm 在训练中持续把每层的尺度拉回来，降低了对初始化的敏感度。
+- **其他初始化**：正交初始化让 $W$ 保持向量长度；LSUV 用数据逐层校准方差；μP 让超参数在模型变宽时保持可迁移。
+- **梯度裁剪**：限制梯度范数，防止偶发的爆炸（第 16 章的手册）。
+- **自动微分框架**：PyTorch、JAX 都把用户代码记录成计算图再反向求导；JAX 也提供前向模式（`jvp`）和两者的组合（如 Hessian-向量积）。
+
+</Section>

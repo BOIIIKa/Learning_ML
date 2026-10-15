@@ -1,0 +1,42 @@
+---
+title: "反向传播实战：梯度检查、初始化与数值问题"
+summary: "PyTorch / JAX 的自动微分怎么用，怎样用有限差分检查手写梯度，各种初始化怎么选，以及梯度消失、爆炸和显存不够时的办法。"
+chapters: ["17"]
+---
+
+### 常用代码
+
+```python
+import torch, torch.nn as nn
+layer = nn.Linear(256, 256)
+nn.init.kaiming_normal_(layer.weight, nonlinearity="relu")   # He：Var = 2 / fan_in
+nn.init.xavier_uniform_(layer.weight)                        # Xavier：Var = 2 / (fan_in + fan_out)
+nn.init.zeros_(layer.bias)
+
+torch.autograd.gradcheck(f, inputs)            # 用双精度输入做有限差分对拍
+torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+from torch.utils.checkpoint import checkpoint  # 以重算换显存
+
+import jax
+g = jax.grad(loss)(params)                     # 反向模式
+y, jv = jax.jvp(f, (x,), (v,))                 # 前向模式：J v
+y, vjp_fn = jax.vjp(f, x); (uJ,) = vjp_fn(u)   # 反向模式：uᵀ J
+```
+
+### 容易踩的坑
+
+- **手写梯度一定要做梯度检查**：中心差分 $(f(x + h e_i) - f(x - h e_i)) / 2h$，$h \approx 10^{-5}$，用 float64；相对误差 $\lt 10^{-6}$ 才算对。ReLU 的折点附近会有假报警，换几个随机点再看。
+- **PyTorch 的 `nn.Linear` 默认初始化不是 He**：它用的是缩放过的均匀分布（kaiming_uniform 配 $a = \sqrt 5$），方差约 $1/(3 n)$。很深的纯 ReLU 网络要自己调用 `kaiming_normal_`；有归一化层或残差连接时影响就小多了。
+- **梯度累加**：PyTorch 的 `.grad` 会累加，每步要 `zero_grad()`；忘了它等于把学习率越调越大。
+- **`requires_grad` 与 `no_grad`**：评估和推理放进 `torch.no_grad()`，否则会建图、占显存。
+- **梯度消失的诊断**：每层打印 `p.grad.norm()`；前几层比后几层小几个数量级，就先查初始化和激活函数（sigmoid / tanh 饱和），再考虑残差连接和归一化。
+- **梯度爆炸 / NaN**：梯度裁剪、调小学习率；混合精度时用 `GradScaler`。
+- **显存不够**：反向传播要存所有中间激活。梯度检查点（只存部分层，反向时重算）以约 30% 的额外计算换显存。
+
+### 前沿阅读
+
+- Rumelhart、Hinton 与 Williams（1986）：用误差反向传播学习表示。
+- Glorot 与 Bengio（2010）：理解深度前馈网络训练的困难（Xavier 初始化）。
+- He 等（2015）：Delving Deep into Rectifiers（He 初始化）。
+- Baydin 等（2018）：机器学习中的自动微分综述。
+- Yang 与 Hu（2021）：μP，宽网络的特征学习与超参数迁移。

@@ -1,0 +1,187 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import DeepStall from "../../components/chapters/ch17/DeepStall";
+import BackpropGraph from "../../components/chapters/ch17/BackpropGraph";
+import InitVariance from "../../components/chapters/ch17/InitVariance";
+import AutodiffModes from "../../components/chapters/ch17/AutodiffModes";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 17 章 · 动画课程" title="反向传播与初始化" say="梯度是怎么算出来的？网络一深，为什么就学不动了？">
+
+计算图 · 反向传播 · 梯度消失与爆炸 · He 初始化
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="网络一加深，就学不动了" say="老师把双月分类的网络加深，权重照旧初始化成很小的随机数。">
+
+<Step drive="s1=2/1.5" say="两层：小随机数和 He 初始化都能学。">2 层：都能学</Step>
+
+<Step drive="s1=5/2" say="五层：小随机数的损失停在 ln 2，等于瞎猜。">5 层：损失停在 $\ln 2$</Step>
+
+<Step drive="s1=8/2" say="八层：第一层的梯度只有十的负六次方，He 初始化下是百分之三。">8 层：梯度 $10^{-6}$ 对 $3 \times 10^{-2}$</Step>
+
+<div slot="visual"><DeepStall client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="第一，几十万个参数的梯度，怎样一次算出来？">
+<p class="big-q sm">梯度是怎样一次算出来的？</p>
+</Step>
+
+<Step say="第二，为什么网络一深，梯度就会消失或爆炸？">为什么会消失或爆炸？</Step>
+
+<Step say="第三，初始权重该取多大？">初始权重取多大？</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="计算图上的前向与反向" say="一个神经元，拆成乘、加、sigmoid、减、平方。">
+
+<Step drive="s1=6/4" say="前向：沿箭头算出每个节点的值，损失是零点三七八。">前向：$s = 1.9$，$p = 0.870$，$L = 0.378$</Step>
+
+<Step drive="s1=10/3" say="反向：从 L 出发逆着箭头走。每个节点的梯度，等于下游梯度乘局部导数。">反向：$\partial L/\partial s = 0.0985$</Step>
+
+<Step drive="s1=15/3" say="走到底，三个参数的梯度都有了，它们共用同一个 dL/ds。">$\partial L/\partial w_1 = 0.148$，共用 $\partial L/\partial s$</Step>
+
+<Step drive="s2=-1/2.5" say="改变 w1，所有值和梯度一起变。">拖动 $w_1$：全部重算</Step>
+
+<div slot="visual"><BackpropGraph client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="反向模式的规则" say="把这个过程写成一条规则。">
+
+<Step say="前向按拓扑序算值，并存下来。">① 前向：按拓扑序算出并保存每个值</Step>
+
+<Step say="反向按逆拓扑序，对每个节点，把下游的梯度乘局部导数，再相加。">② 反向：$\bar v = \sum_{c} \bar c\, \partial c / \partial v$</Step>
+
+<Step effect="focus" say="每个节点只算一次，再分给所有上游：链式法则加动态规划，代价和一次前向同一个量级。">
+<p class="big-q sm">反向传播 = 链式法则 + 动态规划</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="多层感知机的递推" say="对多层感知机写出来。">
+
+<Morph>
+
+<Step effect="morph" say="定义误差信号 delta l，等于损失对第 l 层预激活的导数。">
+
+$$
+\delta_l = \frac{\partial L}{\partial z_l}, \qquad z_{l+1} = W_{l+1}\, \varphi(z_l) + b_{l+1}
+$$
+
+</Step>
+
+<Step effect="morph" say="z l 只通过下一层影响损失，链式法则给出递推。">
+
+$$
+\delta_l = \varphi'(z_l) \odot \big(W_{l+1}^\top \delta_{l+1}\big)
+$$
+
+</Step>
+
+<Step effect="morph" say="权重的梯度是误差信号乘上一层的激活。">
+
+$$
+\frac{\partial L}{\partial W_l} = \delta_l\, h_{l-1}^\top, \qquad \frac{\partial L}{\partial b_l} = \delta_l
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="梯度为什么会消失" say="把递推展开。">
+
+<Step say="第一层的误差信号，是很多个矩阵的连乘。">$\delta_1 = \mathrm{diag}(\varphi'_1) W_2^\top \cdots \mathrm{diag}(\varphi'_{L-1}) W_L^\top \delta_L$</Step>
+
+<Step say="每层平均乘以 rho，传到第一层就乘了 rho 的 L 次方。">每层 $\times \rho$ ⇒ 共 $\times \rho^L$</Step>
+
+<Step say="sigmoid 的导数不超过四分之一：十层就是十的负六次方。">sigmoid：$(\frac14)^{10} \approx 9.5 \times 10^{-7}$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="方差保持：He 初始化" say="ReLU 网络里，方差怎样逐层传递？">
+
+<Morph>
+
+<Step effect="morph" say="n 个独立项相加，方差相加。">
+
+$$
+\mathrm{Var}(z_{l+1}) = n\, \sigma_w^2\, \mathbb E\big[h_l^2\big]
+$$
+
+</Step>
+
+<Step effect="morph" say="ReLU 截掉一半：h 平方的期望是方差的一半。">
+
+$$
+\mathrm{Var}(z_{l+1}) = \frac{n\, \sigma_w^2}{2}\, \mathrm{Var}(z_l)
+$$
+
+</Step>
+
+<Step effect="morph" say="让这个系数等于一。">
+
+$$
+\sigma_w^2 = \frac{2}{n}
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="这就是 He 初始化。tanh 没有一半的因子，Xavier 取二除以输入宽度加输出宽度。">He：$2/n$　Xavier：$2/(n_{\text{in}} + n_{\text{out}})$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="初始化与各层的方差" say="宽九十六、深三十层的网络，看每层激活和梯度的大小。">
+
+<Step drive="click:chip3; wait:1.5" say="He 初始化，g 等于二：前向和反向都大致不变。">$g = 2$：大致不变</Step>
+
+<Step drive="s1=1/2" say="g 等于一：三十层后缩到十的负五次方，梯度也一样。">$g = 1$：$\sim 10^{-5}$</Step>
+
+<Step drive="s1=4/2" say="g 等于四：涨到十的四次方。">$g = 4$：$\sim 10^{4}$</Step>
+
+<Step drive="click:chip2; click:chip4; wait:1.5" say="tanh 在零点斜率为一，配 g 等于一的 Xavier 初始化。">tanh + Xavier（$g = 1$）</Step>
+
+<div slot="visual"><InitVariance client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="前向模式还是反向模式？" say="雅可比矩阵 m 乘 n。一遍能得到多少？">
+
+<Step drive="click:chip1; s3=0/0.3; s3=8/4" say="前向模式一遍得到一列：八个输入，要八遍。">前向：一遍一列，$n$ 遍</Step>
+
+<Step drive="click:chip2; s3=0/0.3; s3=2/2" say="反向模式一遍得到一行：两个输出，两遍。">反向：一遍一行，$m$ 遍</Step>
+
+<Step effect="focus" say="训练网络只有一个损失：反向一遍，就得到所有参数的梯度。">
+<p class="big-q sm">$m = 1$：反向一遍得到整个梯度</p>
+</Step>
+
+<div slot="visual"><AutodiffModes client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：几个数" say="几个可以手算的数。">
+
+<Step say="神经元：dL/ds 等于零点零九八五，乘一点五得到 dL/dw1 等于零点一四八。">$\partial L/\partial w_1 = 0.0985 \times 1.5 = 0.148$</Step>
+
+<Step say="宽十六、标准差零点一：每层方差乘零点零八，八层后只剩四乘十的负五次方。">$0.08^4 \approx 4 \times 10^{-5}$</Step>
+
+<Step say="一百万个参数：中心差分要两百万次计算，反向传播约三次。">$2 \times 10^6$ 次 对 约 3 次</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，用 NumPy 从零写反向传播和 He 初始化，再用 autograd 库自动求导。">
+
+<Step say="代码运行后，可以回放你写的网络在双月数据上一轮轮学出弯曲的分界线。">✎ 4 道推导 · ⌨ 反向传播 + He 初始化 · ⚙ autograd：grad、jvp、vjp</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/backprop-init/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

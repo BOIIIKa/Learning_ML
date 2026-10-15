@@ -1,0 +1,187 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import DeepStall from "../../components/chapters/ch17/DeepStall";
+import BackpropGraph from "../../components/chapters/ch17/BackpropGraph";
+import InitVariance from "../../components/chapters/ch17/InitVariance";
+import AutodiffModes from "../../components/chapters/ch17/AutodiffModes";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 17 · Animated course" title="Backpropagation and Initialization" say="How are gradients computed? And why does a deeper network stop learning?">
+
+Computational graphs · backpropagation · vanishing and exploding gradients · He initialisation
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="Make it deeper and it stops learning" say="The teacher deepens the two-moons classifier, initialising the weights as small random numbers as usual.">
+
+<Step drive="s1=2/1.5" say="Two layers: both the small init and He init learn.">2 layers: both learn</Step>
+
+<Step drive="s1=5/2" say="Five layers: with the small init, the loss sits at log two, no better than guessing.">5 layers: loss stuck at $\ln 2$</Step>
+
+<Step drive="s1=8/2" say="Eight layers: the first layer's gradient is ten to the minus six; under He it is three hundredths.">8 layers: gradient $10^{-6}$ vs $3 \times 10^{-2}$</Step>
+
+<div slot="visual"><DeepStall client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions" say="Three questions.">
+
+<Step effect="focus" say="First: how are the gradients of hundreds of thousands of parameters computed in one go?">
+<p class="big-q sm">How is the gradient computed in one go?</p>
+</Step>
+
+<Step say="Second: why do gradients vanish or explode as networks get deeper?">Why do they vanish or explode?</Step>
+
+<Step say="Third: how large should the initial weights be?">How large should the initial weights be?</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Forward and backward on a graph" say="One neuron, split into multiply, add, sigmoid, subtract and square.">
+
+<Step drive="s1=6/4" say="Forward: follow the arrows and compute every value. The loss is 0.378.">Forward: $s = 1.9$, $p = 0.870$, $L = 0.378$</Step>
+
+<Step drive="s1=10/3" say="Backward: start at L and go against the arrows. Each gradient is the downstream gradient times the local derivative.">Backward: $\partial L/\partial s = 0.0985$</Step>
+
+<Step drive="s1=15/3" say="At the end, all three parameter gradients are known, and they share the same d L d s.">$\partial L/\partial w_1 = 0.148$, sharing $\partial L/\partial s$</Step>
+
+<Step drive="s2=-1/2.5" say="Change w one, and every value and gradient follows.">Drag $w_1$: everything updates</Step>
+
+<div slot="visual"><BackpropGraph client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="The rule of reverse mode" say="Write the process down as one rule.">
+
+<Step say="Forward: compute and store the values in topological order.">① Forward: compute and keep every value in topological order</Step>
+
+<Step say="Backward, in reverse order: for each node, sum the downstream gradients times the local derivatives.">② Backward: $\bar v = \sum_{c} \bar c\, \partial c / \partial v$</Step>
+
+<Step effect="focus" say="Each node is computed once and shared with all its inputs: the chain rule plus dynamic programming, at the cost of about one forward pass.">
+<p class="big-q sm">Backprop = chain rule + dynamic programming</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="The recursion for an MLP" say="Now for a multilayer perceptron.">
+
+<Morph>
+
+<Step effect="morph" say="Define the error signal delta l, the derivative of the loss with respect to layer l's pre-activation.">
+
+$$
+\delta_l = \frac{\partial L}{\partial z_l}, \qquad z_{l+1} = W_{l+1}\, \varphi(z_l) + b_{l+1}
+$$
+
+</Step>
+
+<Step effect="morph" say="z l reaches the loss only through the next layer; the chain rule gives the recursion.">
+
+$$
+\delta_l = \varphi'(z_l) \odot \big(W_{l+1}^\top \delta_{l+1}\big)
+$$
+
+</Step>
+
+<Step effect="morph" say="A weight's gradient is the error signal times the previous layer's activation.">
+
+$$
+\frac{\partial L}{\partial W_l} = \delta_l\, h_{l-1}^\top, \qquad \frac{\partial L}{\partial b_l} = \delta_l
+$$
+
+</Step>
+
+</Morph>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Why gradients vanish" say="Unroll the recursion.">
+
+<Step say="The first layer's error signal is a long product of matrices.">$\delta_1 = \mathrm{diag}(\varphi'_1) W_2^\top \cdots \mathrm{diag}(\varphi'_{L-1}) W_L^\top \delta_L$</Step>
+
+<Step say="If each layer multiplies by rho on average, the first layer gets rho to the L.">Each layer $\times \rho$ ⇒ overall $\times \rho^L$</Step>
+
+<Step say="The sigmoid's slope is at most a quarter: ten layers make it ten to the minus six.">Sigmoid: $(\frac14)^{10} \approx 9.5 \times 10^{-7}$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Keeping the variance: He init" say="How does the variance travel through a ReLU network?">
+
+<Morph>
+
+<Step effect="morph" say="A sum of n independent terms: the variances add.">
+
+$$
+\mathrm{Var}(z_{l+1}) = n\, \sigma_w^2\, \mathbb E\big[h_l^2\big]
+$$
+
+</Step>
+
+<Step effect="morph" say="ReLU cuts off half: the expected square of h is half the variance.">
+
+$$
+\mathrm{Var}(z_{l+1}) = \frac{n\, \sigma_w^2}{2}\, \mathrm{Var}(z_l)
+$$
+
+</Step>
+
+<Step effect="morph" say="Make the factor one.">
+
+$$
+\sigma_w^2 = \frac{2}{n}
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="That is He initialisation. tanh has no factor one half; Xavier uses two over the sum of the input and output widths.">He: $2/n$　Xavier: $2/(n_{\text{in}} + n_{\text{out}})$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Initialisation and per-layer variance" say="A network of width ninety-six and depth thirty: watch each layer's activations and gradients.">
+
+<Step drive="click:chip3; wait:1.5" say="He initialisation, g equals two: forward and backward stay roughly level.">$g = 2$: roughly level</Step>
+
+<Step drive="s1=1/2" say="g equals one: after thirty layers, down to ten to the minus five, and the gradients too.">$g = 1$: $\sim 10^{-5}$</Step>
+
+<Step drive="s1=4/2" say="g equals four: up to ten to the four.">$g = 4$: $\sim 10^{4}$</Step>
+
+<Step drive="click:chip2; click:chip4; wait:1.5" say="tanh has slope one at zero and goes with Xavier, g equals one.">tanh + Xavier ($g = 1$)</Step>
+
+<div slot="visual"><InitVariance client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Forward mode or reverse mode?" say="The Jacobian is m by n. How much of it does one pass give?">
+
+<Step drive="click:chip1; s3=0/0.3; s3=8/4" say="Forward mode gets one column per pass: eight inputs, eight passes.">Forward: a column per pass, $n$ passes</Step>
+
+<Step drive="click:chip2; s3=0/0.3; s3=2/2" say="Reverse mode gets one row per pass: two outputs, two passes.">Reverse: a row per pass, $m$ passes</Step>
+
+<Step effect="focus" say="Training has a single loss: one reverse pass gives the gradient of every parameter.">
+<p class="big-q sm">$m = 1$: one reverse pass, the whole gradient</p>
+</Step>
+
+<div slot="visual"><AutodiffModes client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked numbers" say="A few numbers you can check by hand.">
+
+<Step say="The neuron: d L d s is 0.0985; times 1.5 gives d L d w one, 0.148.">$\partial L/\partial w_1 = 0.0985 \times 1.5 = 0.148$</Step>
+
+<Step say="Width sixteen, standard deviation 0.1: every layer multiplies the variance by 0.08; after eight layers, four times ten to the minus five is left.">$0.08^4 \approx 4 \times 10^{-5}$</Step>
+
+<Step say="A million parameters: central differences need two million evaluations, backpropagation about three.">$2 \times 10^6$ vs about 3</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="Practice is on the notes page: four derivations, backpropagation and He initialisation from scratch in NumPy, then automatic differentiation with the autograd library.">
+
+<Step say="After running the code, replay your network learning a curved boundary on the two moons, epoch by epoch.">✎ 4 derivations · ⌨ backprop + He init · ⚙ autograd: grad, jvp, vjp</Step>
+
+<Step effect="pop" say="Hit the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/backprop-init/#s-practice">Practise →</a>
+</Step>
+
+</Slide>
