@@ -1,0 +1,264 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import RegularizerLab from "../../components/chapters/ch18/RegularizerLab";
+import EarlyStopRidge from "../../components/chapters/ch18/EarlyStopRidge";
+import MinNormGD from "../../components/chapters/ch18/MinNormGD";
+import LossLandscape from "../../components/chapters/ch18/LossLandscape";
+import Grokking from "../../components/chapters/ch18/Grokking";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 18 章 · 动画课程" title="深度网络的正则化与泛化之谜" say="参数比数据多得多，网络为什么还能泛化？">
+
+权重衰减 · Dropout · 早停 · 最小范数 · 平坦极小 · 顿悟
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="193 个参数，12 个学生" say="老师用一个 193 个参数的网络，拟合 12 个学生的学习时长和分数。">
+
+<Step drive="s2=0/0.3; s2=60/5" say="不加正则，训练三千步：网络把十二个学生全背了下来，训练误差只有二点四。">不加正则：训练 MSE $2.4$</Step>
+
+<Step drive="s2=1/2.5" say="回到第五十步，新学生上的误差只有六十二；越往后训越差，最后到一百八十四。">测试：$62 \to 184$</Step>
+
+<Step drive="s2=60/1; s1=3/2" say="加上权重衰减三：曲线平滑了，测试误差降到六十一。">权重衰减 3：$61$</Step>
+
+<Step drive="click:chip2; wait:2" say="换成丢弃率零点六的 Dropout：六十八。">Dropout 0.6：$68$</Step>
+
+<Step drive="click:chip3; s1=2/1.5" say="给学习时长加一小时的抖动，这是数据增强：六十四。">数据增强 ±1 小时：$64$</Step>
+
+<div slot="visual"><RegularizerLab client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="第一，参数远多于数据时，怎样不让网络死记硬背？">
+<p class="big-q sm">怎样不让网络死记硬背？</p>
+</Step>
+
+<Step say="第二，什么正则都不加，大网络为什么常常也能泛化？">不加正则，为什么也能泛化？</Step>
+
+<Step say="第三，还有哪些问题至今没有答案？">哪些问题还没有答案？</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="显式正则的四种做法" say="四种显式正则。">
+
+<Step say="权重衰减：每一步先把权重按比例缩小，再走梯度。">权重衰减：$\theta \leftarrow (1 - \eta\lambda)\theta - \eta\nabla L$</Step>
+
+<Step say="Dropout：训练时随机丢掉一部分单元，留下的放大，期望不变。">Dropout：$\tilde h_j = m_j h_j / (1 - p)$</Step>
+
+<Step say="数据增强：对输入做不改变标签的变换，比如加一点噪声。">数据增强：$x \to x + \varepsilon$</Step>
+
+<Step say="早停：盯着验证误差，它不再下降就停，退回最好的那一步。">早停：验证误差最低处停下</Step>
+
+<Step effect="focus" say="四种做法都没有减少一个参数。它们限制的是训练能走到哪些函数。">
+<p class="big-q sm">限制的是用到的容量，不是参数个数</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="早停与岭回归" say="在线性回归上，早停可以和岭回归精确比较。">
+
+<Morph>
+
+<Step effect="morph" say="从零出发，梯度下降每一步把到最优解的偏差乘以 I 减 eta A。">
+
+$$
+w_t - w^* = (I - \eta A)(w_{t-1} - w^*)
+$$
+
+</Step>
+
+<Step effect="morph" say="展开 t 步：梯度下降恢复了最优解的一部分。">
+
+$$
+w_t = \big[I - (I - \eta A)^t\big]\, w^*
+$$
+
+</Step>
+
+<Step effect="morph" say="沿特征值 lambda 的方向，恢复比例是一减一减 eta lambda 的 t 次方。">
+
+$$
+\varphi^{\text{GD}}_t = 1 - (1 - \eta\lambda)^t \approx \eta t \lambda
+$$
+
+</Step>
+
+<Step effect="morph" say="岭回归的恢复比例是 lambda 除以 lambda 加 alpha；小特征值时约等于 lambda 除以 alpha。">
+
+$$
+\varphi^{\text{ridge}}_\alpha = \frac{\lambda}{\lambda + \alpha} \approx \frac{\lambda}{\alpha}
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="两者对上，只要 alpha 等于 eta t 分之一：训练步数起着一除以 alpha 的作用。">
+<p class="big-q sm">$\alpha = 1/(\eta t)$：步数 $t$ 就是 $1/\alpha$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="早停 ≈ 岭回归" say="两个特征值，一和零点零四。实线是梯度下降，虚线是岭回归。">
+
+<Step drive="s1=0.3/2" say="刚开始，梯度下降只走完了陡的方向，平的方向几乎没动。">$t = 2$：只走了陡的方向</Step>
+
+<Step drive="s1=1.7/3" say="五十步，对应 alpha 等于零点零四：小特征值方向上，一个恢复了零点六三六，一个零点五。">$t = 50$：$0.636$ 对 $0.5$</Step>
+
+<Step drive="s1=2.6/3" say="走得足够久，两者都到达最小二乘解；一路上两条路径几乎重合。">$t \to \infty$ ⇔ $\alpha \to 0$</Step>
+
+<Step effect="focus" say="两种做法都保留信号强的方向，压掉最容易被噪声带偏的方向。">
+<p class="big-q sm">早停 = 压掉小特征值方向</p>
+</Step>
+
+<div slot="visual"><EarlyStopRidge client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="Dropout 与输入噪声" say="Dropout 对线性模型做了什么？">
+
+<Morph>
+
+<Step effect="morph" say="期望的平方误差，等于偏差的平方加方差。">
+
+$$
+\mathbb E\big[(y - \hat y)^2\big] = (y - \mathbb E\hat y)^2 + \mathrm{Var}(\hat y)
+$$
+
+</Step>
+
+<Step effect="morph" say="期望不变；每个掩码的方差是 p 除以一减 p。">
+
+$$
+\mathbb E\big[(y - \hat y)^2\big] = (y - w^\top x)^2 + \frac{p}{1 - p}\sum_j w_j^2 x_j^2
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="这是按特征尺度加权的 L2：常取大值的特征，权重被压得更狠。">自适应的 L2</Step>
+
+<Step say="另一种看法：两的 n 次方个共享权重的子网络，测试时取它们的平均。">$2^n$ 个子网络的集成</Step>
+
+<Step say="给输入加噪声也一样：对线性模型，正好是 sigma 平方乘权重的范数平方。">输入噪声：$+\,\sigma^2 \lVert w\rVert^2$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="无数个解，挑哪一个？" say="一个方程、两个未知数：直线上每一点都是零误差的解。">
+
+<Step drive="s3=0/0.3; s3=40/4" say="从这里出发，梯度永远平行于 a，所以梯度下降走直线，垂直地撞上解直线。">梯度 $\parallel a$：走直线</Step>
+
+<Step drive="click:chip1; wait:2" say="从原点出发，它停在零点六、一点二：范数最小的那个解。">从原点：$(0.6, 1.2)$，范数 $1.342$</Step>
+
+<Step effect="focus" say="没有人要求范数最小，是算法自己挑的。这叫隐式正则。">
+<p class="big-q sm">算法自己挑了最小范数解</p>
+</Step>
+
+<div slot="visual"><MinNormGD client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="为什么是最小范数" say="为什么从原点出发，一定是最小范数？">
+
+<Step say="梯度总在 X 的行空间里，所以收敛点也在行空间里。">$w_\infty = X^\top (X X^\top)^{-1} y \in \mathrm{row}(X)$</Step>
+
+<Morph>
+
+<Step effect="morph" say="任何别的解，都等于它加上零空间里的一个向量 u。">
+
+$$
+w = w_\infty + u, \qquad Xu = 0
+$$
+
+</Step>
+
+<Step effect="morph" say="零空间和行空间正交，勾股定理。">
+
+$$
+\lVert w\rVert^2 = \lVert w_\infty\rVert^2 + \lVert u\rVert^2 \ge \lVert w_\infty\rVert^2
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="第二章的双下降，画的正是这个最小范数解。">第 02 章的双下降</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="SGD 的噪声与平坦极小" say="另一种隐式正则来自步长和噪声。">
+
+<Step say="曲率为 h 的谷底，每一步偏差乘以一减 eta h：只有 eta h 小于二才停得住。">$\lvert 1 - \eta h\rvert \lt 1 \iff \eta h \lt 2$</Step>
+
+<Step say="所以步长 eta 的梯度下降，只能停在最大曲率小于二除以 eta 的极小点。">只能停在 $\lambda_{\max}(H) \lt 2/\eta$</Step>
+
+<Step say="小批量再加噪声，强度随 eta 除以 B 增大：尖锐的极小点更容易被踢出去。">噪声 $\propto \eta / B$ ⇒ 偏向平坦</Step>
+
+<Step say="但要小心：一层乘 c、下一层除以 c，函数不变，尖锐程度却可以任意改。">重参数化：平坦度要与尺度无关</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="损失地形切片" say="从训练好的权重出发，沿两个随机方向切开损失。">
+
+<Step drive="click:chip1; s1=12/1" say="二十层的普通网络：离开中心一点，损失就涨到几十。">无残差：距离 1 处 $55.8$</Step>
+
+<Step drive="s1=6/2; s1=18/3; s1=12/1.5" say="加上残差连接，同样的距离只有二点八，地形平滑得多。">残差：$2.8$</Step>
+
+<Step drive="click:chip2; wait:2" say="小批量比全批量停在更平的地方，可测试准确率几乎一样。">小批量更平，测试准确率相近</Step>
+
+<Step effect="focus" say="平坦和泛化有关，却不是简单的因果。">
+<p class="big-q sm">平坦 ≠ 泛化的全部</p>
+</Step>
+
+<div slot="visual"><LossLandscape client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="顿悟" say="模三十一的加法，一半算式训练，一半测试。">
+
+<Step drive="s1=0/1; s2=0/0.3; s2=77/5" say="不加权重衰减：不到一百步就背下了训练集，测试准确率一直接近零。">无衰减：只会背</Step>
+
+<Step drive="s1=3/1; s2=0/0.3; s2=77/6" say="权重衰减一：训练集照样很快背下，测试准确率要到九千多步才到百分之九十五。">衰减 1：69 步背下，约 9200 步学会</Step>
+
+<Step drive="s1=4/2" say="衰减太强也不行：两万步时只有百分之六十三。">衰减 3：$63\%$</Step>
+
+<Step effect="focus" say="先记住，再在正则的推动下，找到更简单的解。">
+<p class="big-q sm">先记住，后理解</p>
+</Step>
+
+<div slot="visual"><Grokking client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：几个数" say="几个可以手算的数。">
+
+<Step say="eta 零点一、一百步：特征值零点一的方向，梯度下降恢复零点六三四，岭回归零点五。">$1 - 0.99^{100} = 0.634$ 对 $0.5$</Step>
+
+<Step say="Dropout，p 等于零点五：四种掩码的平均损失是十四，等于一加十三。">$\mathbb E = 1 + 13 = 14$</Step>
+
+<Step say="方程 w1 加 2 w2 等于三：从二、二出发，停在一点四、零点八。">$(2, 2) \to (1.4, 0.8)$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="还没有答案的问题" say="深度学习为何有效，还有很多问题没有答案。">
+
+<Step say="同样的网络能记住随机标签：函数类的容量解释不了泛化。">随机标签也能记住</Step>
+
+<Step say="一般深网络里，SGD 到底偏爱哪类函数？平坦度该怎样定义？">隐式偏好 · 平坦度的定义</Step>
+
+<Step say="双下降、彩票假设、顿悟、规模定律：都还只有部分解释。">双下降 · 彩票 · 顿悟 · 规模定律</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现 Dropout、权重衰减和早停，再用 scikit-learn 调正则。">
+
+<Step say="代码运行后，可以回放网络在双月数据上的分界线怎样被正则抚平。">✎ 4 道推导 · ⌨ Dropout + 权重衰减 + 早停 · ⚙ scikit-learn：alpha 与早停</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/dl-generalization/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

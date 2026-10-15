@@ -1,0 +1,65 @@
+---
+title: "正则化实战：权重衰减、Dropout、增强与早停"
+summary: "PyTorch 里各种正则怎么写、怎么调：AdamW 的 weight_decay、Dropout 与 train/eval 模式、数据增强、早停与检查点，以及标签平滑、SWA、SAM 等常用技巧和容易踩的坑。"
+chapters: ["18"]
+---
+
+### 常用代码
+
+```python
+import torch, torch.nn as nn
+model = nn.Sequential(nn.Linear(784, 512), nn.ReLU(), nn.Dropout(p=0.3), nn.Linear(512, 10))
+
+# 解耦权重衰减：偏置和归一化层的参数通常不衰减
+decay = [p for n, p in model.named_parameters() if p.ndim > 1]
+no_decay = [p for n, p in model.named_parameters() if p.ndim <= 1]
+opt = torch.optim.AdamW([{"params": decay, "weight_decay": 0.05},
+                         {"params": no_decay, "weight_decay": 0.0}], lr=3e-4)
+
+model.train()   # Dropout 生效
+model.eval()    # Dropout 关闭；评估、推理前一定要切换
+
+loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)   # 标签平滑
+
+# 早停：保存验证最好的检查点
+best, bad = float("inf"), 0
+for epoch in range(max_epochs):
+    train_one_epoch(model, opt)
+    v = evaluate(model, val_loader)
+    if v < best - 1e-4:
+        best, bad = v, 0
+        torch.save(model.state_dict(), "best.pt")
+    else:
+        bad += 1
+        if bad >= patience:
+            break
+model.load_state_dict(torch.load("best.pt"))
+
+# 图像增强
+import torchvision.transforms.v2 as T
+aug = T.Compose([T.RandomResizedCrop(224), T.RandomHorizontalFlip(), T.ColorJitter(0.2, 0.2, 0.2)])
+```
+
+### 容易踩的坑
+
+- **Adam 加 L2 ≠ 权重衰减**：`torch.optim.Adam(weight_decay=…)` 是把 L2 加进梯度，会被自适应步长缩放；要解耦衰减用 `AdamW`（第 16 章）。AdamW 的有效收缩是 `lr × weight_decay`，改学习率时衰减强度也跟着变。
+- **偏置、LayerNorm / BatchNorm 的参数不要衰减**：它们控制尺度和偏移，衰减只会添乱。
+- **忘了 `model.eval()`**：Dropout 在评估时还在随机丢弃，BatchNorm 还在用批统计量，验证分数会抖动、偏低。
+- **Dropout 和 BatchNorm 的顺序**：Dropout 放在 BatchNorm 前面会让训练和测试时的方差不一致；卷积网络里常常只在最后的全连接层用 Dropout，或者不用。
+- **早停要看验证集，不能看测试集**：用测试集挑停止点就是把测试集当成了训练的一部分。保存的是最好的检查点，不是最后一个。
+- **增强只用于训练集**：验证、测试时只做确定性的预处理（缩放、中心裁剪）。增强必须保持标签不变：数字 6 上下翻转就成了 9。
+- **数据很少时，早停的验证集代价很大**：划出 20% 做验证，训练集就少了 20%；可以先用交叉验证选好轮数，再用全部数据训练同样的轮数。
+- **权重衰减和学习率调度一起调**：余弦退火、预热都会改变衰减的累计效果（第 16 章）。
+- **大批量训练**：批量变大时按比例放大学习率并加预热，否则泛化常会变差；LARS / LAMB 是为大批量设计的优化器。
+- **想要更平的解**：SWA（随机权重平均）对训练后期的多个检查点取平均，几乎没有额外代价；SAM 每步多一次前向反向，换来更平坦的极小点。
+
+### 前沿阅读
+
+- Srivastava 等（2014）：Dropout，防止神经网络过拟合的简单方法。
+- Loshchilov 与 Hutter（2019）：解耦的权重衰减（AdamW）。
+- Zhang 等（2017）：理解深度学习需要重新思考泛化（随机标签实验）。
+- Keskar 等（2017）：大批量训练与尖锐极小；Dinh 等（2017）：尖锐的极小也能泛化。
+- Li 等（2018）：神经网络损失地形的可视化（滤波器归一化）。
+- Frankle 与 Carbin（2019）：彩票假设。
+- Power 等（2022）：顿悟，小算术数据集上超越过拟合的泛化。
+- Foret 等（2021）：锐度感知最小化（SAM）。

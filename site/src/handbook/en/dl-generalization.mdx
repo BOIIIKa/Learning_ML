@@ -1,0 +1,65 @@
+---
+title: "Regularisation in practice: weight decay, dropout, augmentation and early stopping"
+summary: "How to write and tune regularisers in PyTorch: AdamW's weight_decay, dropout and train / eval mode, data augmentation, early stopping with checkpoints, plus label smoothing, SWA, SAM and the traps that catch people."
+chapters: ["18"]
+---
+
+### Go-to code
+
+```python
+import torch, torch.nn as nn
+model = nn.Sequential(nn.Linear(784, 512), nn.ReLU(), nn.Dropout(p=0.3), nn.Linear(512, 10))
+
+# Decoupled weight decay; biases and normalisation parameters usually get none
+decay = [p for n, p in model.named_parameters() if p.ndim > 1]
+no_decay = [p for n, p in model.named_parameters() if p.ndim <= 1]
+opt = torch.optim.AdamW([{"params": decay, "weight_decay": 0.05},
+                         {"params": no_decay, "weight_decay": 0.0}], lr=3e-4)
+
+model.train()   # dropout on
+model.eval()    # dropout off; always switch before evaluating or predicting
+
+loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)   # label smoothing
+
+# Early stopping: keep the checkpoint with the best validation loss
+best, bad = float("inf"), 0
+for epoch in range(max_epochs):
+    train_one_epoch(model, opt)
+    v = evaluate(model, val_loader)
+    if v < best - 1e-4:
+        best, bad = v, 0
+        torch.save(model.state_dict(), "best.pt")
+    else:
+        bad += 1
+        if bad >= patience:
+            break
+model.load_state_dict(torch.load("best.pt"))
+
+# Image augmentation
+import torchvision.transforms.v2 as T
+aug = T.Compose([T.RandomResizedCrop(224), T.RandomHorizontalFlip(), T.ColorJitter(0.2, 0.2, 0.2)])
+```
+
+### Traps that bite
+
+- **Adam with L2 ≠ weight decay**: `torch.optim.Adam(weight_decay=…)` adds L2 to the gradient, which the adaptive step then rescales; for decoupled decay use `AdamW` (chapter 16). AdamW's effective shrinkage is `lr × weight_decay`, so changing the learning rate changes the decay too.
+- **Don't decay biases or LayerNorm / BatchNorm parameters**: they set scales and offsets, and decaying them only does harm.
+- **Forgetting `model.eval()`**: dropout keeps dropping during evaluation and BatchNorm keeps using batch statistics, so validation scores jitter and come out low.
+- **Dropout before BatchNorm**: it makes the variance differ between training and test. Convolutional networks often use dropout only in the final dense layers, or not at all.
+- **Early-stop on the validation set, never the test set**: choosing the stopping point on the test set makes it part of training. Keep the best checkpoint, not the last one.
+- **Augment the training set only**: validation and test get deterministic preprocessing (resize, centre crop). Augmentations must keep the label: a 6 flipped upside down is a 9.
+- **With little data, early stopping's validation set is expensive**: holding out 20% leaves 20% less to train on. Choose the number of epochs by cross-validation, then retrain on everything for that many epochs.
+- **Tune weight decay together with the schedule**: cosine decay and warm-up change its cumulative effect (chapter 16).
+- **Large batches**: scale the learning rate with the batch size and add warm-up, or generalisation often suffers; LARS / LAMB are optimizers built for large batches.
+- **For flatter solutions**: SWA (stochastic weight averaging) averages several late checkpoints at almost no cost; SAM spends one extra forward-backward pass per step to reach flatter minima.
+
+### Frontier reading
+
+- Srivastava et al. (2014): Dropout, a simple way to prevent neural networks from overfitting.
+- Loshchilov & Hutter (2019): Decoupled weight decay regularization (AdamW).
+- Zhang et al. (2017): Understanding deep learning requires rethinking generalization (the random-label experiments).
+- Keskar et al. (2017): large-batch training and sharp minima; Dinh et al. (2017): sharp minima can generalize.
+- Li et al. (2018): Visualizing the loss landscape of neural nets (filter normalisation).
+- Frankle & Carbin (2019): The lottery ticket hypothesis.
+- Power et al. (2022): Grokking, generalization beyond overfitting on small algorithmic datasets.
+- Foret et al. (2021): Sharpness-aware minimization (SAM).

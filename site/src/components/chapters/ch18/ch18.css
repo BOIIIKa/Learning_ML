@@ -1,0 +1,22 @@
+/* Chapter 18 widgets. Colours only from the theme variables. */
+.dg-sub { font-size: 0.82rem; color: var(--text-muted); margin: 0.3rem 0 0.1rem; }
+.dg-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.6rem; align-items: start; }
+.dg-two > * { min-width: 0; }
+.dg-heats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.dg-heats > * { min-width: 0; }
+.dg-heat .lm-svg { max-width: 240px; }
+.dg-cell { fill: var(--accent); stroke: none; shape-rendering: crispEdges; }
+.dg-rowline { stroke: var(--accent-2); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.dg-contour { fill: none; stroke: var(--accent); stroke-width: 1; opacity: 0.45; }
+.dg-gd { fill: none; stroke: var(--accent); stroke-width: 2.4; }
+.dg-ridge { fill: none; stroke: var(--accent-2); stroke-width: 2; stroke-dasharray: 5 4; }
+.dg-star { fill: var(--ink); }
+.dg-pt-gd { fill: var(--accent); stroke: var(--surface); stroke-width: 1.2; }
+.dg-pt-ridge { fill: none; stroke: var(--accent-2); stroke-width: 2.4; }
+.dg-label { fill: var(--text-muted); font: 11px var(--mono); }
+.dg-circle { fill: none; stroke: var(--text-muted); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.dg-solline { stroke: var(--class-pos); stroke-width: 2.4; }
+.dg-proj { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.dg-start { fill: var(--accent-2); }
+.dg-step { fill: var(--accent); opacity: 0.75; }
+.dg-mn { max-width: 420px; }

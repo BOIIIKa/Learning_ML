@@ -14,14 +14,16 @@ python3 ../scripts/build_exercises.py    # regenerate exercises.json after editi
 npx astro dev --port 4321 --host 127.0.0.1   # Astro 7 daemonizes; stop with `npx astro dev stop`
 ```
 
-- **Pyodide**: by default it loads from jsDelivr. In sandboxes without that host, download the
-  Pyodide 0.29.3 release once (numpy, scikit-learn, scipy, lightgbm), symlink it to
-  `site/public/pyodide`, and start the server with `PUBLIC_PYODIDE_URL=/pyodide/`. **Remove the
-  symlink before `astro build` or committing.**
+- First time on a machine: `bash scripts/setup_local.sh` (`.venv`, `npm ci`, Playwright's Chromium,
+  first checks); see `docs/LOCAL_DEV.md`.
+- **Pyodide**: by default it loads from jsDelivr. Offline or in sandboxes without that host, run
+  `bash scripts/fetch_pyodide.sh` (downloads 0.29.3 into `.cache/` and links `site/public/pyodide`)
+  and start the server with `PUBLIC_PYODIDE_URL=/pyodide/`. **Remove the link before `astro build`
+  or committing.**
 - After `astro build`, the dev server's Vite cache can go stale ("504 Outdated Optimize Dep",
   islands fail to hydrate): `npx astro dev stop; rm -rf node_modules/.vite`, restart.
 
-## Scripts (`site/scripts/verify/`, Playwright; set `PLAYWRIGHT_MODULE` if not installed locally)
+## Scripts (`site/scripts/verify/`; Playwright is a dev dependency, or set `PLAYWRIGHT_MODULE`)
 
 | Command | Checks |
 |---|---|
@@ -29,6 +31,8 @@ npx astro dev --port 4321 --host 127.0.0.1   # Astro 7 daemonizes; stop with `np
 | `node scripts/verify/course.mjs walk zh <slug…>` | steps through every beat of the decks; console must stay clean |
 | `node scripts/verify/course.mjs film <slug> zh "#5" "2,6,10"` | plays from slide 5 and screenshots at those seconds (morphs, drives, pacing) |
 | `node scripts/verify/pages.mjs <slug>` | home, handbook, chapter in both themes; scrolls to hydrate every island; mobile overflow at 390 px |
+| `node scripts/verify/hydration.mjs /zh/chapters/<slug>/ [dark]` | prints React's hydration diffs (+ client / − server) and the island they occur in |
+| `node scripts/verify/mathdiff.mjs` | compares `Math.*` bit for bit between Node and Chromium (cos, sin, fractional pow differ) |
 
 Screenshots go to `verify-out/` (git-ignored). **Open and look at them** — layout overflow,
 unreadable colours and wrong widget states don't show up as errors.
@@ -48,7 +52,7 @@ via the Actions run status.
 
 | Symptom | Cause / fix |
 |---|---|
-| "A tree hydrated but some attributes … didn't match" | unrounded float in SVG, `Math.random()` in render, multi-value or custom-property `style` in SSR, DOM mutated before hydration |
+| "A tree hydrated but some attributes … didn't match" | unrounded float in SVG, `Math.random()` in render, multi-value or custom-property `style` in SSR, DOM mutated before hydration, or a chaotic computation amplifying a last-bit `Math.cos` difference (run `hydration.mjs`, then `mathdiff.mjs`) |
 | Display math renders inline | single-line `$$…$$`; use a multi-line block |
 | MDX compile error near `<` or `{` | escape in prose (`$p \lt n$`), no `style=""` strings |
 | KaTeX glyphs misaligned | katex CSS version ≠ rehype-katex's katex (pinned 0.16.x) |
