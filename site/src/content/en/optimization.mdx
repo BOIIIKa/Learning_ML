@@ -1,0 +1,229 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import LrDial from "../../components/chapters/ch16/LrDial";
+import ConditionZigzag from "../../components/chapters/ch16/ConditionZigzag";
+import OptimizerRace from "../../components/chapters/ch16/OptimizerRace";
+import LrSchedules from "../../components/chapters/ch16/LrSchedules";
+
+<Section lang="en" k="scenario">
+
+Chapter 15 said the strategy is the negative log-likelihood. But once the loss is written down, someone still has to bring it down. A network has thousands of parameters and no closed-form solution, so we walk downhill one step at a time: gradient descent.
+
+The teacher tries it first on the simplest case: 40 students, "score = $w_0 + w_1 \times$ hours", fitted by gradient descent instead of the least-squares formula. Her first problem is the learning rate: too small, and after 100 steps she is still halfway down the hill; a little too large, and the iterates fly off. The second problem is stranger: no setting works well, and the intercept is always learned slowly. Drag the learning rate below, then switch to "standardised hours":
+
+<LrDial client:visible lang="en" />
+
+Just subtracting the mean from the hours and dividing by the standard deviation turns "not there after 100 steps" into "there in one step". This chapter answers:
+
+1. How large can the learning rate be, and what sets the speed of convergence? (The condition number.)
+2. Which flaw of gradient descent does each of momentum, Nesterov and Adam fix?
+3. A network's non-convex loss has saddles and plateaus; how should the learning rate change during training?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Update rules of first-order optimizers
+
+Write $g_t = \nabla L(\theta_t)$; in deep learning it is usually the gradient on a minibatch (a stochastic gradient).
+
+<Box kind="definition" title="Five update rules">
+
+| Method | Update | Idea |
+|---|---|---|
+| Gradient descent / SGD | $\theta_{t+1} = \theta_t - \eta g_t$ | step along the negative gradient |
+| Momentum (heavy ball) | $v_{t+1} = \beta v_t - \eta g_t,\ \theta_{t+1} = \theta_t + v_{t+1}$ | build up velocity, average out the back-and-forth |
+| Nesterov | the same, with the gradient at the look-ahead point $\theta_t + \beta v_t$ | coast first, then correct for the slope |
+| RMSProp | $s_{t+1} = \rho s_t + (1 - \rho) g_t^2,\ \theta_{t+1} = \theta_t - \eta g_t / \sqrt{s_{t+1}}$ | scale each coordinate by the size of its own gradient |
+| Adam | momentum $m$ + RMSProp's $v$ + bias correction | both together; the defaults rarely need tuning |
+
+(Squares, square roots and divisions act coordinate by coordinate.)
+
+</Box>
+
+The learning rate $\eta$ is the most important hyperparameter. As the scenario shows, the right value depends on the shape of the loss surface. Steep directions demand small steps and flat ones want large steps, and a single $\eta$ cannot serve both. That is the condition-number problem.
+
+<OptimizerRace client:visible lang="en" />
+
+<Box kind="insight" title="The triad">
+
+**Model**: any differentiable parametrized model. **Strategy**: any differentiable loss (chapter 15). **Algorithm**: the iterative optimization of this chapter. Where the gradient comes from is chapter 17's business: backpropagation.
+
+</Box>
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Smoothness and strong convexity
+
+<Box kind="definition" title="L-smooth, μ-strongly convex">
+
+$f$ is $L$-smooth if $\|\nabla f(x) - \nabla f(y)\| \le L \|x - y\|$ for all $x, y$, and $\mu$-strongly convex if $f(y) \ge f(x) + \nabla f(x)^\top (y - x) + \frac{\mu}{2}\|y - x\|^2$. For a quadratic $f = \frac12 x^\top H x$, $L$ and $\mu$ are the largest and smallest eigenvalues of $H$. The **condition number** is $\kappa = L / \mu$.
+
+</Box>
+
+<Box kind="theorem" title="Linear convergence of gradient descent">
+
+If $f$ is $L$-smooth and $\mu$-strongly convex and $\eta = 1/L$, then
+
+$$
+f(x_t) - f^* \le \Big(1 - \frac{\mu}{L}\Big)^t \big(f(x_0) - f^*\big).
+$$
+
+</Box>
+
+**Proof**. Step one, the **descent lemma**: $L$-smoothness gives $f(y) \le f(x) + \nabla f(x)^\top (y - x) + \frac{L}{2}\|y - x\|^2$. Put $y = x - \frac1L \nabla f(x)$:
+
+$$
+f(x_{t+1}) \le f(x_t) - \frac{1}{2L} \|\nabla f(x_t)\|^2.
+$$
+
+Step two, strong convexity bounds the gradient from below. Minimise the right-hand side of the strong-convexity inequality over $y$ (the minimum is at $y = x - \nabla f(x)/\mu$) to get $f^* \ge f(x) - \frac{1}{2\mu}\|\nabla f(x)\|^2$, that is,
+
+$$
+\|\nabla f(x)\|^2 \ge 2\mu \big(f(x) - f^*\big).
+$$
+
+Combine the two: $f(x_{t+1}) - f^* \le (f(x_t) - f^*) - \frac{\mu}{L}(f(x_t) - f^*)$. (Derivation exercise 1.)
+
+Shrinking the error by a factor $\varepsilon$ takes about $\kappa \ln(1/\varepsilon)$ steps: **the number of steps is proportional to the condition number**.
+
+### Quadratics: the exact picture
+
+On $f = \frac12 (x - x^*)^\top H (x - x^*)$,
+
+$$
+x_{t+1} - x^* = (I - \eta H)(x_t - x^*).
+$$
+
+Along the $i$-th eigen-direction of $H$, the error is multiplied by $1 - \eta\lambda_i$ every step. Hence:
+
+- **Stability** needs every $\lvert 1 - \eta\lambda_i \rvert \lt 1$, that is, $\eta \lt 2/L$. The steepest direction caps the step.
+- **Speed**: the rate is $\max_i \lvert 1 - \eta\lambda_i \rvert$, set by the two ends, the flattest direction $\mu$ and the steepest $L$. Setting $1 - \eta\mu = \eta L - 1$ gives the best step $\eta = 2/(L + \mu)$ and the rate $(\kappa - 1)/(\kappa + 1)$ (derivation exercise 2).
+
+<ConditionZigzag client:visible lang="en" />
+
+Back to the scenario: the Hessian of the linear regression loss $\frac12 \overline{(w_0 + w_1 u - y)^2}$ is $\begin{pmatrix} 1 & \bar u \\ \bar u & \overline{u^2} \end{pmatrix}$. Raw hours average about 5, so the two columns $(1, u)$ are highly correlated and $\kappa \approx 169$. After standardising, $\bar u = 0$ and $\overline{u^2} = 1$, the Hessian is the identity and $\kappa = 1$. **Feature scaling is preconditioning for gradient descent.**
+
+### Momentum: a damped heavy ball
+
+Picture a ball rolling on the loss surface, pushed by the slope and slowed by friction:
+
+$$
+m \ddot x + c \dot x + \nabla f(x) = 0.
+$$
+
+Discretise with step $h$, using $\ddot x \approx (x_{t+1} - 2x_t + x_{t-1}) / h^2$ and $\dot x \approx (x_t - x_{t-1}) / h$:
+
+$$
+x_{t+1} = x_t - \frac{h^2}{m} \nabla f(x_t) + \Big(1 - \frac{ch}{m}\Big)(x_t - x_{t-1}).
+$$
+
+This is exactly the heavy-ball method, with $\eta = h^2/m$ and $\beta = 1 - ch/m$ (derivation exercise 3). $\beta = 0$ is gradient descent, where friction is so strong that there is no inertia; $\beta \to 1$ means no friction, and the ball oscillates forever.
+
+Momentum does two things. First, it **accelerates**: along a consistent direction, the velocity builds up to $\eta g/(1 - \beta)$, which at $\beta = 0.9$ is a 10× larger step. Second, it **cancels oscillation**: in the zig-zag direction the gradient flips sign, and those contributions cancel in the velocity. With the best $\eta, \beta$ on a quadratic, the rate improves from $(\kappa - 1)/(\kappa + 1)$ to
+
+$$
+\frac{\sqrt\kappa - 1}{\sqrt\kappa + 1},
+$$
+
+as if the condition number had been square-rooted. Nesterov evaluates the gradient at the look-ahead point. On general smooth convex functions its error falls as $O(1/t^2)$, against $O(1/t)$ for gradient descent, and no first-order method can do better.
+
+### Second order: Newton's method
+
+Use the Hessian to make the surface round: $x_{t+1} = x_t - H^{-1} \nabla f(x_t)$. On a quadratic it lands in one step, and it is invariant to linear changes of variables, so feature scaling makes no difference to it. Near a minimum the error converges quadratically: the number of correct digits doubles each step. The price: $p$ parameters need a $p^2$ Hessian and an $O(p^3)$ solve, and near a saddle the Hessian is indefinite and the Newton step is pulled *towards* the saddle. Quasi-Newton methods (BFGS, L-BFGS) approximate $H^{-1}$ from differences of gradients and suit small and medium smooth problems. Network training almost always uses first-order methods.
+
+### Stochastic gradients and schedules
+
+The minibatch gradient $\tilde g$ is unbiased, $\mathbb E \tilde g = \nabla f$, but has variance $\sigma^2$. With a constant step the iterate does not settle at the minimum; it jitters around it, with a spread proportional to $\eta \sigma^2$. Hence "large first, small later": SGD converges when the steps satisfy $\sum_t \eta_t = \infty$ (travel far enough) and $\sum_t \eta_t^2 \lt \infty$ (the noise eventually dies out), the Robbins–Monro conditions. In practice people use step decay or cosine decay, preceded by a few epochs of linear **warm-up**: at the start neither the parameters nor Adam's second-moment estimates can be trusted, so walk with small steps for a while.
+
+<LrSchedules client:visible lang="en" />
+
+### Adam and its bias correction
+
+$$
+m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t, \qquad v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2,
+$$
+
+with $m_0 = v_0 = 0$. Unrolling the recursion, $m_t = (1 - \beta_1)\sum_{i=1}^t \beta_1^{t-i} g_i$. If every gradient has mean $g$,
+
+$$
+\mathbb E\, m_t = (1 - \beta_1) \sum_{i=1}^t \beta_1^{t-i} g = (1 - \beta_1^t)\, g.
+$$
+
+Early estimates are dragged towards the zero start, so divide by $1 - \beta_1^t$ (derivation exercise 4), and $v_t$ by $1 - \beta_2^t$. The update is
+
+$$
+\theta_{t+1} = \theta_t - \eta \frac{\hat m_t}{\sqrt{\hat v_t} + \epsilon}, \qquad \hat m_t = \frac{m_t}{1 - \beta_1^t},\ \hat v_t = \frac{v_t}{1 - \beta_2^t}.
+$$
+
+The ratio $\hat m / \sqrt{\hat v}$ is roughly the gradient's signal-to-noise ratio, of order 1: **Adam moves each parameter by about $\eta$ per step, whatever the scale of its gradient**. That lets one learning rate serve layers whose gradients differ by orders of magnitude. The price is that the step is no longer along the gradient: a tiny gradient near a saddle is blown up into a full step (in the race above, Adam escapes the saddle first).
+
+<Box kind="insight" title="AdamW: move the weight decay out of the ratio">
+
+Adding L2 regularisation to Adam means adding $\lambda\theta$ to the gradient, and that term is then divided by $\sqrt{\hat v}$ too. Parameters whose gradients have been large get almost no decay; in the extreme case where the only gradient is the penalty, $\lambda$ cancels and the decay no longer depends on it. AdamW **decouples** the decay:
+
+$$
+\theta_{t+1} = \theta_t - \eta \Big(\frac{\hat m_t}{\sqrt{\hat v_t} + \epsilon} + \lambda \theta_t\Big),
+$$
+
+shrinking every parameter by the same factor $1 - \eta\lambda$ per step. For SGD the two are equivalent; for Adam they are not. AdamW is now the default for training Transformers.
+
+</Box>
+
+### Non-convexity: saddles and plateaus
+
+A network's loss is not convex. At a critical point $\nabla f = 0$ the Hessian can have both positive and negative eigenvalues: a **saddle**. In high dimensions saddles are far more common than local minima. Gradient descent does not stay at a saddle: along a direction of negative curvature $-\lvert\lambda\rvert$, the offset is multiplied by $1 + \eta\lvert\lambda\rvert \gt 1$ each step and the iterate eventually slides off. But if it starts very close to that direction, escaping takes many steps, and the loss curve shows a long plateau. Momentum and adaptive methods shorten it.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Example 1: a bowl with condition number 10
+
+<Box kind="example" title="f = ½(0.1x² + y²), from (−3, 1), until the error shrinks a thousandfold">
+
+| Method | Rate | Steps |
+|---|---|---|
+| Gradient descent, $\eta = 1/L = 1$ | $1 - 1/\kappa = 0.9$ | $66$ |
+| Gradient descent, $\eta = 2/(L+\mu) = 1.818$ | $9/11 = 0.818$ | $35$ |
+| Heavy ball, $\eta = 2.309,\ \beta = 0.270$ | $(\sqrt{10} - 1)/(\sqrt{10} + 1) = 0.519$ | $15$ |
+
+At $\kappa = 100$ the three rows need $683$, $346$ and $52$ steps: gradient descent grows linearly in $\kappa$, the heavy ball only with $\sqrt\kappa$. (The heavy ball takes a few more steps than $\ln 10^{-3} / \ln 0.519 \approx 11$ because of its start-up transient.)
+
+</Box>
+
+### Example 2: the first step without bias correction
+
+<Box kind="example" title="β₁ = 0.9, β₂ = 0.999, first gradient g">
+
+$m_1 = 0.1 g$ and $v_1 = 0.001 g^2$. Uncorrected, the first step is $\eta \cdot 0.1 \lvert g \rvert / \sqrt{0.001}\, \lvert g \rvert = 3.16\,\eta$; corrected, $\hat m_1 = g$ and $\hat v_1 = g^2$, and the first step is exactly $\eta$. The answer is the same for $g = 0.01$ and $g = 100$: Adam ignores the scale of the gradient.
+
+</Box>
+
+### Example 3: how long near a saddle
+
+<Box kind="example" title="f = ½x² + ¼y⁴ − ½y², η = 0.1, y₀ = 0.001">
+
+The curvature along $y$ at the origin is $-1$, so $y_{t+1} = y_t + 0.1(y_t - y_t^3) \approx 1.1\, y_t$. Growing from $0.001$ to $0.5$ takes about $\ln 500 / \ln 1.1 \approx 65$ steps; the exact iteration takes $67$. During those 67 steps the loss barely moves: that is the plateau. From the same start, Adam blows the tiny $y$-gradient up into full steps and escapes in $10$.
+
+</Box>
+
+### Example 4: momentum's effective step
+
+<Box kind="example" title="Constant gradient g, β = 0.9">
+
+The fixed point of $v_{t+1} = 0.9 v_t - \eta g$ is $v = -\eta g / (1 - 0.9) = -10\,\eta g$. Momentum makes the step along a consistent direction 10× longer, which is why switching from SGD to momentum SGD usually calls for a smaller learning rate.
+
+</Box>
+
+### Extensions
+
+- **Edge of stability**: with full-batch gradient descent on a network, the largest Hessian eigenvalue rises by itself to about $2/\eta$ and stays there; the loss is not monotone but keeps falling. The quadratic model's $\eta \lt 2/L$ is satisfied "dynamically" during training.
+- **Large-batch training**: double the batch, scale the learning rate with it (the linear scaling rule), and add warm-up; LARS / LAMB adapt the step per layer.
+- **New optimizers**: Lion uses only the sign of the momentum; Shampoo, SOAP and Muon precondition with matrices, between Adam and second-order methods.
+- **Learning-rate-free methods**: schedule-free optimization and D-Adaptation estimate the step size automatically.
+- **Sharpness-Aware Minimization (SAM)**: first move a little in the worst direction, then take the gradient there; it prefers flat minima.
+
+</Section>

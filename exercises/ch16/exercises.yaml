@@ -1,0 +1,68 @@
+# 第 16 章 优化：从梯度下降到 Adam —— 课后练习 / Chapter 16 exercises
+
+derivation:
+  - id: linear-rate
+    title: {zh: "梯度下降的线性收敛率", en: "The linear rate of gradient descent"}
+    prompt:
+      zh: "$f$ 是 $L$-光滑、$\\mu$-强凸的，步长 $1/L$。下降引理给出 $f(x_{t+1}) \\le f(x_t) - \\frac{1}{2L}\\|\\nabla f(x_t)\\|^2$，强凸给出 $\\|\\nabla f(x_t)\\|^2 \\ge 2\\mu(f(x_t) - f^*)$。于是 $f(x_{t+1}) - f^* \\le \\rho\\,(f(x_t) - f^*)$，求 $\\rho$。可用变量：`mu, L`。"
+      en: "$f$ is $L$-smooth and $\\mu$-strongly convex, with step $1/L$. The descent lemma gives $f(x_{t+1}) \\le f(x_t) - \\frac{1}{2L}\\|\\nabla f(x_t)\\|^2$ and strong convexity gives $\\|\\nabla f(x_t)\\|^2 \\ge 2\\mu(f(x_t) - f^*)$. So $f(x_{t+1}) - f^* \\le \\rho\\,(f(x_t) - f^*)$; find $\\rho$. Variables: `mu, L`."
+    answer: "1 - mu/L"
+    vars: {mu: [0.05, 1], L: [1.5, 10]}
+    solution:
+      zh: "两边减去 $f^*$，再把第二个不等式代入第一个：$f(x_{t+1}) - f^* \\le (f(x_t) - f^*) - \\frac{2\\mu}{2L}(f(x_t) - f^*) = (1 - \\mu/L)(f(x_t) - f^*)$。迭代 $t$ 次得 $(1 - 1/\\kappa)^t$，所需步数约 $\\kappa \\ln(1/\\varepsilon)$。场景里原始小时数的 $\\kappa \\approx 169$，标准化后 $\\kappa = 1$，一步到位。"
+      en: "Subtract $f^*$ from both sides and substitute the second inequality into the first: $f(x_{t+1}) - f^* \\le (f(x_t) - f^*) - \\frac{2\\mu}{2L}(f(x_t) - f^*) = (1 - \\mu/L)(f(x_t) - f^*)$. Iterating $t$ times gives $(1 - 1/\\kappa)^t$, so about $\\kappa \\ln(1/\\varepsilon)$ steps. In the scenario, raw hours have $\\kappa \\approx 169$; standardised, $\\kappa = 1$ and one step suffices."
+
+  - id: best-step
+    title: {zh: "二次函数上的最优步长", en: "The best step on a quadratic"}
+    prompt:
+      zh: "在特征值介于 $\\mu$ 与 $L$ 之间的二次函数上，梯度下降的收缩率是 $\\max(\\lvert 1 - \\eta\\mu \\rvert, \\lvert 1 - \\eta L \\rvert)$。取使它最小的 $\\eta$，用条件数 $\\kappa = L/\\mu$ 写出最小的收缩率。可用变量：`k`。"
+      en: "On a quadratic with eigenvalues between $\\mu$ and $L$, gradient descent's rate is $\\max(\\lvert 1 - \\eta\\mu \\rvert, \\lvert 1 - \\eta L \\rvert)$. Choose the $\\eta$ that minimises it and write the smallest rate in terms of the condition number $\\kappa = L/\\mu$. Variables: `k`."
+    answer: "(k - 1)/(k + 1)"
+    vars: {k: [1.5, 200]}
+    solution:
+      zh: "$\\lvert 1 - \\eta\\mu \\rvert$ 随 $\\eta$ 下降，$\\lvert 1 - \\eta L \\rvert$ 在 $\\eta \\gt 1/L$ 后上升，最大值在两者相等处最小：$1 - \\eta\\mu = \\eta L - 1$，$\\eta = 2/(L + \\mu)$，收缩率 $\\frac{L - \\mu}{L + \\mu} = \\frac{\\kappa - 1}{\\kappa + 1}$。例题一：$\\kappa = 10$ 时为 $9/11$，35 步；重球把它变成 $(\\sqrt\\kappa - 1)/(\\sqrt\\kappa + 1)$。"
+      en: "$\\lvert 1 - \\eta\\mu \\rvert$ falls with $\\eta$ and $\\lvert 1 - \\eta L \\rvert$ rises beyond $\\eta = 1/L$, so their maximum is smallest where they are equal: $1 - \\eta\\mu = \\eta L - 1$, $\\eta = 2/(L + \\mu)$, and the rate is $\\frac{L - \\mu}{L + \\mu} = \\frac{\\kappa - 1}{\\kappa + 1}$. Example 1: at $\\kappa = 10$ it is $9/11$, 35 steps; the heavy ball improves it to $(\\sqrt\\kappa - 1)/(\\sqrt\\kappa + 1)$."
+
+  - id: heavy-ball
+    title: {zh: "重球方程的离散化", en: "Discretising the heavy-ball equation"}
+    prompt:
+      zh: "把 $m\\ddot x + c\\dot x + \\nabla f(x) = 0$ 用 $\\ddot x \\approx (x_{t+1} - 2x_t + x_{t-1})/h^2$、$\\dot x \\approx (x_t - x_{t-1})/h$ 离散化，整理成 $x_{t+1} = x_t - \\eta\\nabla f(x_t) + \\beta(x_t - x_{t-1})$。求动量系数 $\\beta$。可用变量：`m, c, h`。"
+      en: "Discretise $m\\ddot x + c\\dot x + \\nabla f(x) = 0$ with $\\ddot x \\approx (x_{t+1} - 2x_t + x_{t-1})/h^2$ and $\\dot x \\approx (x_t - x_{t-1})/h$, and rearrange into $x_{t+1} = x_t - \\eta\\nabla f(x_t) + \\beta(x_t - x_{t-1})$. Find the momentum coefficient $\\beta$. Variables: `m, c, h`."
+    answer: "1 - c*h/m"
+    vars: {m: [1, 5], c: [0.1, 1], h: [0.1, 0.9]}
+    solution:
+      zh: "乘以 $h^2/m$：$x_{t+1} - 2x_t + x_{t-1} + \\frac{ch}{m}(x_t - x_{t-1}) + \\frac{h^2}{m}\\nabla f(x_t) = 0$，即 $x_{t+1} = x_t + (1 - \\frac{ch}{m})(x_t - x_{t-1}) - \\frac{h^2}{m}\\nabla f(x_t)$。所以 $\\beta = 1 - ch/m$，$\\eta = h^2/m$。摩擦 $c$ 越大，$\\beta$ 越小，越接近梯度下降；恒定梯度下速度趋于 $\\eta g/(1 - \\beta)$，$\\beta = 0.9$ 时步长放大 10 倍（例题四）。"
+      en: "Multiply by $h^2/m$: $x_{t+1} - 2x_t + x_{t-1} + \\frac{ch}{m}(x_t - x_{t-1}) + \\frac{h^2}{m}\\nabla f(x_t) = 0$, that is, $x_{t+1} = x_t + (1 - \\frac{ch}{m})(x_t - x_{t-1}) - \\frac{h^2}{m}\\nabla f(x_t)$. So $\\beta = 1 - ch/m$ and $\\eta = h^2/m$. More friction $c$ means a smaller $\\beta$, closer to gradient descent; under a constant gradient the velocity tends to $\\eta g/(1 - \\beta)$, a 10× longer step at $\\beta = 0.9$ (example 4)."
+
+  - id: bias-correction
+    title: {zh: "Adam 的偏差修正", en: "Adam's bias correction"}
+    prompt:
+      zh: "$m_0 = 0$，$m_t = \\beta m_{t-1} + (1 - \\beta) g_t$，每个 $g_t$ 的期望都是 $g$。$\\mathbb E\\, m_t = c_t\\, g$，求 $c_t$。可用变量：`b, t`（$t$ 取正数即可）。"
+      en: "$m_0 = 0$, $m_t = \\beta m_{t-1} + (1 - \\beta) g_t$, and every $g_t$ has mean $g$. Then $\\mathbb E\\, m_t = c_t\\, g$; find $c_t$. Variables: `b, t` (any positive $t$)."
+    answer: "1 - b^t"
+    vars: {b: [0.5, 0.99], t: [1, 30]}
+    solution:
+      zh: "展开得 $m_t = (1 - \\beta)\\sum_{i=1}^t \\beta^{t-i} g_i$，取期望并用等比数列求和：$(1 - \\beta)\\frac{1 - \\beta^t}{1 - \\beta} g = (1 - \\beta^t) g$。所以 Adam 用 $\\hat m_t = m_t / (1 - \\beta_1^t)$。例题二：$t = 1$ 时 $m_1 = 0.1 g$、$v_1 = 0.001 g^2$，不修正的第一步是 $3.16\\eta$，修正后恰好是 $\\eta$。"
+      en: "Unrolled, $m_t = (1 - \\beta)\\sum_{i=1}^t \\beta^{t-i} g_i$; take expectations and sum the geometric series: $(1 - \\beta)\\frac{1 - \\beta^t}{1 - \\beta} g = (1 - \\beta^t) g$. Hence Adam uses $\\hat m_t = m_t / (1 - \\beta_1^t)$. Example 2: at $t = 1$, $m_1 = 0.1 g$ and $v_1 = 0.001 g^2$, so the uncorrected first step is $3.16\\eta$ and the corrected one exactly $\\eta$."
+
+code:
+  - id: optimizers
+    kind: implement
+    file: optimizers.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现动量、Adam 与 AdamW", en: "Momentum, Adam and AdamW from scratch"}
+    intro:
+      zh: "补全重球动量、Adam 的一阶 / 二阶矩、偏差修正和 AdamW 的解耦衰减。检查会复现条件数 10 的碗上 15 步收敛、Adam 第一步恰好等于学习率、AdamW 每步乘以 1 − lr·wd，并用你的 Adam 训练逻辑回归，与 scikit-learn 的最优损失对比。运行后可以回放：分界线在 Adam 的更新下一步步转到位。"
+      en: "Fill in heavy-ball momentum, Adam's first and second moments, the bias correction and AdamW's decoupled decay. The checks reproduce the 15-step convergence on the bowl with condition number 10, confirm Adam's first step is exactly the learning rate and AdamW shrinks by 1 − lr·wd per step, and train a logistic regression with your Adam against scikit-learn's optimum. Afterwards, replay the boundary turning into place under Adam's updates."
+    metrics:
+      - {key: loss, label: {zh: "训练损失", en: "Training loss"}}
+  - id: optim-library
+    kind: library
+    file: optim_library.py
+    packages: [numpy, scipy, scikit-learn]
+    title: {zh: "SciPy 的拟牛顿法与 MLP 的 SGD / Nesterov / Adam", en: "SciPy's quasi-Newton methods and an MLP under SGD / Nesterov / Adam"}
+    intro:
+      zh: "用 scipy.optimize.minimize 在 Rosenbrock 函数上比较共轭梯度、BFGS、L-BFGS-B 和牛顿共轭梯度各用了多少次迭代和梯度计算（BFGS 用曲率信息，梯度计算约少一半）；再用 MLPClassifier 在双月数据上比较普通 SGD、Nesterov 动量和 Adam 的训练曲线。运行后可以回放 Adam 训练的 MLP，决策边界一轮轮弯过去。"
+      en: "Compare how many iterations and gradient evaluations conjugate gradient, BFGS, L-BFGS-B and Newton-CG need on the Rosenbrock function with scipy.optimize.minimize (BFGS uses curvature and needs about half the gradients); then compare the training curves of plain SGD, Nesterov momentum and Adam for an MLPClassifier on the two moons. Afterwards, replay an MLP trained by Adam as its decision boundary bends epoch by epoch."
+    metrics:
+      - {key: loss, label: {zh: "训练损失", en: "Training loss"}}

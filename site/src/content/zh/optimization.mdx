@@ -1,0 +1,229 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import LrDial from "../../components/chapters/ch16/LrDial";
+import ConditionZigzag from "../../components/chapters/ch16/ConditionZigzag";
+import OptimizerRace from "../../components/chapters/ch16/OptimizerRace";
+import LrSchedules from "../../components/chapters/ch16/LrSchedules";
+
+<Section lang="zh" k="scenario">
+
+第 15 章说，策略就是负对数似然。可是损失写出来以后，还得有人把它降下去。网络有成千上万个参数，没有闭式解，只能一步一步往下走：梯度下降。
+
+老师先拿最简单的情况试手：40 个学生，“成绩 = $w_0 + w_1 \times$ 小时数”，用梯度下降代替最小二乘公式。她遇到的第一个问题是学习率：太小，100 步还在半山腰；稍大一点，直接飞出去。第二个问题更奇怪：怎么调都不理想，截距总是学得很慢。拖动下面的学习率，再换成“标准化小时数”试试：
+
+<LrDial client:visible lang="zh" />
+
+只是把小时数减去均值、除以标准差，梯度下降就从“100 步还没到”变成“一步到位”。这一章回答：
+
+1. 学习率能取多大？收敛快慢由什么决定？（条件数）
+2. 动量、Nesterov、Adam 各自修好了梯度下降的哪个毛病？
+3. 非凸的网络损失里有鞍点和平坦区，学习率又该怎样随训练调度？
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 一阶优化器的更新规则
+
+记 $g_t = \nabla L(\theta_t)$；深度学习里它通常是一个小批量上的梯度（随机梯度）。
+
+<Box kind="definition" title="五个更新规则">
+
+| 方法 | 更新 | 想法 |
+|---|---|---|
+| 梯度下降 / SGD | $\theta_{t+1} = \theta_t - \eta g_t$ | 沿负梯度走一步 |
+| 动量（重球） | $v_{t+1} = \beta v_t - \eta g_t,\ \theta_{t+1} = \theta_t + v_{t+1}$ | 累积速度，平均掉来回摆动 |
+| Nesterov | 同上，但梯度在前瞻点 $\theta_t + \beta v_t$ 处计算 | 先按惯性走，再看坡度修正 |
+| RMSProp | $s_{t+1} = \rho s_t + (1 - \rho) g_t^2,\ \theta_{t+1} = \theta_t - \eta g_t / \sqrt{s_{t+1}}$ | 每个坐标按自己梯度的大小缩放 |
+| Adam | 动量 $m$ + RMSProp 的 $v$ + 偏差修正 | 两者结合，默认参数几乎不用调 |
+
+（平方、开方、除法都按坐标进行。）
+
+</Box>
+
+学习率 $\eta$ 是最重要的超参数。上面的场景说明，它的合适取值取决于损失曲面的形状。陡的方向要求小步长，缓的方向又希望大步长，一个 $\eta$ 很难兼顾，这就是条件数问题。
+
+<OptimizerRace client:visible lang="zh" />
+
+<Box kind="insight" title="三要素">
+
+**模型**：任意可微的参数化模型。**策略**：任意可微的损失（第 15 章）。**算法**：本章的迭代优化。梯度从哪里来，是第 17 章反向传播的事。
+
+</Box>
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 光滑与强凸
+
+<Box kind="definition" title="L-光滑、μ-强凸">
+
+若对任意 $x, y$，$\|\nabla f(x) - \nabla f(y)\| \le L \|x - y\|$，称 $f$ 为 $L$-光滑；若 $f(y) \ge f(x) + \nabla f(x)^\top (y - x) + \frac{\mu}{2}\|y - x\|^2$，称 $f$ 为 $\mu$-强凸。对二次函数 $f = \frac12 x^\top H x$，$L$ 和 $\mu$ 就是 $H$ 的最大、最小特征值。**条件数** $\kappa = L / \mu$。
+
+</Box>
+
+<Box kind="theorem" title="梯度下降的线性收敛">
+
+$f$ 是 $L$-光滑且 $\mu$-强凸的，取 $\eta = 1/L$，则
+
+$$
+f(x_t) - f^* \le \Big(1 - \frac{\mu}{L}\Big)^t \big(f(x_0) - f^*\big).
+$$
+
+</Box>
+
+**证明**。第一步，**下降引理**：$L$-光滑意味着 $f(y) \le f(x) + \nabla f(x)^\top (y - x) + \frac{L}{2}\|y - x\|^2$。代入 $y = x - \frac1L \nabla f(x)$：
+
+$$
+f(x_{t+1}) \le f(x_t) - \frac{1}{2L} \|\nabla f(x_t)\|^2.
+$$
+
+第二步，强凸给出梯度的下界。在强凸不等式右边对 $y$ 取最小值（在 $y = x - \nabla f(x)/\mu$ 处取到），得到 $f^* \ge f(x) - \frac{1}{2\mu}\|\nabla f(x)\|^2$，即
+
+$$
+\|\nabla f(x)\|^2 \ge 2\mu \big(f(x) - f^*\big).
+$$
+
+两式合并：$f(x_{t+1}) - f^* \le (f(x_t) - f^*) - \frac{\mu}{L}(f(x_t) - f^*)$。（推导题 1）
+
+要把误差缩小到 $\varepsilon$ 倍，大约需要 $\kappa \ln(1/\varepsilon)$ 步：**步数与条件数成正比**。
+
+### 二次函数：精确的图景
+
+在 $f = \frac12 (x - x^*)^\top H (x - x^*)$ 上，
+
+$$
+x_{t+1} - x^* = (I - \eta H)(x_t - x^*).
+$$
+
+在 $H$ 的第 $i$ 个特征方向上，误差每步乘以 $1 - \eta\lambda_i$。于是：
+
+- **稳定**：需要所有 $\lvert 1 - \eta\lambda_i \rvert \lt 1$，即 $\eta \lt 2/L$。陡的方向决定了步长的上限。
+- **速度**：收缩率是 $\max_i \lvert 1 - \eta\lambda_i \rvert$，由最缓的方向 $\mu$ 和最陡的方向 $L$ 两端决定。让 $1 - \eta\mu = \eta L - 1$，得最优步长 $\eta = 2/(L + \mu)$，收缩率 $(\kappa - 1)/(\kappa + 1)$（推导题 2）。
+
+<ConditionZigzag client:visible lang="zh" />
+
+回到场景：线性回归 $\frac12 \overline{(w_0 + w_1 u - y)^2}$ 的 Hessian 是 $\begin{pmatrix} 1 & \bar u \\ \bar u & \overline{u^2} \end{pmatrix}$。原始小时数的均值约为 5，两列 $(1, u)$ 高度相关，$\kappa \approx 169$；标准化之后 $\bar u = 0$，$\overline{u^2} = 1$，Hessian 是单位阵，$\kappa = 1$。**特征缩放就是给梯度下降做预条件。**
+
+### 动量：带阻尼的重球
+
+想象一个小球在损失曲面上滚动，受到坡度的推力和摩擦力：
+
+$$
+m \ddot x + c \dot x + \nabla f(x) = 0.
+$$
+
+用步长 $h$ 离散化，$\ddot x \approx (x_{t+1} - 2x_t + x_{t-1}) / h^2$，$\dot x \approx (x_t - x_{t-1}) / h$，整理得
+
+$$
+x_{t+1} = x_t - \frac{h^2}{m} \nabla f(x_t) + \Big(1 - \frac{ch}{m}\Big)(x_t - x_{t-1}).
+$$
+
+这正是重球法：$\eta = h^2/m$，$\beta = 1 - ch/m$（推导题 3）。$\beta = 0$ 是摩擦大到没有惯性的梯度下降；$\beta \to 1$ 是没有摩擦，小球永远来回振荡。
+
+动量有两个作用。第一，**加速**：沿着一致的方向，速度累积到 $\eta g/(1 - \beta)$，$\beta = 0.9$ 时相当于步长放大 10 倍。第二，**抵消摆动**：之字形方向上的梯度正负交替，在速度里相互抵消。在二次函数上取最优的 $\eta, \beta$，收缩率从 $(\kappa - 1)/(\kappa + 1)$ 变成
+
+$$
+\frac{\sqrt\kappa - 1}{\sqrt\kappa + 1},
+$$
+
+相当于把条件数开了平方根。Nesterov 把梯度挪到前瞻点计算。对一般的光滑凸函数，它的误差以 $O(1/t^2)$ 下降，而梯度下降是 $O(1/t)$；这个速度对一阶方法已经是最优的。
+
+### 二阶方法：牛顿法
+
+用 Hessian 把曲面“拉圆”：$x_{t+1} = x_t - H^{-1} \nabla f(x_t)$。在二次函数上一步到位，而且对线性变换不变，特征缩不缩放都一样。接近最小值时误差平方收敛，每步有效数字翻倍。代价是：$p$ 个参数要存 $p^2$ 的 Hessian、做 $O(p^3)$ 的求解；在鞍点附近 Hessian 不定，牛顿步反而会被吸向鞍点。拟牛顿法（BFGS、L-BFGS）用梯度的差近似 $H^{-1}$，适合中小规模的光滑问题。网络训练几乎都用一阶方法。
+
+### 随机梯度与调度
+
+小批量梯度 $\tilde g$ 是无偏的，$\mathbb E \tilde g = \nabla f$，但带着方差 $\sigma^2$。常数步长下，迭代点不会停在最小值，而是在它附近抖动，抖动的大小与 $\eta \sigma^2$ 成正比。所以要“先大后小”：步长满足 $\sum_t \eta_t = \infty$（走得足够远）和 $\sum_t \eta_t^2 \lt \infty$（噪声最终消失）时，SGD 收敛（Robbins–Monro 条件）。实践中常用阶梯衰减和余弦衰减，前面再加几轮线性**预热**：刚开始的参数和 Adam 的二阶矩估计都不可靠，先用小步长走一段。
+
+<LrSchedules client:visible lang="zh" />
+
+### Adam 与偏差修正
+
+$$
+m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t, \qquad v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2.
+$$
+
+$m_0 = v_0 = 0$。把递推展开，$m_t = (1 - \beta_1)\sum_{i=1}^t \beta_1^{t-i} g_i$。若梯度的期望恒为 $g$，
+
+$$
+\mathbb E\, m_t = (1 - \beta_1) \sum_{i=1}^t \beta_1^{t-i} g = (1 - \beta_1^t)\, g.
+$$
+
+初期的估计被零初始值拉向 0，所以要除以 $1 - \beta_1^t$（推导题 4）；$v_t$ 同理除以 $1 - \beta_2^t$。更新是
+
+$$
+\theta_{t+1} = \theta_t - \eta \frac{\hat m_t}{\sqrt{\hat v_t} + \epsilon}, \qquad \hat m_t = \frac{m_t}{1 - \beta_1^t},\ \hat v_t = \frac{v_t}{1 - \beta_2^t}.
+$$
+
+比值 $\hat m / \sqrt{\hat v}$ 大约是梯度的“信噪比”，量级在 1 左右：**Adam 每步移动约 $\eta$，与梯度的尺度无关**。这让同一个学习率能用于尺度差异很大的各层参数；代价是它不再是梯度方向，鞍点附近微小的梯度也会被放大成整步（上面的赛跑里 Adam 逃离鞍点最快）。
+
+<Box kind="insight" title="AdamW：把权重衰减移出比值">
+
+在 Adam 里加 L2 正则，就是把 $\lambda\theta$ 加进梯度，它也会被 $\sqrt{\hat v}$ 除掉。梯度历来很大的参数几乎得不到衰减；极端情况下，梯度只有正则项时，$\lambda$ 被约掉，衰减强度与 $\lambda$ 无关。AdamW 把衰减**解耦**出来：
+
+$$
+\theta_{t+1} = \theta_t - \eta \Big(\frac{\hat m_t}{\sqrt{\hat v_t} + \epsilon} + \lambda \theta_t\Big),
+$$
+
+每步把所有参数统一乘以 $1 - \eta\lambda$。对 SGD 而言两者等价，对 Adam 则不然。现在训练 Transformer 默认用 AdamW。
+
+</Box>
+
+### 非凸：鞍点与平坦区
+
+网络的损失不是凸的。在临界点 $\nabla f = 0$ 处，Hessian 可能既有正特征值也有负特征值，这就是**鞍点**。高维空间里，鞍点远比局部极小值常见。梯度下降并不会停在鞍点上：沿负曲率方向 $-\lvert\lambda\rvert$，偏离量每步乘以 $1 + \eta\lvert\lambda\rvert \gt 1$，最终会滑下去。但如果起点离那个方向很近，要花很多步才能逃出来，损失曲线上就出现一段长长的平台。动量和自适应方法能缩短这个平台。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题一：条件数 10 的碗
+
+<Box kind="example" title="f = ½(0.1x² + y²)，从 (−3, 1) 出发，误差缩小到千分之一">
+
+| 方法 | 收缩率 | 步数 |
+|---|---|---|
+| 梯度下降，$\eta = 1/L = 1$ | $1 - 1/\kappa = 0.9$ | $66$ |
+| 梯度下降，$\eta = 2/(L+\mu) = 1.818$ | $9/11 = 0.818$ | $35$ |
+| 重球，$\eta = 2.309,\ \beta = 0.270$ | $(\sqrt{10} - 1)/(\sqrt{10} + 1) = 0.519$ | $15$ |
+
+$\kappa = 100$ 时，三行的步数变成 $683$、$346$、$52$：梯度下降的步数随 $\kappa$ 线性增长，重球只随 $\sqrt\kappa$ 增长。（重球的实测步数比 $\ln 10^{-3} / \ln 0.519 \approx 11$ 多几步，那是起步阶段的过渡。）
+
+</Box>
+
+### 例题二：没有偏差修正的第一步
+
+<Box kind="example" title="β₁ = 0.9，β₂ = 0.999，第一步梯度为 g">
+
+$m_1 = 0.1 g$，$v_1 = 0.001 g^2$。不修正时，第一步长 $\eta \cdot 0.1 \lvert g \rvert / \sqrt{0.001}\, \lvert g \rvert = 3.16\,\eta$；修正后 $\hat m_1 = g$，$\hat v_1 = g^2$，第一步恰好是 $\eta$。无论 $g = 0.01$ 还是 $100$，结果都一样，这正是 Adam 不看梯度尺度的体现。
+
+</Box>
+
+### 例题三：在鞍点附近停留多久
+
+<Box kind="example" title="f = ½x² + ¼y⁴ − ½y²，η = 0.1，y₀ = 0.001">
+
+$y$ 方向的曲率在原点是 $-1$，所以 $y_{t+1} = y_t + 0.1(y_t - y_t^3) \approx 1.1\, y_t$。从 $0.001$ 长到 $0.5$ 需要约 $\ln 500 / \ln 1.1 \approx 65$ 步，精确迭代是 $67$ 步。在这 67 步里，损失几乎不变：这就是平台。同样的起点，Adam 把 $y$ 方向的微小梯度放大成整步，$10$ 步就逃了出来。
+
+</Box>
+
+### 例题四：动量的有效步长
+
+<Box kind="example" title="恒定梯度 g，β = 0.9">
+
+$v_{t+1} = 0.9 v_t - \eta g$ 的不动点是 $v = -\eta g / (1 - 0.9) = -10\,\eta g$。动量把一致方向上的步长放大了 10 倍；所以从 SGD 换成动量 SGD 时，学习率通常要相应调小。
+
+</Box>
+
+### 拓展
+
+- **稳定性边缘**：在网络上用全批量梯度下降，Hessian 的最大特征值会自己涨到 $2/\eta$ 附近然后停住，损失不单调却仍在下降。二次模型给出的 $\eta \lt 2/L$ 在训练中被“动态地”满足。
+- **大批量训练**：批量翻倍、学习率同比放大（线性缩放规则），再配合预热；LARS / LAMB 按层调整步长。
+- **新优化器**：Lion 只用动量的符号；Shampoo、SOAP、Muon 用矩阵形式的预条件，介于 Adam 和二阶方法之间。
+- **学习率无关的方法**：schedule-free 优化、D-Adaptation 自动估计步长。
+- **Sharpness-Aware Minimization（SAM）**：先往最坏方向挪一点再求梯度，偏好平坦的极小值。
+
+</Section>

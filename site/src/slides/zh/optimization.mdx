@@ -1,0 +1,255 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import LrDial from "../../components/chapters/ch16/LrDial";
+import ConditionZigzag from "../../components/chapters/ch16/ConditionZigzag";
+import OptimizerRace from "../../components/chapters/ch16/OptimizerRace";
+import LrSchedules from "../../components/chapters/ch16/LrSchedules";
+
+<Slide lang="zh" part="intro" layout="title" kicker="第 16 章 · 动画课程" title="优化：从梯度下降到 Adam" say="损失写出来了，怎样把它降下去？这一章讲步长、条件数、动量和 Adam。">
+
+步长 · 条件数 · 动量 · Adam · 调度
+
+</Slide>
+
+<Slide lang="zh" part="scenario" title="学习率旋钮" say="老师用梯度下降拟合成绩线：从 w 等于零出发，走一百步。">
+
+<Step drive="s1=-2.5/2" say="学习率零点零零三：一百步后，损失还是最优的三倍，截距几乎没动。">太小：截距几乎不动</Step>
+
+<Step drive="s1=-1.25/2.5" say="调到零点零五六，这是不发散的最大值。一百步后，截距仍然偏低。">最大的稳定值：截距仍偏低</Step>
+
+<Step drive="s1=-1.15/1.5" say="再大一点点，就直接发散了。">再大一点：发散</Step>
+
+<Step drive="click:chip2; s1=0/2" say="把小时数标准化，学习率可以放到一，一步就到最小二乘的答案。">标准化：$\eta = 1$，一步到位</Step>
+
+<div slot="visual"><LrDial client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="scenario" layout="center" title="这一章的三个问题" say="三个问题。">
+
+<Step effect="focus" say="第一，学习率能取多大？收敛快慢由什么决定？">
+<p class="big-q sm">步长与收敛速度由什么决定？</p>
+</Step>
+
+<Step say="第二，动量、Nesterov、Adam 各修好了梯度下降的哪个毛病？">动量、Nesterov、Adam 各修好了什么？</Step>
+
+<Step say="第三，非凸的地形里有鞍点和平坦区，学习率又该怎样调度？">鞍点、平坦区与学习率调度</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="二次碗上的一步" say="先看最简单的地形：二次函数。">
+
+<Morph>
+
+<Step effect="morph" say="梯度下降的一步。">
+
+$$
+x_{t+1} = x_t - \eta \nabla f(x_t)
+$$
+
+</Step>
+
+<Step effect="morph" say="二次函数的梯度是 H 乘以 x 减 x 星。">
+
+$$
+x_{t+1} - x^* = (I - \eta H)(x_t - x^*)
+$$
+
+</Step>
+
+<Step effect="morph" say="沿 H 的每个特征方向，误差每步乘以一减 eta lambda。">
+
+$$
+e_{t+1} = (1 - \eta\lambda)\, e_t
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="陡的方向要求 eta 小于二比 L；缓的方向每步只缩小一点点。">
+<p class="big-q sm">稳定：$\eta \lt 2/L$　速度：由 $\kappa = L/\mu$ 决定</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="math" title="条件数与之字形" say="拉长二次碗，看梯度下降怎样走。">
+
+<Step drive="s1=10/1.5; s2=1/1" say="条件数十，步长一比 L：陡的方向一步归零，缓的方向每步只缩百分之十，要六十六步。">$\kappa = 10$，$\eta = 1/L$：66 步</Step>
+
+<Step drive="click:chip3; wait:1" say="最优步长二比 L 加 mu：两头的收缩率相等，三十五步。">$\eta = 2/(L+\mu)$：35 步</Step>
+
+<Step drive="s2=2.05/1.5" say="步长超过二比 L，陡的方向来回弹跳，越弹越远。">$\eta \gt 2/L$：发散</Step>
+
+<Step drive="s1=100/2; click:chip3; wait:1" say="条件数一百：最优步长也要三百四十六步，轨迹之字形前进。">$\kappa = 100$：346 步</Step>
+
+<Step drive="click:chip2; wait:1" say="换成重球动量：五十二步。">重球：52 步</Step>
+
+<div slot="visual"><ConditionZigzag client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="线性收敛" say="一般的光滑强凸函数呢？两个不等式就够了。">
+
+<Morph>
+
+<Step effect="morph" say="下降引理：步长一比 L 时，每步至少下降梯度平方除以二 L。">
+
+$$
+f(x_{t+1}) \le f(x_t) - \frac{1}{2L}\|\nabla f(x_t)\|^2
+$$
+
+</Step>
+
+<Step effect="morph" say="强凸给出梯度的下界。">
+
+$$
+\|\nabla f(x_t)\|^2 \ge 2\mu\,\big(f(x_t) - f^*\big)
+$$
+
+</Step>
+
+<Step effect="morph" say="合起来：每步把差距乘以一减 mu 比 L。">
+
+$$
+f(x_{t+1}) - f^* \le \Big(1 - \frac{\mu}{L}\Big)\big(f(x_t) - f^*\big)
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="缩小到 epsilon 倍，大约要 kappa 乘 ln 一比 epsilon 步。">步数 $\approx \kappa \ln(1/\varepsilon)$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="动量：带阻尼的重球" say="让小球带上惯性。">
+
+<Morph>
+
+<Step effect="morph" say="一个有质量、有摩擦的小球，在坡上滚。">
+
+$$
+m \ddot x + c \dot x + \nabla f(x) = 0
+$$
+
+</Step>
+
+<Step effect="morph" say="用步长 h 离散化。">
+
+$$
+x_{t+1} = x_t - \frac{h^2}{m}\nabla f(x_t) + \Big(1 - \frac{ch}{m}\Big)(x_t - x_{t-1})
+$$
+
+</Step>
+
+<Step effect="morph" say="这就是重球法：eta 等于 h 方比 m，beta 等于一减 ch 比 m。">
+
+$$
+x_{t+1} = x_t - \eta \nabla f(x_t) + \beta (x_t - x_{t-1})
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="一致的方向上速度累积，步长放大一比一减 beta 倍；来回摆动的方向相互抵消。">收缩率 $\frac{\kappa - 1}{\kappa + 1} \to \frac{\sqrt\kappa - 1}{\sqrt\kappa + 1}$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" title="优化器赛跑" say="四个优化器从同一点出发：梯度下降、动量、Nesterov、Adam。">
+
+<Step drive="click:chip1; s2=0/0.3; s2=150/5" say="病态山谷里，梯度下降沿谷底慢慢爬，动量和 Nesterov 借着惯性先到。">山谷：动量先到</Step>
+
+<Step drive="click:chip2; s2=0/0.3; s2=150/5" say="Rosenbrock 的香蕉谷：梯度下降一百五十步还没到终点。">香蕉谷：GD 没到</Step>
+
+<Step drive="click:chip3; s2=0/0.3; s2=150/5" say="鞍点附近梯度几乎为零。梯度下降停留了六十多步，Adam 十步就逃了出来。">鞍点：Adam 最先逃出</Step>
+
+<Step drive="click:chip1; s1=2/2" say="学习率放大到四倍：Nesterov 最先发散，梯度下降在两壁之间来回弹。">×4：Nesterov 先发散</Step>
+
+<div slot="visual"><OptimizerRace client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="math" layout="center" title="Adam 的偏差修正" say="Adam 用梯度的滑动平均。可是它从零开始。">
+
+<Morph>
+
+<Step effect="morph" say="展开一阶矩的递推。">
+
+$$
+m_t = (1 - \beta_1) \sum_{i=1}^{t} \beta_1^{t-i} g_i
+$$
+
+</Step>
+
+<Step effect="morph" say="梯度期望恒为 g 时，求和是一个等比数列。">
+
+$$
+\mathbb E\, m_t = (1 - \beta_1^t)\, g
+$$
+
+</Step>
+
+<Step effect="morph" say="所以除以一减 beta 一的 t 次方。二阶矩同理。">
+
+$$
+\hat m_t = \frac{m_t}{1 - \beta_1^t}, \qquad \hat v_t = \frac{v_t}{1 - \beta_2^t}
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="不修正的话，第一步是学习率的三点一六倍；修正后恰好等于学习率。">第一步：$3.16\,\eta \to \eta$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="method" layout="center" title="Adam 与 AdamW" say="Adam 的步子有多大？">
+
+<Step say="m 帽除以根号 v 帽，量级在一左右：每个参数每步移动约 eta，与梯度的尺度无关。">$\theta \leftarrow \theta - \eta\, \hat m / (\sqrt{\hat v} + \epsilon)$：每步约 $\eta$</Step>
+
+<Step say="在 Adam 里加 L2，正则项也被根号 v 除掉：梯度大的参数几乎不衰减。">Adam + L2：衰减被 $\sqrt{\hat v}$ 稀释</Step>
+
+<Step effect="focus" say="AdamW 把衰减移出比值，每步统一乘以一减 eta lambda。">
+<p class="big-q sm">AdamW：$\theta \leftarrow \theta - \eta\big(\hat m/\sqrt{\hat v} + \lambda\theta\big)$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="zh" part="cases" title="学习率调度" say="同一个小网络，同样六十轮，只改变学习率随时间的变化。">
+
+<Step drive="click:chip3; wait:1.5" say="峰值零点三：常数学习率一直在谷底乱跳，损失降不下去。">峰值 0.3：常数降不下去</Step>
+
+<Step drive="wait:1.5" say="阶梯和余弦先走大步，再收小步子，才能落进谷底；先预热，开头也不再猛跳。">先大后小，再加预热</Step>
+
+<Step drive="click:chip1; wait:1.5" say="峰值只有零点零三时，过早衰减反而拖慢训练。">峰值 0.03：衰减反而拖慢</Step>
+
+<Step effect="focus" say="调度是用来驾驭大学习率的。">
+<p class="big-q sm">调度 = 驾驭大学习率</p>
+</Step>
+
+<div slot="visual"><LrSchedules client:visible lang="zh" /></div>
+
+</Slide>
+
+<Slide lang="zh" part="cases" layout="center" title="例题：几个数" say="几个可以手算的数。">
+
+<Step say="条件数十的碗：步长一比 L 要六十六步，最优步长三十五步，重球十五步。">$\kappa = 10$：66 / 35 / 15 步</Step>
+
+<Step say="鞍点旁：y 每步乘一点一，从千分之一长到零点五要六十七步；Adam 十步。">鞍点：GD 67 步，Adam 10 步</Step>
+
+<Step say="恒定梯度下，动量零点九把步长放大十倍。">$\beta = 0.9$：有效步长 $\times 10$</Step>
+
+</Slide>
+
+<Slide lang="zh" part="practice" layout="center" title="轮到你了" say="课后训练在讲义页面里：四道推导题，从零实现动量和 Adam，再用 SciPy 和 scikit-learn 比较各种优化器。">
+
+<Step say="代码运行后，可以回放 Adam 训练逻辑回归时，分界线怎样一步步转到位。">✎ 4 道推导 · ⌨ 动量 + Adam / AdamW · ⚙ SciPy 拟牛顿 + MLP 的 SGD / Adam</Step>
+
+<Step effect="pop" say="点按钮去练习。">
+<a class="btn btn-primary btn-xl" href="../../chapters/optimization/#s-practice">去练习 →</a>
+</Step>
+
+</Slide>

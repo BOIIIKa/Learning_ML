@@ -1,0 +1,40 @@
+---
+title: "优化器实战：学习率、AdamW 与调度"
+summary: "PyTorch / scikit-learn / SciPy 里优化器的正确写法，找学习率的办法，AdamW 的权重衰减，预热与余弦调度，以及常见的发散原因。"
+chapters: ["16"]
+---
+
+### 常用代码
+
+```python
+import torch
+opt = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=0.01)   # 网络默认的起点
+opt = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, nesterov=True, weight_decay=5e-4)
+sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=3e-3, total_steps=T, pct_start=0.1)  # 预热 + 余弦
+# 循环里：loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step(); sched.step(); opt.zero_grad()
+
+from scipy.optimize import minimize          # 小规模光滑问题：L-BFGS-B / BFGS / Newton-CG
+res = minimize(f, x0, jac=grad, method="L-BFGS-B")
+from sklearn.neural_network import MLPClassifier
+MLPClassifier(solver="adam", learning_rate_init=1e-3)   # 或 solver="sgd", momentum=0.9, nesterovs_momentum=True
+```
+
+### 容易踩的坑
+
+- **先标准化特征**：梯度下降对尺度极其敏感（本章场景里条件数 169 → 1）。树模型不在乎，线性模型和网络在乎。
+- **找学习率**：从很小的值开始每步把学习率乘以一个常数，画出损失，取损失下降最快处的约 1/10（LR range test）。发散时先把学习率除以 3，而不是换优化器。
+- **Adam 的 `weight_decay` 是 L2，AdamW 的才是解耦衰减**：PyTorch 的 `Adam(weight_decay=…)` 把 $\lambda\theta$ 加进梯度，会被 $\sqrt v$ 稀释；要用 `AdamW`。偏置和 LayerNorm 的参数通常不做衰减。
+- **从 SGD 换到动量**：动量 0.9 让有效步长变成 10 倍，学习率要相应缩小。
+- **批量变大**：学习率按比例放大并加预热；批量很小时 Adam 的 $\epsilon$（默认 1e-8）有时要调大到 1e-6 以求稳定。
+- **调度按步而不是按轮**：`OneCycleLR`、余弦调度通常每个小批量调用一次 `sched.step()`；按轮调用会让预热长得离谱。
+- **梯度裁剪**：RNN / Transformer 训练中偶发的大梯度会把参数打飞，`clip_grad_norm_` 是便宜的保险。
+- **loss 出现 NaN**：先查数据（除零、log 0）、再查学习率，最后才是数值精度（混合精度时用 GradScaler）。
+
+### 前沿阅读
+
+- Kingma 与 Ba（2015）：Adam。
+- Loshchilov 与 Hutter（2019）：AdamW，解耦权重衰减；（2017）SGDR，余弦退火与热重启。
+- Goyal 等（2017）：大批量训练的线性缩放规则与预热。
+- Cohen 等（2021）：梯度下降在网络上处于“稳定性边缘”。
+- Foret 等（2021）：Sharpness-Aware Minimization。
+- Chen 等（2023）：Lion，符号动量优化器；Defazio 等（2024）：schedule-free 优化。

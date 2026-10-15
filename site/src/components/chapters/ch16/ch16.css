@@ -1,0 +1,20 @@
+/* Chapter 16 widgets. Colours only from the theme variables. */
+.op-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.6rem; align-items: center; }
+.op-two > * { min-width: 0; }
+.op-svg { margin: 0.3rem auto; }
+.op-frame { fill: none; stroke: var(--border); }
+.op-level, .op-contour { fill: none; stroke: var(--accent-2); stroke-width: 1; opacity: 0.4; }
+.op-path { fill: none; stroke: var(--class-pos); stroke-width: 1.6; }
+.op-path.hb, .op-dot.hb { stroke: var(--success); }
+.op-dot { fill: var(--surface); stroke: var(--class-pos); stroke-width: 1.4; }
+.op-dot.hb { fill: var(--surface); }
+.op-min { fill: var(--ink); }
+.op-race { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.op-head { stroke: var(--surface); stroke-width: 1.5; }
+.op-start { fill: none; stroke: var(--ink); stroke-width: 1.6; }
+.op-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; font-size: 0.86rem; color: var(--text-muted); margin: 0.2rem 0; }
+.op-leg { display: inline-flex; align-items: center; gap: 0.35rem; }
+.op-leg i { width: 14px; height: 4px; display: inline-block; }
+.op-leg b { color: var(--text); font-family: var(--mono); font-weight: 600; }
+.op-sub { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.1rem; }
+.op-chiplab { font-size: 0.86rem; color: var(--text-muted); align-self: center; margin-right: 0.2rem; }

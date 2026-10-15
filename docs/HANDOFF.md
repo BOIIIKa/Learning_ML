@@ -5,7 +5,7 @@
 
 ## 1. 现状一句话
 
-**完成 16/30 章（00–15），全部已合并到 `main` 并部署到 https://boiiika.github.io/Learning_ML/。** 没有待合并的 PR。下一步：第 16 章“优化：从梯度下降到 Adam”。用户要求：**在保证准确性的前提下尽量精简编辑次数，持续推进**（每章只做一轮验证：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk + 看组件截图）。
+**完成 17/30 章（00–16）。** 00–15 已合并并部署到 https://boiiika.github.io/Learning_ML/；第 16 章在 PR #11（草稿）中等待合并。下一步：第 17 章“反向传播与初始化”（slug `backprop-init`）。用户要求：**在保证准确性的前提下尽量精简编辑次数，持续推进**（每章只做一轮验证：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk + 看组件截图）。
 
 - 竖版讲义：工程蓝图风格。
 - 横版动画课程：3Blue1Brown / manim 风格，自动播放。
@@ -22,6 +22,7 @@
 | BOIIIKa/Learning_ML#8 | 翻页滑动动画、上一页 / 下一页 / 重播 / 页面总览按钮、滚轮与触屏翻页；朗读注释掉；尺寸优化；暂停时手动翻看动画冻结的修复 | 已合并 |
 | BOIIIKa/Learning_ML#9 | 第 14 章；通用引擎 `mlp.ts` | 已合并 |
 | BOIIIKa/Learning_ML#10 | 第 15 章；CurvePlot clipPath id 重复的修复 | 已合并 |
+| BOIIIKa/Learning_ML#11 | 交接文档；第 16 章（优化） | 草稿，待合并 |
 
 ## 2. 用户（项目负责人）的偏好与约定
 
@@ -39,20 +40,20 @@
 - 章节顺序由我决定。**只有用户明确同意时才合并 PR**；用户会把网站链接发给学生测试。
 - 工作分支：`claude/charming-knuth-ti0cof`。每次 PR 合并后，从 `main` 重新开这个分支，再开新的 PR（草稿）。
 
-## 3. 下一步：第 16 章（优化：从梯度下降到 Adam，slug `optimization`）
+## 3. 下一步：第 17 章（反向传播与初始化，slug `backprop-init`）
 
-`curriculum/outline.yaml` 中第 16 章承诺的内容：
-- **目标**：步长、条件数与收敛速度的关系；SGD、动量、Nesterov、Adam / AdamW 的更新规则；非凸地形中的鞍点、平坦区与学习率调度。
-- **推导**：强凸光滑函数上 GD 的线性收敛 $(1-\mu/L)^t$；动量作为带阻尼的重球方程；Adam 的偏差修正、AdamW 的解耦权重衰减。
-- **组件**：优化器赛跑（Rosenbrock / 鞍点 / 病态二次型，可调学习率与起点）、条件数与之字形、学习率调度（常数 / 阶梯 / 余弦 / 预热）。
+`curriculum/outline.yaml` 中第 17 章承诺的内容：
+- **目标**：在计算图上推导反向传播（反向模式自动微分）；梯度消失 / 爆炸，推导 He / Xavier 初始化。
+- **推导**：MLP 的逐层梯度递推；前向方差保持 ⇒ $\mathrm{Var}(w) = 2/n_{in}$；前向模式与反向模式的复杂度比较。
+- **组件**：计算图上的前向值与反向梯度流动（节点显示局部导数）；初始化尺度 × 深度下各层激活 / 梯度的分布（消失与爆炸）。
 
 建议做法：
-- 引擎 `site/src/engines/optimization.ts` 写纯函数的 `gd / momentum / nesterov / rmsprop / adam / adamw` 步进器（输入梯度函数，返回轨迹），测试里验证二次型上的收敛率、Adam 偏差修正后第一步的大小 ≈ 学习率。
-- 情景可以沿用老师的学生：用第 14 章的 `mlp.ts` 训练一个小网络，比较不同优化器的训练曲线（例如作为调度组件的数据）。
-- 例题先在 Python 里算准：例如二次型 $f = \frac12(x^2 + \kappa y^2)$ 上最优步长 $2/(L + \mu)$ 的收敛因子 $(\kappa - 1)/(\kappa + 1)$。
+- 引擎 `site/src/engines/backprop-init.ts`：小表达式图（节点、局部导数、拓扑序前向 / 反向），测试用有限差分核对；方差传播用 `mlp.ts` 的 `initNet(sizes, seed, gain)`（gain = 2 即 He，gain = 1 即 Xavier / LeCun）逐层统计。
+- 情景可沿用第 16 章：老师的小网络加深后训练不动了（梯度在前几层消失）。
+- 第 16 章的 `optimization.ts` 有优化器（`optimizer`、`run`）和扁平数组 MLP 训练（`flatGrad`），可以直接拿来展示“初始化不同，训练曲线不同”。
 
 ```bash
-python3 scripts/new_chapter.py 16 --widget OptimizerRace
+python3 scripts/new_chapter.py 17 --widget BackpropGraph
 ```
 
 可复用的引擎：
@@ -63,7 +64,9 @@ python3 scripts/new_chapter.py 16 --widget OptimizerRace
 - `regression.ts`：`solve`。
 - `data.ts`：`rng`、`gaussian`、`r6`、`moons`、`blobs`。
 
-### 第 07–15 章期间新踩到的坑（写新章时注意）
+### 第 07–16 章期间新踩到的坑（写新章时注意）
+
+- **浏览器的 `Math.cos` / `Math.sin` 与 Node 在末位可能不同**（`tanh`、`exp`、`log` 一致）。不稳定的训练过程（第 16 章峰值学习率 0.3）会把这一位差异放大成完全不同的曲线，导致 hydration 报错。办法：初始权重用 `r6` 取整，余弦用 `optimization.ts` 里的 `detCos`（只用四则运算）。
 
 - **SVG 的 id 必须每个实例唯一**：所有 CurvePlot 曾共用 `cp-clip`，同页高矮不同的图会被第一张图的尺寸裁掉。现在用 `useId()`；Astro 给每个 island 不同前缀，跨 island 也唯一。
 - **scikit-learn 1.7**：`MLPRegressor` 的第一个位置参数是 `loss`，层数要写 `hidden_layer_sizes=(…)`。
@@ -97,8 +100,8 @@ python3 scripts/new_chapter.py 16 --widget OptimizerRace
 ## 5. 推送前检查清单
 
 ```bash
-cd site && npx tsc --noEmit -p . && npx vitest run && npx astro build      # 185 tests, 70 pages
-cd .. && python -m pytest -q tests && python3 scripts/build_outline.py --check   # 96 tests
+cd site && npx tsc --noEmit -p . && npx vitest run && npx astro build      # 198 tests, 74 pages
+cd .. && python -m pytest -q tests && python3 scripts/build_outline.py --check   # 102 tests
 cd site && node scripts/verify/course.mjs walk zh <slug> && node scripts/verify/course.mjs walk en <slug>
 node scripts/verify/chapter.mjs <slug> zh dark     # 需要本地 Pyodide
 node scripts/verify/pages.mjs <slug>
@@ -107,7 +110,7 @@ node scripts/verify/pages.mjs <slug>
 ## 6. 压缩上下文用的关键词 / Context-compression keywords
 
 Learning_ML · BOIIIKa/Learning_ML · boiiika.github.io/Learning_ML · 看得见的机器学习 / Visible ML · ISL + UDL(Prince) + 李航 · 重写不复制 · 中英双语 · 非商用 CC BY-NC-SA + MIT ·
-16/30 章完成（00–15），全部已合并 · 下一步 16 优化（GD → Adam，slug optimization）· 然后 17 反向传播 … 21 Transformer，第五部分起是生成模型 ·
+17/30 章完成（00–16），00–15 已合并、16 在 PR #11 · 下一步 17 反向传播与初始化（slug backprop-init）… 21 Transformer，第五部分起是生成模型 ·
 竖版讲义 = 蓝图风格（不改）· 横版动画课程 = 3B1B / manim · **点一下播完一页再暂停**（连播按钮 / A 键）· 翻页 = 新旧两页同时滑动 · 按钮：上一页 / 上一拍 / 播放 / 下一拍 / 下一页 / 重播本页 / 连播 / 倍速 / 页面总览 / 全屏 · 朗读已注释掉 · 学生拖动控件时 drive 脚本停下（takeover）· 课程忽略 prefers-reduced-motion ·
 六段结构（情景 / 方法 / 数学 / 例题拓展 / 课后训练 / 实战手册）+ 一页纸 recap · 情景人物：老师和学生（第 01–03、14、15 章）、医院初筛（第 07 章）·
 Astro 7 + React 19 + MDX + KaTeX + Pyodide 0.29.3（sklearn 1.7）· src/manim（Clock、Write、Morph、createSvg）· drive DSL（s1=11/4、s1=80%、click:chip2、wait:1）· `<Morph>` 推导变形 ·
