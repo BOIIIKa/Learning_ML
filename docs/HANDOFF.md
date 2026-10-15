@@ -25,7 +25,7 @@
 | BOIIIKa/Learning_ML#11 | 交接文档；第 16 章（优化） | 已合并 |
 | BOIIIKa/Learning_ML#12 | 第 17 章（反向传播与初始化）；Pyodide 练习可用 autograd | 已合并 |
 | BOIIIKa/Learning_ML#13 | 本地开发工具与指南（setup 脚本、requirements-dev.txt、Playwright 开发依赖、水合与 Math 差异检查工具、LOCAL_DEV.md） | 见 PR |
-| 第 18 章 PR（基于 #13 的分支 `claude/chapter-18-dl-generalization-odq0wf`） | 第 18 章（正则化与泛化之谜）；Python 预计算实验的模式 | 见 PR |
+| BOIIIKa/Learning_ML#14 | 第 18 章（正则化与泛化之谜）；Python 预计算实验的模式（基于 #13 的分支，合并它会一并合并 #13） | 见 PR |
 
 ## 2. 用户（项目负责人）的偏好与约定
 
