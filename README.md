@@ -29,12 +29,15 @@ We cite only their chapter structure; all explanations and figures are original.
 
 ## 本地运行 / Run locally
 
+需要 Node 22 与 Python 3.11+。完整指南（检查工具、工作流、踩过的坑）见 [docs/LOCAL_DEV.md](docs/LOCAL_DEV.md)。
+Needs Node 22 and Python 3.11+. Full guide (verify tools, workflow, lessons learned): [docs/LOCAL_DEV.md](docs/LOCAL_DEV.md).
+
 ```bash
-cd site
-npm install
-npm run dev        # http://localhost:4321 （会先运行 scripts/build_exercises.py，需要 PyYAML）
-npm test           # 算法引擎与判题单元测试 / engine & grading unit tests
-pytest ../tests    # 练习：参考解答全过、骨架全不过 / exercises: solutions pass, skeletons fail
+bash scripts/setup_local.sh      # 一次性：.venv、npm ci、Playwright Chromium、首轮检查 / one-time setup + first checks
+source .venv/bin/activate
+cd site && npm run dev           # http://localhost:4321/zh/
+npm test                         # 引擎与判题单元测试 / engine & grading unit tests
+python -m pytest -q ../tests     # 练习：参考解答全过、骨架全不过 / exercises: solutions pass, skeletons fail
 ```
 
 ## 写一章 / Writing a chapter
@@ -42,6 +45,7 @@ pytest ../tests    # 练习：参考解答全过、骨架全不过 / exercises: 
 ```bash
 python3 scripts/new_chapter.py 04        # 按模板生成一章的全部文件 / scaffold every file of chapter 04
 cd site && npm run verify:chapter -- linear-classification   # 浏览器检查 / browser check (Playwright)
+npm run verify:hydration -- /zh/chapters/linear-classification/   # 定位水合不一致 / locate hydration mismatches
 ```
 
 流程、质量标准和常见坑见 [`CLAUDE.md`](CLAUDE.md) 与 [`.claude/skills/`](.claude/skills)（new-chapter、course-deck、widget、exercise、verify-site）。

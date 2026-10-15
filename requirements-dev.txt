@@ -1,0 +1,10 @@
+# Python tools for local development and CI: exercise checks (pytest), the exercise / outline
+# builders (pyyaml), and the libraries the Python exercises use. The browser runs the same
+# exercises in Pyodide 0.29.3, which ships these packages (scikit-learn 1.7, scipy, lightgbm, autograd).
+numpy
+scipy
+scikit-learn          # the browser has 1.7: avoid APIs newer than that (verify:chapter runs them in Pyodide)
+lightgbm
+autograd
+pyyaml
+pytest

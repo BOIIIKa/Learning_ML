@@ -1,11 +1,11 @@
 # 交接文档 / Handoff
 
-> 写于 2026-10-14（当天收工时更新），供上下文压缩或换人之后继续工作使用。先读本文，再读 `CLAUDE.md` 和 `.claude/skills/`。
+> 写于 2026-10-14，2026-10-15 更新（转为本地开发），供上下文压缩或换人之后继续工作使用。先读本文，再读 `CLAUDE.md` 和 `.claude/skills/`。
 > Written 2026-10-14 for picking the work up after a context reset. Read this, then `CLAUDE.md` and `.claude/skills/`.
 
 ## 1. 现状一句话
 
-**完成 18/30 章（00–17）。** 00–16 已合并并部署到 https://boiiika.github.io/Learning_ML/；第 17 章在 PR #12（草稿）中等待合并。下一步：第 18 章“深度网络的正则化与泛化之谜”（slug `dl-generalization`）。用户要求：**在保证准确性的前提下尽量精简编辑次数，持续推进**（每章只做一轮验证：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk + 看组件截图）。
+**完成 18/30 章（00–17），全部已合并并部署到 https://boiiika.github.io/Learning_ML/。** 从第 18 章起，用户改在本地开发：先读 [`LOCAL_DEV.md`](LOCAL_DEV.md)。下一步：第 18 章“深度网络的正则化与泛化之谜”（slug `dl-generalization`）。用户要求：**在保证准确性的前提下尽量精简编辑次数，持续推进**（每章只做一轮验证：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk + 看组件截图）。
 
 - 竖版讲义：工程蓝图风格。
 - 横版动画课程：3Blue1Brown / manim 风格，自动播放。
@@ -23,7 +23,8 @@
 | BOIIIKa/Learning_ML#9 | 第 14 章；通用引擎 `mlp.ts` | 已合并 |
 | BOIIIKa/Learning_ML#10 | 第 15 章；CurvePlot clipPath id 重复的修复 | 已合并 |
 | BOIIIKa/Learning_ML#11 | 交接文档；第 16 章（优化） | 已合并 |
-| BOIIIKa/Learning_ML#12 | 第 17 章（反向传播与初始化）；Pyodide 练习可用 autograd | 草稿，待合并 |
+| BOIIIKa/Learning_ML#12 | 第 17 章（反向传播与初始化）；Pyodide 练习可用 autograd | 已合并 |
+| BOIIIKa/Learning_ML#13 | 本地开发工具与指南（setup 脚本、requirements-dev.txt、Playwright 开发依赖、水合与 Math 差异检查工具、LOCAL_DEV.md） | 见 PR |
 
 ## 2. 用户（项目负责人）的偏好与约定
 
@@ -39,7 +40,7 @@
   - 训练过程要可视化，例如每次更新后超平面的移动。
   - 必须有参考答案；连按两次 Tab 填入答案，填充动效要酷。
 - 章节顺序由我决定。**只有用户明确同意时才合并 PR**；用户会把网站链接发给学生测试。
-- 工作分支：`claude/charming-knuth-ti0cof`。每次 PR 合并后，从 `main` 重新开这个分支，再开新的 PR（草稿）。
+- 工作分支：云端会话用 `claude/charming-knuth-ti0cof`；本地开发自己开功能分支。每次 PR 合并后从 `main` 重新开分支，再开新的 PR。
 
 ## 3. 下一步：第 18 章（深度网络的正则化与泛化之谜，slug `dl-generalization`）
 
@@ -82,21 +83,16 @@ python3 scripts/new_chapter.py 18 --widget EarlyStopRidge
 - 同一道代码题的多条 trace 可以记录不同的 metrics；TracePlayer 会从第一条含该指标的 trace 取值，MetricChart 跳过非有限值（d3 比例尺对 NaN 返回 undefined，会让整个组件崩溃）。
 - `Plot2D` 新增 `levels`（固定等高线，例如概率 0.5/0.75/0.9 对应的 logit）和 `overlay`（在数据坐标上叠加任意 SVG）。
 
-## 4. 环境备忘（云端沙箱）
+## 4. 开发环境
 
-这些路径只在当前会话的沙箱里有效，容器回收后需要按下面的说明重建。
+**本地开发**（用户从第 18 章起改在自己电脑上开发）：全部步骤、检查工具和心得都在 [`LOCAL_DEV.md`](LOCAL_DEV.md)。一次性设置是 `bash scripts/setup_local.sh`（Windows 用 `scripts/setup_local.ps1`）。
 
-- Python 虚拟环境（含 numpy、scipy、sklearn、lightgbm、pytest、pyyaml）：
-  `/tmp/claude-0/-home-user-Learning-ML/d78ce949-50c6-5fa6-b1f1-4262f6405940/scratchpad/venv/bin/python`
-  重建：`python3 -m venv venv && venv/bin/pip install numpy scipy scikit-learn lightgbm pytest pyyaml autograd`
-- 本地 Pyodide 0.29.3（沙箱访问不了 jsDelivr）：`$SP/pyodide-dl/pyodide`，其中 `$SP` 是上面的 scratchpad 目录。
-  - 使用：`ln -sfn $SP/pyodide-dl/pyodide site/public/pyodide`，再运行 `PUBLIC_PYODIDE_URL=/pyodide/ npx astro dev --port 4321 --host 127.0.0.1`。
-  - 没设 `PUBLIC_PYODIDE_URL` 时会去 CDN 取 Pyodide，沙箱里代码题会一直转圈（`chapter.mjs` 超时）。新加的练习若显示 `code exercises: 0`，是开发服务器还拿着旧的 `generated/exercises.json`：`npx astro dev stop; rm -rf node_modules/.vite .astro` 后重启。
-  - **构建或提交前删除这个软链接**（已加入 .gitignore，但构建时会把它复制进 dist）。
-- Astro 7 的 dev 服务器会以守护进程运行，用 `npx astro dev stop` 停止。`astro build` 之后 dev 服务器的 Vite 缓存可能失效，需要 `rm -rf node_modules/.vite` 后重启。
-- Playwright：`/opt/node-tools/node_modules/playwright`，`site/scripts/verify/_browser.mjs` 会自动找到它。
-- github.io 在沙箱里访问不了。部署结果用 GitHub Actions 中 `pages.yml` 的运行状态确认。
-- GitHub 操作只能用 MCP 的 github 工具（没有 `gh`），推送用 `git push -u origin claude/charming-knuth-ti0cof`。
+**云端沙箱**（Claude Code on the web）的特殊情况：
+- 沙箱访问不了 jsDelivr，需要本地 Pyodide：`bash scripts/fetch_pyodide.sh`，再用 `PUBLIC_PYODIDE_URL=/pyodide/` 启动开发服务器；构建或提交前删掉 `site/public/pyodide` 链接。
+- Playwright 浏览器预装在 `/opt/pw-browsers`（`PLAYWRIGHT_BROWSERS_PATH`），不要运行 `playwright install`。
+- 访问不了 github.io：用 Actions 中 `pages.yml` 的运行状态确认部署。
+- GitHub 操作只能用 MCP 的 github 工具（没有 `gh`）。
+- Astro 7 的开发服务器以守护进程运行，用 `npx astro dev stop` 停止。
 
 ## 5. 推送前检查清单
 
@@ -104,14 +100,15 @@ python3 scripts/new_chapter.py 18 --widget EarlyStopRidge
 cd site && npx tsc --noEmit -p . && npx vitest run && npx astro build      # 207 tests, 78 pages
 cd .. && python -m pytest -q tests && python3 scripts/build_outline.py --check   # 108 tests
 cd site && node scripts/verify/course.mjs walk zh <slug> && node scripts/verify/course.mjs walk en <slug>
-node scripts/verify/chapter.mjs <slug> zh dark     # 需要本地 Pyodide
+node scripts/verify/chapter.mjs <slug> zh dark     # 本地默认从 CDN 加载 Pyodide
+node scripts/verify/hydration.mjs /zh/chapters/<slug>/   # 出现水合报错时定位组件
 node scripts/verify/pages.mjs <slug>
 ```
 
 ## 6. 压缩上下文用的关键词 / Context-compression keywords
 
 Learning_ML · BOIIIKa/Learning_ML · boiiika.github.io/Learning_ML · 看得见的机器学习 / Visible ML · ISL + UDL(Prince) + 李航 · 重写不复制 · 中英双语 · 非商用 CC BY-NC-SA + MIT ·
-18/30 章完成（00–17），00–16 已合并、17 在 PR #12 · 下一步 18 深度网络的泛化（slug dl-generalization）· 19 卷积与残差 · 20 Transformer · 21 图网络（第五部分：网络架构与归纳偏置） ·
+18/30 章完成（00–17），全部已合并 · 本地开发见 docs/LOCAL_DEV.md · 下一步 18 深度网络的泛化（slug dl-generalization）· 19 卷积与残差 · 20 Transformer · 21 图网络（第五部分：网络架构与归纳偏置） ·
 竖版讲义 = 蓝图风格（不改）· 横版动画课程 = 3B1B / manim · **点一下播完一页再暂停**（连播按钮 / A 键）· 翻页 = 新旧两页同时滑动 · 按钮：上一页 / 上一拍 / 播放 / 下一拍 / 下一页 / 重播本页 / 连播 / 倍速 / 页面总览 / 全屏 · 朗读已注释掉 · 学生拖动控件时 drive 脚本停下（takeover）· 课程忽略 prefers-reduced-motion ·
 六段结构（情景 / 方法 / 数学 / 例题拓展 / 课后训练 / 实战手册）+ 一页纸 recap · 情景人物：老师和学生（第 01–03、14、15 章）、医院初筛（第 07 章）·
 Astro 7 + React 19 + MDX + KaTeX + Pyodide 0.29.3（sklearn 1.7）· src/manim（Clock、Write、Morph、createSvg）· drive DSL（s1=11/4、s1=80%、click:chip2、wait:1）· `<Morph>` 推导变形 ·

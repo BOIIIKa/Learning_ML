@@ -12,7 +12,10 @@
     "check": "tsc --noEmit",
     "verify:chapter": "node scripts/verify/chapter.mjs",
     "verify:course": "node scripts/verify/course.mjs",
-    "verify:pages": "node scripts/verify/pages.mjs"
+    "verify:pages": "node scripts/verify/pages.mjs",
+    "verify:hydration": "node scripts/verify/hydration.mjs",
+    "verify:mathdiff": "node scripts/verify/mathdiff.mjs",
+    "setup:browser": "playwright install chromium"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.3.2",
@@ -48,6 +51,7 @@
     "@types/katex": "^0.16.8",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "playwright": "1.56.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.4"
   }

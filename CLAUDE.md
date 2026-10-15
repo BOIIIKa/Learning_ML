@@ -39,10 +39,13 @@ Live site: https://boiiika.github.io/Learning_ML/ (deployed from `main`).
 
 ## Commands
 
+Local setup, every verify tool and the lessons learned: `docs/LOCAL_DEV.md` (one-time: `bash scripts/setup_local.sh`).
+
 ```bash
 cd site && npx tsc --noEmit -p . && npx vitest run && npx astro build
 python -m pytest -q tests && python3 scripts/build_outline.py --check
 python3 scripts/new_chapter.py <id>          # scaffold the next chapter
+cd site && npm run verify:hydration -- /zh/chapters/<slug>/   # locate a hydration mismatch
 ```
 
 ## Status
