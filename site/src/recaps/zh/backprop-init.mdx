@@ -1,0 +1,8 @@
+- **计算图**：函数拆成基本运算；求导只需要每种运算的局部导数。
+- **反向模式**：前向按拓扑序算值并保存；反向从 $\bar L = 1$ 出发，按逆拓扑序 $\bar v = \sum_c \bar c\, \partial c/\partial v$。链式法则 + 动态规划，代价约为一次前向的 2–3 倍，代价是存储中间值。
+- **MLP 递推**：$\delta_l = \varphi'(z_l) \odot (W_{l+1}^\top \delta_{l+1})$，$\partial L/\partial W_l = \delta_l h_{l-1}^\top$，$\partial L/\partial b_l = \delta_l$；BCE + sigmoid 时 $\delta_L = p - y$。
+- **消失与爆炸**：$\delta_1$ 是 $L$ 个矩阵的连乘，每层 $\times\rho$ 共 $\times\rho^L$；sigmoid 的 $\sigma' \le \frac14$，10 层 $\le 9.5 \times 10^{-7}$。
+- **He 初始化**：$\mathrm{Var}(z_{l+1}) = \frac{n\sigma_w^2}{2}\mathrm{Var}(z_l)$（ReLU 截掉一半），取 $\sigma_w^2 = 2/n$；**Xavier**：$2/(n_{\text{in}} + n_{\text{out}})$，用于 tanh。
+- **场景**：宽 16、$\sigma_w = 0.1$ 时每层方差 $\times 0.08$，5 层起损失停在 $\ln 2$；He 初始化任何深度都能训练。
+- **前向 vs 反向模式**：$m \times n$ 雅可比，前向一遍一列（$n$ 遍），反向一遍一行（$m$ 遍）；损失 $m = 1$ ⇒ 反向一遍得到全部梯度，中心差分要 $2n$ 次。
+- **例题**：神经元 $\partial L/\partial s = 0.0985$、$\partial L/\partial w_1 = 0.148$；$0.08^4 \approx 4 \times 10^{-5}$；$10^6$ 个参数：$2 \times 10^6$ 次对约 3 次。

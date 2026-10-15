@@ -1,0 +1,68 @@
+# 第 17 章 反向传播与初始化 —— 课后练习 / Chapter 17 exercises
+
+derivation:
+  - id: neuron-grad
+    title: {zh: "一个神经元的梯度", en: "The gradient of one neuron"}
+    prompt:
+      zh: "$L = \\frac12(\\sigma(w x + b) - y)^2$，$\\sigma(s) = 1/(1 + e^{-s})$。沿计算图反向求 $\\partial L / \\partial w$。可用变量：`w, x, b, y`。"
+      en: "$L = \\frac12(\\sigma(w x + b) - y)^2$ with $\\sigma(s) = 1/(1 + e^{-s})$. Work backwards through the graph to find $\\partial L / \\partial w$. Variables: `w, x, b, y`."
+    answer: "(1/(1 + exp(-(w*x + b))) - y) * (1/(1 + exp(-(w*x + b)))) * (1 - 1/(1 + exp(-(w*x + b)))) * x"
+    vars: {w: [-2, 2], x: [-2, 2], b: [-1, 1], y: [0, 1]}
+    solution:
+      zh: "前向：$s = wx + b$，$p = \\sigma(s)$，$L = \\frac12 (p - y)^2$。反向：$\\bar L = 1$，$\\bar p = p - y$，$\\bar s = \\bar p \\cdot p(1 - p)$，$\\bar w = \\bar s \\cdot x$。所以 $\\partial L / \\partial w = (p - y)\\, p(1 - p)\\, x$。例题一：$\\bar s = 0.8699 \\times 0.8699 \\times 0.1301 = 0.0985$，乘 $x_1 = 1.5$ 得 $0.1477$；$w_2$、$b$ 的梯度也都从同一个 $\\bar s$ 出发。"
+      en: "Forward: $s = wx + b$, $p = \\sigma(s)$, $L = \\frac12 (p - y)^2$. Backward: $\\bar L = 1$, $\\bar p = p - y$, $\\bar s = \\bar p \\cdot p(1 - p)$, $\\bar w = \\bar s \\cdot x$. So $\\partial L / \\partial w = (p - y)\\, p(1 - p)\\, x$. Example 1: $\\bar s = 0.8699 \\times 0.8699 \\times 0.1301 = 0.0985$, times $x_1 = 1.5$ gives $0.1477$; the gradients of $w_2$ and $b$ start from the same $\\bar s$."
+
+  - id: relu-variance
+    title: {zh: "ReLU 层的方差递推", en: "The variance recursion of a ReLU layer"}
+    prompt:
+      zh: "$z_{l+1} = \\sum_{j=1}^{n} W_j\\, \\mathrm{ReLU}(z_{l, j})$，$W_j$ 独立、均值 0、方差 $s^2$，与 $z_l$ 独立；$z_{l,j}$ 关于 0 对称、方差 $v$。求 $\\mathrm{Var}(z_{l+1})$。可用变量：`n, s, v`。"
+      en: "$z_{l+1} = \\sum_{j=1}^{n} W_j\\, \\mathrm{ReLU}(z_{l, j})$ with independent $W_j$ of mean 0 and variance $s^2$, independent of $z_l$; each $z_{l,j}$ is symmetric about 0 with variance $v$. Find $\\mathrm{Var}(z_{l+1})$. Variables: `n, s, v`."
+    answer: "n*s^2*v/2"
+    vars: {n: [4, 500], s: [0.01, 1], v: [0.1, 5]}
+    solution:
+      zh: "独立项的方差相加：$\\mathrm{Var}(W_j h_j) = \\mathbb E[W_j^2]\\,\\mathbb E[h_j^2] = s^2\\, \\mathbb E[h_j^2]$（$W_j$ 均值为 0）。$z$ 对称，$\\mathbb E[\\mathrm{ReLU}(z)^2] = \\frac12 \\mathbb E[z^2] = v/2$。所以 $\\mathrm{Var}(z_{l+1}) = n s^2 v / 2$。令系数 $n s^2 / 2 = 1$ 得 He 初始化 $s^2 = 2/n$。场景中 $n = 16$、$s = 0.1$ 时系数是 $0.08$，8 层后只剩 $0.08^4 \\approx 4 \\times 10^{-5}$。"
+      en: "Variances of independent terms add: $\\mathrm{Var}(W_j h_j) = \\mathbb E[W_j^2]\\,\\mathbb E[h_j^2] = s^2\\, \\mathbb E[h_j^2]$ (since $W_j$ has mean 0). By symmetry, $\\mathbb E[\\mathrm{ReLU}(z)^2] = \\frac12 \\mathbb E[z^2] = v/2$. So $\\mathrm{Var}(z_{l+1}) = n s^2 v / 2$. Setting the factor $n s^2 / 2 = 1$ gives He initialisation, $s^2 = 2/n$. In the scenario, $n = 16$ and $s = 0.1$ give a factor of $0.08$, and after 8 layers only $0.08^4 \\approx 4 \\times 10^{-5}$ is left."
+
+  - id: xavier
+    title: {zh: "Xavier 初始化的折中", en: "Xavier's compromise"}
+    prompt:
+      zh: "对零点斜率为 1 的激活（如 tanh 的线性区），前向方差保持要求 $a\\,\\sigma_w^2 = 1$，反向要求 $b\\,\\sigma_w^2 = 1$（$a$、$b$ 是输入、输出宽度）。Xavier 取两个条件的调和平均：$\\sigma_w^2 = $ ？可用变量：`a, b`。"
+      en: "For an activation with slope 1 at zero (tanh's linear regime), keeping the forward variance needs $a\\,\\sigma_w^2 = 1$ and keeping the backward variance needs $b\\,\\sigma_w^2 = 1$ ($a$, $b$ the input and output widths). Xavier takes the harmonic mean of the two: $\\sigma_w^2 = $ ? Variables: `a, b`."
+    answer: "2/(a + b)"
+    vars: {a: [4, 512], b: [4, 512]}
+    solution:
+      zh: "两个条件分别是 $\\sigma_w^2 = 1/a$ 和 $1/b$，宽度不等时无法同时满足。取 $\\sigma_w^2 (a + b)/2 = 1$，即 $\\sigma_w^2 = 2/(a + b)$，是 $1/a$ 与 $1/b$ 的调和平均。宽度相等时就是 $1/n$。ReLU 截掉一半，对应的 He 初始化多一个因子 2：$2/n$。"
+      en: "The two conditions are $\\sigma_w^2 = 1/a$ and $1/b$, which cannot both hold when the widths differ. Require $\\sigma_w^2 (a + b)/2 = 1$, that is $\\sigma_w^2 = 2/(a + b)$, the harmonic mean of $1/a$ and $1/b$. For equal widths it is $1/n$. ReLU cuts off half, so He initialisation has an extra factor 2: $2/n$."
+
+  - id: modes-cost
+    title: {zh: "有限差分与反向模式的代价", en: "The cost of finite differences vs reverse mode"}
+    prompt:
+      zh: "一个有 $p$ 个参数的标量损失。中心差分每个参数要算两次损失；反向模式一次前向加一次反向，总代价约等于 $c$ 次损失计算。前者的代价是后者的多少倍？可用变量：`p, c`。"
+      en: "A scalar loss of $p$ parameters. Central differences evaluate the loss twice per parameter; reverse mode does one forward and one backward pass, costing about $c$ loss evaluations in total. How many times more does the first cost? Variables: `p, c`."
+    answer: "2*p/c"
+    vars: {p: [10, 100000], c: [2, 4]}
+    solution:
+      zh: "中心差分 $2p$ 次，反向模式约 $c$ 次（实践中 $c \\approx 3$），比值 $2p/c$，随参数个数线性增长。前向模式要 $p$ 遍，同样随 $p$ 增长；只有反向模式与 $p$ 无关，因为损失只有一个输出（$m = 1$）。例题四：$p = 10^6$ 时约差 $7 \\times 10^5$ 倍。"
+      en: "Central differences take $2p$ evaluations, reverse mode about $c$ (in practice $c \\approx 3$), a ratio of $2p/c$ that grows linearly with the number of parameters. Forward mode takes $p$ passes and also grows with $p$; only reverse mode is independent of $p$, because the loss has a single output ($m = 1$). Example 4: at $p = 10^6$ the gap is about $7 \\times 10^5$."
+
+code:
+  - id: backprop
+    kind: implement
+    file: backprop.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现反向传播与 He 初始化", en: "Backpropagation and He initialisation from scratch"}
+    intro:
+      zh: "补全 He / Xavier 初始化、前向传播、输出层误差信号和逐层反向递推。检查会量出初始化的方差，确认 20 层 ReLU 网络在 He 初始化下尺度不变，把你的梯度和中心差分逐个参数对拍，最后训练一个三层网络拟合双月数据。运行后可以回放分界线一轮轮弯过去。"
+      en: "Fill in He / Xavier initialisation, the forward pass, the output error signal and the layer-by-layer backward recursion. The checks measure the initial variances, confirm that a 20-layer ReLU network keeps its scale under He initialisation, compare every parameter's gradient with central differences, and train a three-layer network on the two moons. Afterwards, replay the boundary bending epoch by epoch."
+    metrics:
+      - {key: loss, label: {zh: "训练损失", en: "Training loss"}}
+  - id: autodiff-library
+    kind: library
+    file: autodiff_library.py
+    packages: [numpy, scikit-learn, autograd]
+    title: {zh: "用 autograd 自动求导：grad、前向模式与反向模式", en: "Automatic differentiation with autograd: grad, forward and reverse mode"}
+    intro:
+      zh: "autograd 是一个真正的反向模式自动微分库，直接对 NumPy 代码求导。用 grad 一行求出网络损失的梯度；用 make_jvp 按列、用 make_vjp 按行拼出同一个雅可比矩阵；再用这些梯度训练一个 tanh 网络。运行后可以回放训练过程。"
+      en: "autograd is a genuine reverse-mode automatic differentiation library that differentiates NumPy code directly. Get a network loss's gradient in one call with grad; build the same Jacobian column by column with make_jvp and row by row with make_vjp; then train a tanh network with these gradients. Afterwards, replay the training."
+    metrics:
+      - {key: loss, label: {zh: "训练损失", en: "Training loss"}}

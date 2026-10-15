@@ -1,0 +1,42 @@
+---
+title: "Backprop in practice: gradient checks, initialisation and numerical trouble"
+summary: "Using autodiff in PyTorch / JAX, checking hand-written gradients with finite differences, choosing an initialisation, and what to do about vanishing or exploding gradients and running out of memory."
+chapters: ["17"]
+---
+
+### Go-to code
+
+```python
+import torch, torch.nn as nn
+layer = nn.Linear(256, 256)
+nn.init.kaiming_normal_(layer.weight, nonlinearity="relu")   # He: Var = 2 / fan_in
+nn.init.xavier_uniform_(layer.weight)                        # Xavier: Var = 2 / (fan_in + fan_out)
+nn.init.zeros_(layer.bias)
+
+torch.autograd.gradcheck(f, inputs)            # finite-difference check with double-precision inputs
+torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+from torch.utils.checkpoint import checkpoint  # trade recomputation for memory
+
+import jax
+g = jax.grad(loss)(params)                     # reverse mode
+y, jv = jax.jvp(f, (x,), (v,))                 # forward mode: J v
+y, vjp_fn = jax.vjp(f, x); (uJ,) = vjp_fn(u)   # reverse mode: uᵀ J
+```
+
+### Traps that bite
+
+- **Always gradient-check hand-written gradients**: central differences $(f(x + h e_i) - f(x - h e_i)) / 2h$ with $h \approx 10^{-5}$ in float64; a relative error below $10^{-6}$ means correct. ReLU kinks cause false alarms; try a few more random points.
+- **PyTorch's default `nn.Linear` init is not He**: it is a scaled uniform (kaiming_uniform with $a = \sqrt 5$), variance about $1/(3n)$. Very deep plain ReLU stacks need an explicit `kaiming_normal_`; with normalisation layers or residual connections it matters much less.
+- **Gradients accumulate**: PyTorch's `.grad` adds up, so call `zero_grad()` every step; forgetting it is like turning the learning rate up and up.
+- **`requires_grad` and `no_grad`**: wrap evaluation and inference in `torch.no_grad()`, or they build graphs and use memory.
+- **Diagnosing vanishing gradients**: print `p.grad.norm()` per layer; if early layers are orders of magnitude smaller than late ones, check the initialisation and saturating activations (sigmoid / tanh) first, then consider residual connections and normalisation.
+- **Exploding gradients / NaN**: clip gradients, lower the learning rate; with mixed precision use a `GradScaler`.
+- **Out of memory**: backprop keeps every intermediate activation. Gradient checkpointing (store some layers, recompute the rest during the backward pass) trades about 30% extra compute for memory.
+
+### Frontier reading
+
+- Rumelhart, Hinton & Williams (1986): learning representations by back-propagating errors.
+- Glorot & Bengio (2010): understanding the difficulty of training deep feedforward networks (Xavier initialisation).
+- He et al. (2015): Delving Deep into Rectifiers (He initialisation).
+- Baydin et al. (2018): a survey of automatic differentiation in machine learning.
+- Yang & Hu (2021): μP, feature learning in wide networks and hyperparameter transfer.

@@ -37,10 +37,11 @@
 | 14 从浅层到深层网络 | ✓ | ✓ | ✓ | 3 | 4 + 2 | MLP 实战 |
 | 15 损失函数即最大似然 | ✓ | ✓ | ✓ | 3 | 4 + 2 | 损失函数实战 |
 | 16 优化：从梯度下降到 Adam | ✓ | ✓ | ✓ | 4 | 4 + 2 | 优化器实战 |
+| 17 反向传播与初始化 | ✓ | ✓ | ✓ | 4 | 4 + 2 | 反向传播实战 |
 | 07 支持向量机与核方法 | ✓ | ✓ | ✓ | 5 | 4 + 2 | SVM |
 | 08 决策树与集成学习 | ✓ | ✓ | ✓ | 5 | 4 + 2 | LightGBM |
 
-合计：30 章中完成 17 章（00–16），共有 63 个交互组件、739 拍动画（每种语言）、68 道推导题、34 道代码题。测试有 198 项前端单元测试，以及 102 项练习测试（参考答案全部通过，骨架全部不通过）。
+合计：30 章中完成 18 章（00–17），共有 67 个交互组件、788 拍动画（每种语言）、72 道推导题、36 道代码题。测试有 207 项前端单元测试，以及 108 项练习测试（参考答案全部通过，骨架全部不通过）。
 
 ## 3. 架构一览
 
@@ -108,8 +109,8 @@ review) and a 3Blue1Brown-style **animated course** that plays itself: manim-lik
 TransformMatchingTex animations, narration subtitles (optionally spoken), and drive scripts that
 operate the interactive figures.
 
-Seventeen of 30 chapters are done: 00–16. They contain 63 widgets, 739 animated beats per language,
-68 derivation drills and 34 in-browser Python exercises, tested by 198 unit tests and 102 exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
+Eighteen of 30 chapters are done: 00–17. They contain 67 widgets, 788 animated beats per language,
+72 derivation drills and 36 in-browser Python exercises, tested by 207 unit tests and 108 exercise tests. The workflow, quality bar and pitfalls are captured in `CLAUDE.md`,
 `.claude/skills/*` and `templates/chapter/`, and scaffolded by `scripts/new_chapter.py`.
 
 Next steps:
