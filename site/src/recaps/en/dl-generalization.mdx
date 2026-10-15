@@ -1,0 +1,8 @@
+- **Explicit regularisers**: weight decay $\theta \leftarrow (1 - \eta\lambda)\theta - \eta\nabla L$ (decoupled AdamW for Adam); dropout $\tilde h = m \odot h/(1 - p)$, off at test time; data augmentation; early stopping at the lowest validation error. They limit the capacity in use, not the parameter count.
+- **Early stopping ≈ L2**: in linear regression the fraction recovered along eigenvalue $\lambda$ is $1 - (1 - \eta\lambda)^t$ for gradient descent and $\lambda/(\lambda + \alpha)$ for ridge; the ends match when $\alpha = 1/(\eta t)$.
+- **Dropout = adaptive L2 + ensemble**: $\mathbb E[(y - \hat y)^2] = (y - w^\top x)^2 + \frac{p}{1-p}\sum_j w_j^2 x_j^2$; $2^n$ subnetworks sharing weights.
+- **Input noise = L2**: $\mathbb E[(y - w^\top(x + \varepsilon))^2] = (y - w^\top x)^2 + \sigma^2\lVert w\rVert^2$.
+- **Implicit regularisation**: on underdetermined least squares, gradient descent converges to the solution nearest its start; from 0, the minimum-norm solution $X^\top(XX^\top)^{-1}y$ (the one behind chapter 02's double descent).
+- **Flat minima**: gradient descent with step $\eta$ can only stay where $\lambda_{\max}(H) \lt 2/\eta$, and noise grows with $\eta/B$; flatness must be scale-free (filter normalisation). Skip connections smooth the landscape; small batches end flatter, with similar test accuracy.
+- **Grokking**: addition mod 31 with weight decay 1 memorises the training set by step 69 and reaches 95% test accuracy only around step 9200; without decay it never generalises.
+- **Scenario**: 193 parameters for 12 students: test MSE 184 with no regulariser, 62 with early stopping, 61 with weight decay 3, 68 with dropout 0.6, 64 with 1-hour jitter (noise floor about 55).

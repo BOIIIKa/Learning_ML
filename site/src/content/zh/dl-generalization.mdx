@@ -1,0 +1,197 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import RegularizerLab from "../../components/chapters/ch18/RegularizerLab";
+import EarlyStopRidge from "../../components/chapters/ch18/EarlyStopRidge";
+import MinNormGD from "../../components/chapters/ch18/MinNormGD";
+import LossLandscape from "../../components/chapters/ch18/LossLandscape";
+import Grokking from "../../components/chapters/ch18/Grokking";
+
+<Section lang="zh" k="scenario">
+
+第 02 章里，老师用多项式拟合学生的学习时长和分数，阶数一高就过拟合。第 17 章之后她已经会训练深网络了，于是换成一个 1–64–1 的 ReLU 网络：**193 个参数，只有 12 个学生**。按第 02 章的说法，这个模型复杂得离谱。训练 3000 步看看：
+
+<RegularizerLab client:visible lang="zh" />
+
+网络把 12 个学生全背了下来，曲线在学生之间扭来扭去，新学生上的误差是早停时的三倍。可是只要加一点正则，或者在恰当的时候停下，同一个网络就和真实曲线差不多好。这一章回答：
+
+1. 参数远多于数据时，怎样不让网络死记硬背？（显式正则：权重衰减、Dropout、数据增强、早停）
+2. 不加任何正则，大网络为什么常常也能泛化？（隐式正则：梯度下降偏爱的解、SGD 的噪声、平坦的极小点）
+3. 哪些问题至今还没有答案？
+
+</Section>
+
+<Section lang="zh" k="method">
+
+### 显式正则的四种做法
+
+<Box kind="definition" title="权重衰减、Dropout、数据增强、早停">
+
+1. **权重衰减**：最小化 $L(\theta) + \frac{\lambda}{2}\lVert\theta\rVert^2$。梯度下降的一步变成 $\theta \leftarrow (1 - \eta\lambda)\theta - \eta \nabla L(\theta)$：每一步先把权重按比例缩小。对 Adam，“损失里加 L2”和“每步直接缩小权重”不再等价，后者叫解耦权重衰减（AdamW，第 16 章），场景里用的就是它。
+2. **Dropout**：训练时每个隐藏单元以概率 $p$ 被置零，留下的除以 $1 - p$：$\tilde h_j = m_j h_j / (1 - p)$，$m_j \sim \text{Bernoulli}(1 - p)$，于是 $\mathbb E[\tilde h_j] = h_j$。测试时不再丢弃，原样计算。
+3. **数据增强**：训练时对输入做不改变标签的变换（图像的翻转、裁剪、颜色抖动，语音的变速，或者直接加噪声），等于告诉模型“这些变化不重要”。场景里给学习时长加的高斯抖动就是一种。
+4. **早停**：留出一部分数据做验证集，每隔一段检查验证误差；连续若干次不再下降就停止，并退回到验证误差最低时的参数。
+
+</Box>
+
+<Box kind="insight" title="限制的是“用到的”容量，不是参数个数">
+
+四种做法都没有减少参数，网络还是 193 个参数。它们限制的是训练过程能走到的函数：权重衰减把权重拉向 0，Dropout 让每个单元不能依赖别的单元，增强让函数在输入附近不能剧烈变化，早停让参数离初始化不远。第 02 章的双下降已经说明，“参数个数 = 复杂度”这个直觉在过参数化时失效了。
+
+</Box>
+
+**三要素**：模型是过参数化网络；策略是经验风险加显式或隐式的正则；算法是 SGD 及其变体，算法本身也在做正则。
+
+</Section>
+
+<Section lang="zh" k="math">
+
+### 早停近似于 L2 正则
+
+在线性回归上可以精确比较。设 $L(w) = \frac{1}{2n}\lVert Xw - y\rVert^2$，$A = X^\top X / n$ 的特征值为 $\lambda_i$、特征向量为 $v_i$，最小二乘解为 $w^*$。梯度是 $A(w - w^*)$，所以从 $w_0 = 0$ 出发的梯度下降满足
+
+$$
+w_t - w^* = (I - \eta A)(w_{t-1} - w^*) \quad\Rightarrow\quad w_t = \big[I - (I - \eta A)^t\big]\, w^*.
+$$
+
+岭回归的解是 $w_\alpha = (A + \alpha I)^{-1} A\, w^*$。两者都不改变特征向量，只给每个方向乘一个“恢复比例”：
+
+<Box kind="theorem" title="梯度下降与岭回归的谱滤波">
+
+沿特征值 $\lambda_i$ 的方向，
+
+$$
+\varphi^{\text{GD}}_t(\lambda_i) = 1 - (1 - \eta\lambda_i)^t, \qquad \varphi^{\text{ridge}}_\alpha(\lambda_i) = \frac{\lambda_i}{\lambda_i + \alpha}.
+$$
+
+当 $\lambda_i \gg 1/(\eta t)$ 时两者都接近 1；当 $\lambda_i \ll 1/(\eta t)$ 时 $\varphi^{\text{GD}}_t \approx \eta t \lambda_i$，$\varphi^{\text{ridge}}_\alpha \approx \lambda_i / \alpha$。取 $\alpha = 1/(\eta t)$，两种滤波在两端一致：**训练步数 $t$ 起着 $1/\alpha$ 的作用**。
+
+</Box>
+
+（推导题 1。）两者都保留大特征值方向（数据里信号强的方向），压掉小特征值方向（最容易被噪声带偏的方向）。中间一段并不完全相同：在 $\lambda_i = \alpha$ 处岭回归恢复 $\frac12$，梯度下降恢复约 $1 - e^{-1} \approx 0.63$。
+
+<EarlyStopRidge client:visible lang="zh" />
+
+### Dropout：自适应的 L2 与集成
+
+对线性模型 $\hat y = \sum_j w_j x_j m_j / (1 - p)$，对随机掩码求期望：
+
+$$
+\mathbb E_m\big[(y - \hat y)^2\big] = \big(y - w^\top x\big)^2 + \frac{p}{1 - p} \sum_j w_j^2 x_j^2 .
+$$
+
+推导：$\mathbb E[\hat y] = w^\top x$，而 $\mathrm{Var}(m_j / (1 - p)) = p / (1 - p)$，各项独立，方差相加；再用 $\mathbb E[(y - \hat y)^2] = (y - \mathbb E \hat y)^2 + \mathrm{Var}(\hat y)$（推导题 2）。对全部样本求和，惩罚是 $\frac{p}{1-p}\sum_j w_j^2 \sum_i x_{ij}^2$：一个按特征尺度加权的 L2。经常取大值的特征，其权重被压得更狠，所以说它是**自适应**的。
+
+另一种看法是**集成**：$n$ 个可丢弃的单元对应 $2^n$ 个共享权重的子网络，每一步训练其中随机的一个。测试时不丢弃（或者等价地按 $1 - p$ 缩放），是对全部子网络取平均的廉价近似：对单层 softmax 模型，它恰好等于所有子网络预测的归一化几何平均；对深网络只是近似。
+
+### 数据增强：输入加噪声等于 L2
+
+给输入加独立噪声 $\varepsilon \sim \mathcal N(0, \sigma^2 I)$，线性模型的期望损失是
+
+$$
+\mathbb E_\varepsilon\big[(y - w^\top(x + \varepsilon))^2\big] = (y - w^\top x)^2 + \sigma^2 \lVert w\rVert^2 ,
+$$
+
+交叉项 $\mathbb E[\varepsilon] = 0$ 消失了（推导题 4）。所以对线性模型，“加噪声的增强”就是岭回归；对非线性模型，一阶近似下它惩罚 $\sigma^2 \lVert \nabla_x f\rVert^2$，即函数对输入的敏感度。这正是场景里抖动学习时长能把曲线抚平的原因。
+
+### 隐式正则：梯度下降偏爱最小范数解
+
+当参数比样本多（$p \gt n$），$Xw = y$ 有无穷多个精确解，训练误差都是 0。梯度下降会停在哪一个？
+
+梯度 $\nabla L = X^\top(Xw - y)/n$ 总在 $X$ 的行空间里，所以 $w_t - w_0$ 始终在行空间里。收敛点 $w_\infty$ 既是精确解，又满足 $w_\infty - w_0 \in \mathrm{row}(X)$，这样的点只有一个：
+
+<Box kind="theorem" title="梯度下降收敛到离起点最近的解">
+
+步长足够小时（$\eta \lambda_{\max} \lt 2$），欠定最小二乘上的梯度下降收敛到
+
+$$
+w_\infty = w_0 + X^\top (X X^\top)^{-1}(y - X w_0).
+$$
+
+从 $w_0 = 0$ 出发，$w_\infty = X^\top (X X^\top)^{-1} y$ 是**最小范数解**。
+
+</Box>
+
+证明最小范数：任一其他解写成 $w = w_\infty + u$，$Xu = 0$，即 $u$ 在零空间里，与行空间正交，而 $w_\infty$ 在行空间里，所以 $\lVert w\rVert^2 = \lVert w_\infty\rVert^2 + \lVert u\rVert^2 \ge \lVert w_\infty \rVert^2$（推导题 3）。没有人在损失里写范数惩罚，是算法自己挑了范数最小的解。
+
+<MinNormGD client:visible lang="zh" />
+
+第 02 章双下降的曲线，正是用这个最小范数解画出来的：在 $p = n$ 处误差最大，参数再多下去反而变好，因为可选的精确解越多，范数最小的那个越平滑。对深网络，梯度下降偏爱的是什么还没有完整的答案：线性可分数据上的逻辑回归，梯度下降的方向收敛到最大间隔解（第 08 章的 SVM）；非常宽的网络在“懒惰训练”的区域里近似于核方法的最小范数解；一般情形仍是开放问题。
+
+### SGD 的噪声与平坦的极小点
+
+小批量梯度是全梯度加噪声，噪声的协方差约为 $\Sigma(\theta) / B$，噪声的强度随学习率与批量之比 $\eta / B$ 增大。噪声为什么能起正则作用，有一个严格的线性稳定性论证：在曲率为 $h$ 的二次谷底，梯度下降的一步把偏差乘以 $1 - \eta h$，只有 $\eta h \lt 2$ 时才能停留。所以步长为 $\eta$ 的梯度下降只能停在 Hessian 最大特征值小于 $2/\eta$ 的极小点；再加上噪声，尖锐的极小点更容易被“踢出去”。大学习率、小批量因此偏向**平坦**的极小点。
+
+平坦为什么可能与泛化有关？平坦意味着参数稍有扰动损失也不变，描述这个解需要的精度（比特数）更少，PAC-Bayes 类的界正是用这种量来控制泛化误差。但要小心：ReLU 网络把某一层乘以 $c$、下一层除以 $c$，函数完全不变，Hessian 却可以变得任意尖锐。所以比较平坦度时要用与尺度无关的方式，下图沿“滤波器归一化”的随机方向切出损失：
+
+<LossLandscape client:visible lang="zh" />
+
+残差连接让 20 层网络的地形从崎岖变得平滑，这是它能把深网络训练起来的另一种说法（第 19 章）。小批量确实停在更平坦的地方，但在这个例子里两者的测试准确率几乎相同：平坦与泛化有关联，却不是简单的因果。
+
+</Section>
+
+<Section lang="zh" k="cases">
+
+### 例题一：早停与岭回归的滤波
+
+<Box kind="example" title="η = 0.1，t = 100，对应 α = 1/(ηt) = 0.1">
+
+| 特征值 $\lambda$ | 梯度下降 $1 - (1 - \eta\lambda)^t$ | 岭回归 $\lambda / (\lambda + \alpha)$ |
+|---|---|---|
+| $0.001$ | $1 - 0.9999^{100} = 0.00995$ | $0.001/0.101 = 0.0099$ |
+| $0.1$ | $1 - 0.99^{100} = 0.634$ | $0.1/0.2 = 0.5$ |
+| $10$ | $1 - 0^{100} = 1$ | $10/10.1 = 0.990$ |
+
+两端几乎一样，中间（$\lambda = \alpha$）相差 0.13。组件里 $\eta = 0.5$、$t = 50$ 时 $\alpha = 0.04$，小特征值 $\lambda = 0.04$ 的方向上是 $0.636$ 对 $0.5$。
+
+</Box>
+
+### 例题二：Dropout 的期望损失
+
+<Box kind="example" title="p = 0.5，x = (1, 2)，w = (3, 1)，y = 4">
+
+保留的单元乘 $1/(1 - p) = 2$，四种掩码等可能：
+
+| 掩码 | $\hat y$ | $(y - \hat y)^2$ |
+|---|---|---|
+| 都丢 | $0$ | $16$ |
+| 只留 $x_1$ | $6$ | $4$ |
+| 只留 $x_2$ | $4$ | $0$ |
+| 都留 | $10$ | $36$ |
+
+平均是 $14$。公式：$(4 - 5)^2 + \frac{0.5}{0.5}(3^2 \cdot 1^2 + 1^2 \cdot 2^2) = 1 + 13 = 14$。
+
+</Box>
+
+### 例题三：最小范数解
+
+<Box kind="example" title="一个方程 w₁ + 2w₂ = 3">
+
+$a = (1, 2)$，$\lVert a\rVert^2 = 5$。从原点出发：$w_\infty = a \cdot 3/5 = (0.6, 1.2)$，范数 $\sqrt{1.8} \approx 1.342$；另一个解 $(3, 0)$ 的范数是 $3$。从 $w_0 = (2, 2)$ 出发：$a^\top w_0 = 6$，$w_\infty = (2, 2) + (1, 2)(3 - 6)/5 = (1.4, 0.8)$。
+
+</Box>
+
+### 例题四：场景里的数
+
+<Box kind="example" title="12 个学生，193 个参数，200 名新学生">
+
+真实曲线本身在新学生上的 MSE 是 55（分数噪声的标准差为 7，$7^2 = 49$，再加上这 200 人的抽样波动）。不加正则：训练 MSE 2.4，测试 184。早停在第 50 步：测试 62。权重衰减 3：61；Dropout 0.6：68；学习时长抖动 1 小时：64。权重衰减 10：训练和测试都在 290 上下，欠拟合。
+
+</Box>
+
+### 拓展：顿悟
+
+延迟泛化最戏剧化的例子是**顿悟**（grokking）：在小的算术数据集上，网络很快把训练集背下来，测试准确率要再过成百上千倍的步数才突然上升。下面的曲线在 Python 里预先训练好（`scripts/precompute_ch18.py`），这里回放：
+
+<Grokking client:visible lang="zh" />
+
+### “深度学习为何有效”的开放问题
+
+- **随机标签也能记住**：同样的网络能把随机打乱的标签拟合到训练误差为 0，所以“函数类的容量”解释不了它在真实标签上的泛化。
+- **隐式偏好是什么**：最小范数、最大间隔只在线性模型或特殊情形下被证明；一般深网络里，SGD 到底偏爱哪类函数？
+- **平坦与泛化**：尺度不变的平坦度怎样定义？SAM（锐度感知最小化）在实践中有效，但原因仍有争议。
+- **过参数化**：双下降与“良性过拟合”在什么条件下出现？宽网络的核极限（NTK）解释了训练，却漏掉了特征学习。
+- **彩票假设**：大网络里藏着从同样初始化出发就能单独训练好的稀疏子网络，为什么训练大网络比直接训练小网络容易？
+- **顿悟与相变**：泛化何时突然出现，它和权重范数、表示的结构有什么关系？
+- **规模定律**：测试损失随参数量、数据量、计算量呈幂律下降，指数从何而来？
+
+</Section>

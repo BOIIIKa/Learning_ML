@@ -1,0 +1,264 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import RegularizerLab from "../../components/chapters/ch18/RegularizerLab";
+import EarlyStopRidge from "../../components/chapters/ch18/EarlyStopRidge";
+import MinNormGD from "../../components/chapters/ch18/MinNormGD";
+import LossLandscape from "../../components/chapters/ch18/LossLandscape";
+import Grokking from "../../components/chapters/ch18/Grokking";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 18 · Animated course" title="Regularization and the Generalization Puzzle" say="With far more parameters than data, why do networks still generalise?">
+
+Weight decay · Dropout · Early stopping · Minimum norm · Flat minima · Grokking
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="193 parameters, 12 students" say="The teacher fits 12 students' study hours and scores with a network of 193 parameters.">
+
+<Step drive="s2=0/0.3; s2=60/5" say="No regulariser, three thousand steps: the network memorises all twelve students, training error 2.4.">No regulariser: train MSE $2.4$</Step>
+
+<Step drive="s2=1/2.5" say="Back at step fifty, the error on new students was only 62; training longer makes it worse, up to 184.">Test: $62 \to 184$</Step>
+
+<Step drive="s2=60/1; s1=3/2" say="Add weight decay 3: the curve smooths out and the test error drops to 61.">Weight decay 3: $61$</Step>
+
+<Step drive="click:chip2; wait:2" say="Switch to dropout with rate 0.6: 68.">Dropout 0.6: $68$</Step>
+
+<Step drive="click:chip3; s1=2/1.5" say="Jitter the study hours by one hour, a form of data augmentation: 64.">Augmentation ±1 hour: $64$</Step>
+
+<div slot="visual"><RegularizerLab client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions" say="Three questions.">
+
+<Step effect="focus" say="First: with far more parameters than data, how do we stop a network from memorising?">
+<p class="big-q sm">How do we stop it memorising?</p>
+</Step>
+
+<Step say="Second: why do big networks often generalise with no regulariser at all?">Why does it generalise anyway?</Step>
+
+<Step say="Third: which questions are still open?">What is still open?</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Four explicit regularisers" say="Four explicit regularisers.">
+
+<Step say="Weight decay: every step first shrinks the weights by a fixed factor, then follows the gradient.">Weight decay: $\theta \leftarrow (1 - \eta\lambda)\theta - \eta\nabla L$</Step>
+
+<Step say="Dropout: drop random units during training and scale up the rest, so the expectation is unchanged.">Dropout: $\tilde h_j = m_j h_j / (1 - p)$</Step>
+
+<Step say="Augmentation: transform the inputs without changing the label, for example by adding a little noise.">Augmentation: $x \to x + \varepsilon$</Step>
+
+<Step say="Early stopping: watch the validation error, stop when it stops falling, and go back to the best step.">Early stopping: stop at the lowest validation error</Step>
+
+<Step effect="focus" say="None of them removes a single parameter. They limit which functions training can reach.">
+<p class="big-q sm">They limit the capacity in use, not the parameter count</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Early stopping and ridge" say="In linear regression, early stopping can be compared with ridge exactly.">
+
+<Morph>
+
+<Step effect="morph" say="From zero, each gradient step multiplies the distance to the optimum by I minus eta A.">
+
+$$
+w_t - w^* = (I - \eta A)(w_{t-1} - w^*)
+$$
+
+</Step>
+
+<Step effect="morph" say="Unroll t steps: gradient descent has recovered part of the optimum.">
+
+$$
+w_t = \big[I - (I - \eta A)^t\big]\, w^*
+$$
+
+</Step>
+
+<Step effect="morph" say="Along eigenvalue lambda, the fraction recovered is one minus one-minus-eta-lambda to the t.">
+
+$$
+\varphi^{\text{GD}}_t = 1 - (1 - \eta\lambda)^t \approx \eta t \lambda
+$$
+
+</Step>
+
+<Step effect="morph" say="Ridge recovers lambda over lambda plus alpha, about lambda over alpha for small eigenvalues.">
+
+$$
+\varphi^{\text{ridge}}_\alpha = \frac{\lambda}{\lambda + \alpha} \approx \frac{\lambda}{\alpha}
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="They match when alpha is one over eta t: the number of steps plays the role of one over alpha.">
+<p class="big-q sm">$\alpha = 1/(\eta t)$: steps $t$ act as $1/\alpha$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Early stopping ≈ ridge" say="Two eigenvalues, 1 and 0.04. Solid is gradient descent, dashed is ridge.">
+
+<Step drive="s1=0.3/2" say="At first gradient descent has only covered the steep direction; the flat one has barely moved.">$t = 2$: only the steep direction</Step>
+
+<Step drive="s1=1.7/3" say="Fifty steps, matching alpha 0.04: along the small eigenvalue one recovers 0.636, the other 0.5.">$t = 50$: $0.636$ vs $0.5$</Step>
+
+<Step drive="s1=2.6/3" say="Run long enough and both reach the least-squares solution; the two paths nearly coincide all the way.">$t \to \infty$ ⇔ $\alpha \to 0$</Step>
+
+<Step effect="focus" say="Both keep the directions with strong signal and suppress those that noise pushes around most.">
+<p class="big-q sm">Early stopping = suppress small eigenvalues</p>
+</Step>
+
+<div slot="visual"><EarlyStopRidge client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Dropout and input noise" say="What does dropout do to a linear model?">
+
+<Morph>
+
+<Step effect="morph" say="The expected squared error is the squared bias plus the variance.">
+
+$$
+\mathbb E\big[(y - \hat y)^2\big] = (y - \mathbb E\hat y)^2 + \mathrm{Var}(\hat y)
+$$
+
+</Step>
+
+<Step effect="morph" say="The mean is unchanged; each mask contributes variance p over one minus p.">
+
+$$
+\mathbb E\big[(y - \hat y)^2\big] = (y - w^\top x)^2 + \frac{p}{1 - p}\sum_j w_j^2 x_j^2
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="An L2 weighted by feature scale: features that are often large get their weights squeezed harder.">An adaptive L2</Step>
+
+<Step say="Another view: two to the n subnetworks sharing weights, averaged at test time.">An ensemble of $2^n$ subnetworks</Step>
+
+<Step say="Input noise does the same: for a linear model it adds exactly sigma squared times the squared norm.">Input noise: $+\,\sigma^2 \lVert w\rVert^2$</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Infinitely many solutions: which one?" say="One equation, two unknowns: every point on the line is a zero-error solution.">
+
+<Step drive="s3=0/0.3; s3=40/4" say="From here, the gradient is always parallel to a, so gradient descent walks straight, hitting the line at a right angle.">Gradient $\parallel a$: a straight walk</Step>
+
+<Step drive="click:chip1; wait:2" say="From the origin it stops at 0.6, 1.2: the solution of smallest norm.">From the origin: $(0.6, 1.2)$, norm $1.342$</Step>
+
+<Step effect="focus" say="Nobody asked for the minimum norm; the algorithm picked it. That is implicit regularisation.">
+<p class="big-q sm">The algorithm picked the minimum norm</p>
+</Step>
+
+<div slot="visual"><MinNormGD client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Why the minimum norm" say="Why is the limit from the origin always the minimum-norm solution?">
+
+<Step say="Gradients always lie in the row space of X, so the limit does too.">$w_\infty = X^\top (X X^\top)^{-1} y \in \mathrm{row}(X)$</Step>
+
+<Morph>
+
+<Step effect="morph" say="Any other solution is the limit plus a vector u from the null space.">
+
+$$
+w = w_\infty + u, \qquad Xu = 0
+$$
+
+</Step>
+
+<Step effect="morph" say="The null space is orthogonal to the row space: Pythagoras.">
+
+$$
+\lVert w\rVert^2 = \lVert w_\infty\rVert^2 + \lVert u\rVert^2 \ge \lVert w_\infty\rVert^2
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="Chapter 2's double descent was drawn with exactly this minimum-norm solution.">Chapter 02's double descent</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="SGD noise and flat minima" say="Another implicit regulariser comes from the step size and the noise.">
+
+<Step say="In a valley of curvature h, each step multiplies the deviation by one minus eta h: it only settles if eta h is below two.">$\lvert 1 - \eta h\rvert \lt 1 \iff \eta h \lt 2$</Step>
+
+<Step say="So gradient descent with step eta can only stay in minima whose largest curvature is below two over eta.">It can only stay where $\lambda_{\max}(H) \lt 2/\eta$</Step>
+
+<Step say="Minibatches add noise that grows with eta over B, kicking it out of sharp minima more easily.">Noise $\propto \eta / B$ ⇒ a lean towards flat</Step>
+
+<Step say="But beware: scale one layer by c and the next by one over c, and the function is unchanged while sharpness changes at will.">Reparametrisation: flatness must be scale-free</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Slices of the loss landscape" say="Starting from the trained weights, slice the loss along two random directions.">
+
+<Step drive="click:chip1; s1=12/1" say="A plain twenty-layer network: step away from the centre and the loss climbs into the tens.">Plain: $55.8$ at distance 1</Step>
+
+<Step drive="s1=6/2; s1=18/3; s1=12/1.5" say="With skip connections it is only 2.8 at the same distance, and the landscape is far smoother.">Residual: $2.8$</Step>
+
+<Step drive="click:chip2; wait:2" say="Small batches end flatter than the full batch, yet the test accuracies are almost the same.">Small batch is flatter, test accuracy similar</Step>
+
+<Step effect="focus" say="Flatness and generalisation are related, but not simply cause and effect.">
+<p class="big-q sm">Flatness ≠ the whole story</p>
+</Step>
+
+<div slot="visual"><LossLandscape client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Grokking" say="Addition mod 31: half of the sums for training, half for testing.">
+
+<Step drive="s1=0/1; s2=0/0.3; s2=77/5" say="No weight decay: it memorises the training set in under a hundred steps, and test accuracy stays near zero.">No decay: memorisation only</Step>
+
+<Step drive="s1=3/1; s2=0/0.3; s2=77/6" say="Weight decay 1: memorised just as fast, but the test accuracy only reaches ninety-five percent after nine thousand steps.">Decay 1: memorised at 69, learned by about 9200</Step>
+
+<Step drive="s1=4/2" say="Too much decay does not work either: only sixty-three percent at twenty thousand steps.">Decay 3: $63\%$</Step>
+
+<Step effect="focus" say="Memorise first; then, pushed by the regulariser, find a simpler solution.">
+<p class="big-q sm">Memorise first, understand later</p>
+</Step>
+
+<div slot="visual"><Grokking client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked numbers" say="A few numbers to check by hand.">
+
+<Step say="Eta 0.1, a hundred steps: along eigenvalue 0.1, gradient descent recovers 0.634 and ridge 0.5.">$1 - 0.99^{100} = 0.634$ vs $0.5$</Step>
+
+<Step say="Dropout with p one half: the average loss over the four masks is 14, which is 1 plus 13.">$\mathbb E = 1 + 13 = 14$</Step>
+
+<Step say="The equation w1 plus 2 w2 equals 3: starting from 2, 2, it stops at 1.4, 0.8.">$(2, 2) \to (1.4, 0.8)$</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Open questions" say="Why deep learning works still has many open questions.">
+
+<Step say="The same networks can memorise random labels: the capacity of the function class cannot explain generalisation.">Random labels can be memorised</Step>
+
+<Step say="Which functions does SGD prefer in general deep networks? How should flatness be defined?">Implicit bias · defining flatness</Step>
+
+<Step say="Double descent, lottery tickets, grokking, scaling laws: all only partly explained.">Double descent · lottery tickets · grokking · scaling laws</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="The practice is on the notes page: four derivations, dropout, weight decay and early stopping from scratch, then tuning regularisation in scikit-learn.">
+
+<Step say="After running the code, replay how regularisation smooths the network's boundary on the two moons.">✎ 4 derivations · ⌨ dropout + weight decay + early stopping · ⚙ scikit-learn: alpha and early stopping</Step>
+
+<Step effect="pop" say="Click the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/dl-generalization/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

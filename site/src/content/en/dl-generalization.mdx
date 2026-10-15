@@ -1,0 +1,197 @@
+import Section from "../../components/astro/Section.astro";
+import Box from "../../components/astro/Box.astro";
+import RegularizerLab from "../../components/chapters/ch18/RegularizerLab";
+import EarlyStopRidge from "../../components/chapters/ch18/EarlyStopRidge";
+import MinNormGD from "../../components/chapters/ch18/MinNormGD";
+import LossLandscape from "../../components/chapters/ch18/LossLandscape";
+import Grokking from "../../components/chapters/ch18/Grokking";
+
+<Section lang="en" k="scenario">
+
+In chapter 02 the teacher fitted polynomials to her students' study hours and scores, and high degrees overfitted. After chapter 17 she can train deep networks, so she switches to a 1–64–1 ReLU network: **193 parameters for 12 students**. By chapter 02's standards this model is absurdly complex. Train it for 3000 steps:
+
+<RegularizerLab client:visible lang="en" />
+
+The network memorises all 12 students, the curve twists between them, and its error on new students is three times what it was when stopped early. Yet add a little regularisation, or stop at the right moment, and the same network is about as good as the true curve. This chapter answers:
+
+1. With far more parameters than data, how do we keep a network from memorising? (Explicit regularisation: weight decay, dropout, augmentation, early stopping.)
+2. Why do big networks often generalise even with no regulariser at all? (Implicit regularisation: the solutions gradient descent prefers, SGD noise, flat minima.)
+3. Which questions are still open?
+
+</Section>
+
+<Section lang="en" k="method">
+
+### Four explicit regularisers
+
+<Box kind="definition" title="Weight decay, dropout, augmentation, early stopping">
+
+1. **Weight decay**: minimise $L(\theta) + \frac{\lambda}{2}\lVert\theta\rVert^2$. A gradient step becomes $\theta \leftarrow (1 - \eta\lambda)\theta - \eta \nabla L(\theta)$: every step first shrinks the weights by a fixed factor. For Adam, "add L2 to the loss" and "shrink the weights directly" are no longer the same; the latter is decoupled weight decay (AdamW, chapter 16), and it is what the scenario uses.
+2. **Dropout**: during training each hidden unit is zeroed with probability $p$ and the survivors are divided by $1 - p$: $\tilde h_j = m_j h_j / (1 - p)$ with $m_j \sim \text{Bernoulli}(1 - p)$, so $\mathbb E[\tilde h_j] = h_j$. At test time nothing is dropped.
+3. **Data augmentation**: during training, transform the inputs in ways that keep the label (flip, crop or recolour an image, change the speed of speech, or just add noise). It tells the model which changes do not matter. The Gaussian jitter on the study hours in the scenario is one.
+4. **Early stopping**: hold out a validation set and check its error now and then; stop once it has not improved for a while, and go back to the parameters with the lowest validation error.
+
+</Box>
+
+<Box kind="insight" title="They limit the capacity in use, not the number of parameters">
+
+None of the four removes a parameter: the network still has 193. What they limit is which functions training can reach. Weight decay pulls the weights towards 0, dropout keeps units from relying on each other, augmentation keeps the function from changing sharply near the inputs, and early stopping keeps the parameters near their initialisation. Chapter 02's double descent already showed that "number of parameters = complexity" breaks down once a model is over-parametrised.
+
+</Box>
+
+**The triad**: the model is an over-parametrised network; the strategy is empirical risk plus explicit or implicit regularisation; the algorithm is SGD and its variants, and the algorithm itself regularises.
+
+</Section>
+
+<Section lang="en" k="math">
+
+### Early stopping approximates L2
+
+Linear regression allows an exact comparison. Let $L(w) = \frac{1}{2n}\lVert Xw - y\rVert^2$, let $A = X^\top X / n$ have eigenvalues $\lambda_i$ and eigenvectors $v_i$, and let $w^*$ be the least-squares solution. The gradient is $A(w - w^*)$, so gradient descent from $w_0 = 0$ satisfies
+
+$$
+w_t - w^* = (I - \eta A)(w_{t-1} - w^*) \quad\Rightarrow\quad w_t = \big[I - (I - \eta A)^t\big]\, w^*.
+$$
+
+Ridge regression gives $w_\alpha = (A + \alpha I)^{-1} A\, w^*$. Neither changes the eigenvectors; each multiplies every direction by a "recovered fraction":
+
+<Box kind="theorem" title="The spectral filters of gradient descent and ridge">
+
+Along the direction with eigenvalue $\lambda_i$,
+
+$$
+\varphi^{\text{GD}}_t(\lambda_i) = 1 - (1 - \eta\lambda_i)^t, \qquad \varphi^{\text{ridge}}_\alpha(\lambda_i) = \frac{\lambda_i}{\lambda_i + \alpha}.
+$$
+
+For $\lambda_i \gg 1/(\eta t)$ both are close to 1; for $\lambda_i \ll 1/(\eta t)$, $\varphi^{\text{GD}}_t \approx \eta t \lambda_i$ and $\varphi^{\text{ridge}}_\alpha \approx \lambda_i / \alpha$. With $\alpha = 1/(\eta t)$ the two filters agree at both ends: **the number of steps $t$ plays the role of $1/\alpha$**.
+
+</Box>
+
+(Derivation exercise 1.) Both keep the large-eigenvalue directions, where the data carry strong signal, and suppress the small ones, which noise pushes around most easily. In between they are not identical: at $\lambda_i = \alpha$ ridge recovers $\frac12$ and gradient descent about $1 - e^{-1} \approx 0.63$.
+
+<EarlyStopRidge client:visible lang="en" />
+
+### Dropout: an adaptive L2 and an ensemble
+
+For a linear model $\hat y = \sum_j w_j x_j m_j / (1 - p)$, average over the random mask:
+
+$$
+\mathbb E_m\big[(y - \hat y)^2\big] = \big(y - w^\top x\big)^2 + \frac{p}{1 - p} \sum_j w_j^2 x_j^2 .
+$$
+
+Derivation: $\mathbb E[\hat y] = w^\top x$ and $\mathrm{Var}(m_j / (1 - p)) = p / (1 - p)$; the terms are independent, so their variances add; then use $\mathbb E[(y - \hat y)^2] = (y - \mathbb E \hat y)^2 + \mathrm{Var}(\hat y)$ (derivation exercise 2). Summed over the data, the penalty is $\frac{p}{1-p}\sum_j w_j^2 \sum_i x_{ij}^2$: an L2 weighted by each feature's scale. Features that are often large get their weights squeezed harder, which is why it is called **adaptive**.
+
+The other view is an **ensemble**: $n$ droppable units give $2^n$ subnetworks that share weights, and every step trains a random one. Using no dropout at test time (equivalently, scaling by $1 - p$) is a cheap stand-in for averaging all of them: for a single softmax layer it equals exactly the normalised geometric mean of all subnetworks' predictions; for deep networks it is an approximation.
+
+### Augmentation: input noise is L2
+
+Add independent noise $\varepsilon \sim \mathcal N(0, \sigma^2 I)$ to the inputs of a linear model, and the expected loss is
+
+$$
+\mathbb E_\varepsilon\big[(y - w^\top(x + \varepsilon))^2\big] = (y - w^\top x)^2 + \sigma^2 \lVert w\rVert^2 ,
+$$
+
+since the cross term has $\mathbb E[\varepsilon] = 0$ (derivation exercise 4). For a linear model, noise augmentation is ridge regression; for a nonlinear one, to first order it penalises $\sigma^2 \lVert \nabla_x f\rVert^2$, the function's sensitivity to its input. That is why jittering the study hours smooths the scenario's curve.
+
+### Implicit regularisation: gradient descent prefers the minimum-norm solution
+
+With more parameters than samples ($p \gt n$), $Xw = y$ has infinitely many exact solutions, all with zero training error. Where does gradient descent stop?
+
+The gradient $\nabla L = X^\top(Xw - y)/n$ always lies in the row space of $X$, so $w_t - w_0$ stays in the row space. The limit $w_\infty$ is an exact solution with $w_\infty - w_0 \in \mathrm{row}(X)$, and only one point fits both:
+
+<Box kind="theorem" title="Gradient descent converges to the solution nearest its start">
+
+With a small enough step ($\eta \lambda_{\max} \lt 2$), gradient descent on underdetermined least squares converges to
+
+$$
+w_\infty = w_0 + X^\top (X X^\top)^{-1}(y - X w_0).
+$$
+
+From $w_0 = 0$, $w_\infty = X^\top (X X^\top)^{-1} y$ is the **minimum-norm solution**.
+
+</Box>
+
+Why minimum norm: write any other solution as $w = w_\infty + u$ with $Xu = 0$. Then $u$ is in the null space, orthogonal to the row space where $w_\infty$ lives, so $\lVert w\rVert^2 = \lVert w_\infty\rVert^2 + \lVert u\rVert^2 \ge \lVert w_\infty \rVert^2$ (derivation exercise 3). Nobody put a norm penalty into the loss; the algorithm picked the smallest-norm solution by itself.
+
+<MinNormGD client:visible lang="en" />
+
+Chapter 02's double-descent curve was drawn with exactly this minimum-norm solution: the error peaks at $p = n$ and improves beyond it, because the more exact solutions there are to choose from, the smoother the one of least norm. What gradient descent prefers in deep networks has no complete answer yet. For logistic regression on separable data its direction converges to the maximum-margin solution (chapter 08's SVM); very wide networks in the "lazy training" regime behave like the minimum-norm solution of a kernel method; the general case is open.
+
+### SGD noise and flat minima
+
+A minibatch gradient is the full gradient plus noise with covariance about $\Sigma(\theta) / B$, and the noise grows with the ratio $\eta / B$ of learning rate to batch size. There is a rigorous linear-stability argument for why this regularises. In a quadratic valley of curvature $h$, one gradient step multiplies the deviation by $1 - \eta h$, which can only settle if $\eta h \lt 2$. So gradient descent with step $\eta$ can only stay in minima whose largest Hessian eigenvalue is below $2/\eta$, and noise kicks it out of sharp minima more easily still. Large learning rates and small batches therefore lean towards **flat** minima.
+
+Why might flatness relate to generalisation? A flat minimum barely changes under small perturbations, so describing it needs less precision (fewer bits), and PAC-Bayes bounds control the generalisation error with quantities of exactly this kind. But be careful: multiply one layer of a ReLU network by $c$ and divide the next by $c$, and the function is unchanged while the Hessian can be made arbitrarily sharp. Flatness has to be compared in a scale-free way; the slices below use filter-normalised random directions:
+
+<LossLandscape client:visible lang="en" />
+
+Skip connections turn the 20-layer network's landscape from rugged to smooth, another way of saying why they make deep networks trainable (chapter 19). Small batches do end flatter, but here the test accuracies are nearly the same: flatness and generalisation are related, not simply cause and effect.
+
+</Section>
+
+<Section lang="en" k="cases">
+
+### Example 1: the filters of early stopping and ridge
+
+<Box kind="example" title="η = 0.1, t = 100, so α = 1/(ηt) = 0.1">
+
+| Eigenvalue $\lambda$ | Gradient descent $1 - (1 - \eta\lambda)^t$ | Ridge $\lambda / (\lambda + \alpha)$ |
+|---|---|---|
+| $0.001$ | $1 - 0.9999^{100} = 0.00995$ | $0.001/0.101 = 0.0099$ |
+| $0.1$ | $1 - 0.99^{100} = 0.634$ | $0.1/0.2 = 0.5$ |
+| $10$ | $1 - 0^{100} = 1$ | $10/10.1 = 0.990$ |
+
+Nearly equal at both ends, 0.13 apart in the middle ($\lambda = \alpha$). In the widget, $\eta = 0.5$ and $t = 50$ give $\alpha = 0.04$, and along the small eigenvalue $\lambda = 0.04$ the two recover $0.636$ and $0.5$.
+
+</Box>
+
+### Example 2: the expected loss under dropout
+
+<Box kind="example" title="p = 0.5, x = (1, 2), w = (3, 1), y = 4">
+
+Kept units are multiplied by $1/(1 - p) = 2$; the four masks are equally likely:
+
+| Mask | $\hat y$ | $(y - \hat y)^2$ |
+|---|---|---|
+| drop both | $0$ | $16$ |
+| keep $x_1$ only | $6$ | $4$ |
+| keep $x_2$ only | $4$ | $0$ |
+| keep both | $10$ | $36$ |
+
+The average is $14$. The formula: $(4 - 5)^2 + \frac{0.5}{0.5}(3^2 \cdot 1^2 + 1^2 \cdot 2^2) = 1 + 13 = 14$.
+
+</Box>
+
+### Example 3: the minimum-norm solution
+
+<Box kind="example" title="One equation, w₁ + 2w₂ = 3">
+
+$a = (1, 2)$, $\lVert a\rVert^2 = 5$. From the origin: $w_\infty = a \cdot 3/5 = (0.6, 1.2)$, with norm $\sqrt{1.8} \approx 1.342$; another solution, $(3, 0)$, has norm $3$. From $w_0 = (2, 2)$: $a^\top w_0 = 6$ and $w_\infty = (2, 2) + (1, 2)(3 - 6)/5 = (1.4, 0.8)$.
+
+</Box>
+
+### Example 4: the scenario's numbers
+
+<Box kind="example" title="12 students, 193 parameters, 200 new students">
+
+The true curve itself has an MSE of 55 on the new students (the scores have noise with standard deviation 7, $7^2 = 49$, plus the sampling wobble of these 200). No regulariser: training MSE 2.4, test 184. Early stopping at step 50: test 62. Weight decay 3: 61; dropout 0.6: 68; jittering the hours by 1 hour: 64. Weight decay 10: training and test both around 290, underfitting.
+
+</Box>
+
+### Extension: grokking
+
+The most dramatic case of delayed generalisation is **grokking**: on small arithmetic datasets a network memorises the training set quickly, and its test accuracy only rises suddenly after hundreds of times as many steps. The curves below were trained in Python beforehand (`scripts/precompute_ch18.py`) and are replayed here:
+
+<Grokking client:visible lang="en" />
+
+### Open questions on why deep learning works
+
+- **Random labels can be memorised**: the same networks fit randomly shuffled labels to zero training error, so the capacity of the function class cannot explain their generalisation on real labels.
+- **What is the implicit bias?** Minimum norm and maximum margin are proved only for linear models or special cases; in general deep networks, which functions does SGD prefer?
+- **Flatness and generalisation**: how should scale-free flatness be defined? SAM (sharpness-aware minimisation) works in practice, but why is still debated.
+- **Over-parametrisation**: when do double descent and "benign overfitting" occur? The kernel limit of wide networks (NTK) explains training but leaves out feature learning.
+- **The lottery ticket hypothesis**: large networks contain sparse subnetworks that train well on their own from the same initialisation; why is training the large network easier than training the small one directly?
+- **Grokking and phase transitions**: when does generalisation appear suddenly, and how does it relate to the weight norm and the structure of the learned representation?
+- **Scaling laws**: test loss falls as a power law in parameters, data and compute; where do the exponents come from?
+
+</Section>

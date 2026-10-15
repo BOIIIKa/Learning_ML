@@ -1,0 +1,68 @@
+# 第 18 章 深度网络的正则化与泛化之谜 —— 课后练习 / Chapter 18 exercises
+
+derivation:
+  - id: es-filter
+    title: {zh: "早停的谱滤波", en: "The spectral filter of early stopping"}
+    prompt:
+      zh: "一维二次损失 $L(w) = \\frac{\\ell}{2}(w - w^*)^2$，从 $w_0 = 0$ 出发、学习率 $\\eta$ 做 $t$ 步梯度下降。$w_t / w^*$ 等于多少？可用变量：`eta, l, t`。"
+      en: "A one-dimensional quadratic loss $L(w) = \\frac{\\ell}{2}(w - w^*)^2$; run $t$ steps of gradient descent with learning rate $\\eta$ from $w_0 = 0$. What is $w_t / w^*$? Variables: `eta, l, t`."
+    answer: "1 - (1 - eta*l)^t"
+    vars: {eta: [0.01, 0.5], l: [0.01, 1.5], t: [1, 60]}
+    solution:
+      zh: "梯度是 $\\ell(w - w^*)$，所以 $w_t - w^* = (1 - \\eta\\ell)(w_{t-1} - w^*)$。从 $w_0 - w^* = -w^*$ 递推 $t$ 次：$w_t - w^* = -(1 - \\eta\\ell)^t w^*$，即 $w_t / w^* = 1 - (1 - \\eta\\ell)^t$。多维时沿每个特征方向分别成立。与岭回归的 $\\ell/(\\ell + \\alpha)$ 比较：$\\ell$ 很小时前者约为 $\\eta t \\ell$、后者约为 $\\ell/\\alpha$，所以 $\\alpha \\approx 1/(\\eta t)$。例题一：$\\eta = 0.1$、$t = 100$、$\\ell = 0.1$ 时是 $1 - 0.99^{100} = 0.634$，岭回归是 $0.5$。"
+      en: "The gradient is $\\ell(w - w^*)$, so $w_t - w^* = (1 - \\eta\\ell)(w_{t-1} - w^*)$. Starting from $w_0 - w^* = -w^*$ and applying it $t$ times: $w_t - w^* = -(1 - \\eta\\ell)^t w^*$, so $w_t / w^* = 1 - (1 - \\eta\\ell)^t$. In several dimensions this holds along each eigendirection. Compare ridge's $\\ell/(\\ell + \\alpha)$: for small $\\ell$ the first is about $\\eta t \\ell$ and the second about $\\ell/\\alpha$, hence $\\alpha \\approx 1/(\\eta t)$. Example 1: $\\eta = 0.1$, $t = 100$, $\\ell = 0.1$ give $1 - 0.99^{100} = 0.634$, against $0.5$ for ridge."
+
+  - id: dropout-penalty
+    title: {zh: "Dropout 的期望损失", en: "The expected loss under dropout"}
+    prompt:
+      zh: "线性模型 $\\hat y = \\frac{1}{1-p}(w_1 x_1 m_1 + w_2 x_2 m_2)$，$m_1, m_2$ 独立，各以概率 $1 - p$ 取 1、以概率 $p$ 取 0。求 $\\mathbb E_m[(y - \\hat y)^2]$。可用变量：`p, w1, w2, x1, x2, y`。"
+      en: "A linear model $\\hat y = \\frac{1}{1-p}(w_1 x_1 m_1 + w_2 x_2 m_2)$ with independent $m_1, m_2$, each 1 with probability $1 - p$ and 0 with probability $p$. Find $\\mathbb E_m[(y - \\hat y)^2]$. Variables: `p, w1, w2, x1, x2, y`."
+    answer: "(y - w1*x1 - w2*x2)^2 + p/(1 - p)*(w1^2*x1^2 + w2^2*x2^2)"
+    vars: {p: [0.05, 0.9], w1: [-2, 2], w2: [-2, 2], x1: [-2, 2], x2: [-2, 2], y: [-3, 3]}
+    solution:
+      zh: "$m_j/(1-p)$ 的均值是 1、方差是 $\\frac{(1-p)p}{(1-p)^2} = \\frac{p}{1-p}$。所以 $\\mathbb E\\hat y = w_1 x_1 + w_2 x_2$，$\\mathrm{Var}\\,\\hat y = \\frac{p}{1-p}(w_1^2 x_1^2 + w_2^2 x_2^2)$（独立项方差相加）。再用 $\\mathbb E[(y - \\hat y)^2] = (y - \\mathbb E\\hat y)^2 + \\mathrm{Var}\\,\\hat y$。惩罚项按 $x_j^2$ 加权，是自适应的 L2。例题二：$p = 0.5$、$x = (1, 2)$、$w = (3, 1)$、$y = 4$ 时是 $1 + 13 = 14$，和枚举四种掩码的平均一致。"
+      en: "$m_j/(1-p)$ has mean 1 and variance $\\frac{(1-p)p}{(1-p)^2} = \\frac{p}{1-p}$. So $\\mathbb E\\hat y = w_1 x_1 + w_2 x_2$ and $\\mathrm{Var}\\,\\hat y = \\frac{p}{1-p}(w_1^2 x_1^2 + w_2^2 x_2^2)$ (variances of independent terms add). Then $\\mathbb E[(y - \\hat y)^2] = (y - \\mathbb E\\hat y)^2 + \\mathrm{Var}\\,\\hat y$. The penalty is weighted by $x_j^2$: an adaptive L2. Example 2: $p = 0.5$, $x = (1, 2)$, $w = (3, 1)$, $y = 4$ give $1 + 13 = 14$, the same as averaging the four masks."
+
+  - id: min-norm
+    title: {zh: "梯度下降停在哪个解", en: "Which solution gradient descent stops at"}
+    prompt:
+      zh: "一个方程 $a w_1 + b w_2 = y$。从 $(u, v)$ 出发，对 $\\frac12(a w_1 + b w_2 - y)^2$ 做步长足够小的梯度下降。极限的第一个分量 $w_1$ 是多少？可用变量：`a, b, y, u, v`。"
+      en: "One equation $a w_1 + b w_2 = y$. Starting from $(u, v)$, run gradient descent with a small enough step on $\\frac12(a w_1 + b w_2 - y)^2$. What is the first coordinate $w_1$ of the limit? Variables: `a, b, y, u, v`."
+    answer: "u + a*(y - a*u - b*v)/(a^2 + b^2)"
+    vars: {a: [0.5, 2], b: [0.5, 2], y: [-3, 3], u: [-2, 2], v: [-2, 2]}
+    solution:
+      zh: "梯度是 $(a, b)(a w_1 + b w_2 - y)$，永远平行于 $(a, b)$，所以 $w_t = (u, v) + c_t (a, b)$。极限是精确解：$a(u + c a) + b(v + c b) = y$，解得 $c = (y - a u - b v)/(a^2 + b^2)$。于是 $w_1 = u + a(y - a u - b v)/(a^2 + b^2)$：离起点最近的解。$u = v = 0$ 时就是最小范数解 $(a, b)\\, y/(a^2 + b^2)$。例题三：$a = 1$、$b = 2$、$y = 3$ 从原点得 $(0.6, 1.2)$，从 $(2, 2)$ 得 $(1.4, 0.8)$。"
+      en: "The gradient is $(a, b)(a w_1 + b w_2 - y)$, always parallel to $(a, b)$, so $w_t = (u, v) + c_t (a, b)$. The limit is an exact solution: $a(u + c a) + b(v + c b) = y$, giving $c = (y - a u - b v)/(a^2 + b^2)$. Hence $w_1 = u + a(y - a u - b v)/(a^2 + b^2)$: the solution nearest the start. With $u = v = 0$ it is the minimum-norm solution $(a, b)\\, y/(a^2 + b^2)$. Example 3: $a = 1$, $b = 2$, $y = 3$ give $(0.6, 1.2)$ from the origin and $(1.4, 0.8)$ from $(2, 2)$."
+
+  - id: input-noise
+    title: {zh: "输入加噪声等于 L2", en: "Input noise equals L2"}
+    prompt:
+      zh: "线性模型 $w_1 x_1 + w_2 x_2$，训练时给输入加独立噪声 $\\varepsilon_1, \\varepsilon_2 \\sim \\mathcal N(0, s^2)$。求 $\\mathbb E_\\varepsilon[(y - w_1(x_1 + \\varepsilon_1) - w_2(x_2 + \\varepsilon_2))^2]$。可用变量：`s, w1, w2, x1, x2, y`。"
+      en: "A linear model $w_1 x_1 + w_2 x_2$ trained with independent input noise $\\varepsilon_1, \\varepsilon_2 \\sim \\mathcal N(0, s^2)$. Find $\\mathbb E_\\varepsilon[(y - w_1(x_1 + \\varepsilon_1) - w_2(x_2 + \\varepsilon_2))^2]$. Variables: `s, w1, w2, x1, x2, y`."
+    answer: "(y - w1*x1 - w2*x2)^2 + s^2*(w1^2 + w2^2)"
+    vars: {s: [0.05, 2], w1: [-2, 2], w2: [-2, 2], x1: [-2, 2], x2: [-2, 2], y: [-3, 3]}
+    solution:
+      zh: "记 $r = y - w_1 x_1 - w_2 x_2$，误差是 $r - (w_1\\varepsilon_1 + w_2\\varepsilon_2)$。展开平方：交叉项 $-2r\\,\\mathbb E[w_1\\varepsilon_1 + w_2\\varepsilon_2] = 0$；噪声项 $\\mathbb E[(w_1\\varepsilon_1 + w_2\\varepsilon_2)^2] = s^2(w_1^2 + w_2^2)$。所以期望损失是 $r^2 + s^2\\lVert w\\rVert^2$：加噪声的数据增强就是岭回归，$\\lambda = s^2$。对非线性模型，一阶近似下惩罚的是 $s^2\\lVert\\nabla_x f\\rVert^2$。场景里给学习时长加抖动能抚平曲线，就是这个原因。"
+      en: "Let $r = y - w_1 x_1 - w_2 x_2$; the error is $r - (w_1\\varepsilon_1 + w_2\\varepsilon_2)$. Expand the square: the cross term $-2r\\,\\mathbb E[w_1\\varepsilon_1 + w_2\\varepsilon_2] = 0$, and the noise term $\\mathbb E[(w_1\\varepsilon_1 + w_2\\varepsilon_2)^2] = s^2(w_1^2 + w_2^2)$. So the expected loss is $r^2 + s^2\\lVert w\\rVert^2$: noise augmentation is ridge regression with $\\lambda = s^2$. For nonlinear models, to first order it penalises $s^2\\lVert\\nabla_x f\\rVert^2$. That is why jittering the study hours smooths the scenario's curve."
+
+code:
+  - id: regularize
+    kind: implement
+    file: regularize.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "从零实现 Dropout、权重衰减与早停", en: "Dropout, weight decay and early stopping from scratch"}
+    intro:
+      zh: "补全 Inverted Dropout、解耦的权重衰减、反向传播里的掩码和早停循环。检查会量出丢弃比例和期望，按手算核对权重衰减的一步，固定掩码把梯度和中心差分对拍，用一串验证损失检查早停停在哪一轮，最后在带噪声的双月数据上带正则训练。运行后可以回放分界线一轮轮长出来，并看验证损失的变化。"
+      en: "Fill in inverted dropout, decoupled weight decay, the mask in backpropagation, and the early-stopping loop. The checks measure the drop rate and the mean, verify one weight-decay step by hand, compare gradients with central differences under fixed masks, check where early stopping stops on a given sequence of validation losses, and finally train with regularisation on noisy moons. Afterwards, replay the boundary growing epoch by epoch, with the validation loss."
+    metrics:
+      - {key: val, label: {zh: "验证损失", en: "Validation loss"}}
+  - id: regularize-library
+    kind: library
+    file: regularize_library.py
+    packages: [numpy, scikit-learn]
+    title: {zh: "用 scikit-learn 给网络加正则：alpha 与早停", en: "Regularising a network in scikit-learn: alpha and early stopping"}
+    intro:
+      zh: "MLPClassifier 的 alpha 就是 L2 惩罚的系数。补全训练、权重范数、在验证集上选 alpha，以及内置的早停。检查会确认 alpha 越大权重越小、选出的 alpha 确实验证准确率最高、早停在 20 轮没有进步后停下。运行后可以回放 alpha 从小到大时分界线怎样从扭曲变平滑，再变得欠拟合。"
+      en: "MLPClassifier's alpha is the coefficient of its L2 penalty. Fill in training, the weight norm, choosing alpha on a validation set, and the built-in early stopping. The checks confirm that a larger alpha gives smaller weights, that the chosen alpha really has the best validation accuracy, and that early stopping stops after 20 epochs without improvement. Afterwards, replay how the boundary goes from twisted to smooth to underfit as alpha grows."
+    metrics:
+      - {key: val, label: {zh: "验证错误率", en: "Validation error"}}

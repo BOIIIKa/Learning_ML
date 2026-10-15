@@ -1,11 +1,11 @@
 # 交接文档 / Handoff
 
-> 写于 2026-10-14，2026-10-15 更新（转为本地开发），供上下文压缩或换人之后继续工作使用。先读本文，再读 `CLAUDE.md` 和 `.claude/skills/`。
+> 写于 2026-10-14，2026-10-15 更新（转为本地开发；第 18 章完成），供上下文压缩或换人之后继续工作使用。先读本文，再读 `CLAUDE.md` 和 `.claude/skills/`。
 > Written 2026-10-14 for picking the work up after a context reset. Read this, then `CLAUDE.md` and `.claude/skills/`.
 
 ## 1. 现状一句话
 
-**完成 18/30 章（00–17），全部已合并并部署到 https://boiiika.github.io/Learning_ML/。** 从第 18 章起，用户改在本地开发：先读 [`LOCAL_DEV.md`](LOCAL_DEV.md)。下一步：第 18 章“深度网络的正则化与泛化之谜”（slug `dl-generalization`）。用户要求：**在保证准确性的前提下尽量精简编辑次数，持续推进**（每章只做一轮验证：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk + 看组件截图）。
+**完成 19/30 章（00–18）。00–17 已合并并部署到 https://boiiika.github.io/Learning_ML/，第 18 章在 PR 中等待用户同意合并。** 本地开发先读 [`LOCAL_DEV.md`](LOCAL_DEV.md)。下一步：第 19 章“卷积网络与残差网络”（slug `cnn-resnet`）。用户要求：**在保证准确性的前提下尽量精简编辑次数，持续推进**（每章只做一轮验证：单元测试 + pytest + 讲义页 Pyodide 检查 + 两种语言的课程 walk + 看组件截图）。
 
 - 竖版讲义：工程蓝图风格。
 - 横版动画课程：3Blue1Brown / manim 风格，自动播放。
@@ -25,6 +25,7 @@
 | BOIIIKa/Learning_ML#11 | 交接文档；第 16 章（优化） | 已合并 |
 | BOIIIKa/Learning_ML#12 | 第 17 章（反向传播与初始化）；Pyodide 练习可用 autograd | 已合并 |
 | BOIIIKa/Learning_ML#13 | 本地开发工具与指南（setup 脚本、requirements-dev.txt、Playwright 开发依赖、水合与 Math 差异检查工具、LOCAL_DEV.md） | 见 PR |
+| 第 18 章 PR（基于 #13 的分支 `claude/chapter-18-dl-generalization-odq0wf`） | 第 18 章（正则化与泛化之谜）；Python 预计算实验的模式 | 见 PR |
 
 ## 2. 用户（项目负责人）的偏好与约定
 
@@ -42,29 +43,29 @@
 - 章节顺序由我决定。**只有用户明确同意时才合并 PR**；用户会把网站链接发给学生测试。
 - 工作分支：云端会话用 `claude/charming-knuth-ti0cof`；本地开发自己开功能分支。每次 PR 合并后从 `main` 重新开分支，再开新的 PR。
 
-## 3. 下一步：第 18 章（深度网络的正则化与泛化之谜，slug `dl-generalization`）
+## 3. 下一步：第 19 章（卷积网络与残差网络，slug `cnn-resnet`）
 
-`curriculum/outline.yaml` 中第 18 章承诺的内容：
-- **目标**：显式正则（权重衰减、Dropout、数据增强、早停）；隐式正则（SGD 噪声、平坦极小、过参数化）；“深度学习为何有效”的开放问题清单。
-- **推导**：线性模型中早停近似等价于 L2 正则；Dropout 作为集成 / 自适应正则；梯度下降在欠定线性回归中收敛到最小范数解（第 02 章 `generalization.ts` 有 `minNorm` 和双下降）。
-- **组件**：损失地形切片（两个随机方向，对比有无残差、大小批量）；顿悟（grokking，模运算任务，调权重衰减）。
+`curriculum/outline.yaml` 中第 19 章承诺的内容：
+- **目标**：从平移等变性推出卷积，理解感受野随深度增长；理解残差连接与归一化层为何使深层网络可训练。
+- **推导**：卷积 = 与平移交换的线性算子；残差网络的梯度路径展开与“浅网络集成”视角。
+- **组件**：卷积核滑动（可编辑核值，步长、填充、空洞）；感受野生长（点选深层单元，高亮输入上的感受野）。
 
 建议做法：
-- 引擎 `site/src/engines/dl-generalization.ts`。早停 ≈ L2 可以在线性回归上精确比较：GD 第 t 步的谱滤波 $1 - (1 - \eta\lambda_i)^t$ 对比岭回归的 $\lambda_i/(\lambda_i + \alpha)$。
-- 训练用 `backprop-init.ts` 的扁平数组 ReLU 网络（`trainDeep` 的写法，约 40ms 一次）；要加 Dropout 时扩展它，注意随机掩码用 `rng`。
-- grokking 在浏览器里训练太慢：可以在 Python 里预先训练好曲线，作为数据文件提交，并用 vitest 检查文件的形状。若这样做，要在讲义里说明数据是预先计算的。
+- 引擎 `site/src/engines/cnn-resnet.ts`：卷积、感受野都是整数运算，不涉及水合问题。
+- 第 18 章的 `LossLandscape` 已经展示了残差让 20 层网络的地形变平滑，可以在讲义里回引；第 17 章的 `varianceProfile` 可以加一个残差版本，比较有无残差时各层梯度的大小。
+- 浏览器里训练卷积网络太慢：照第 18 章的做法，在 `scripts/precompute_ch18.py` 那样的脚本里用 numpy 预先训练，提交 JSON 数据，由 vitest 检查形状和讲义里的每个结论，讲义里注明数据是预先算好的。
 
 ```bash
-python3 scripts/new_chapter.py 18 --widget EarlyStopRidge
+python3 scripts/new_chapter.py 19 --widget ConvSlide
 ```
 
-可复用的引擎：
-- `mlp.ts`：全连接层、ReLU / tanh、前向缓存、反向传播（有有限差分梯度检验）、激活模式、参数个数。
-- `losses-as-likelihood.ts`：各种头的负对数似然和梯度。
-- `neural-networks.ts`：铰链拟合、线性段计数、帐篷映射。
-- `generalization.ts`：学生数据 `sample` 和 `truth`。
-- `regression.ts`：`solve`。
-- `data.ts`：`rng`、`gaussian`、`r6`、`moons`、`blobs`。
+### 第 18 章的经验
+
+- **实验结论要跨随机种子确认**：损失地形（3 个种子）、顿悟（权重衰减 1 和 0 各 3 个种子）的结论都在 vitest 里逐个种子断言。小网络上“小批量更平”成立，但测试准确率几乎一样，于是讲义就这样写，而不是声称平坦带来更好的泛化。
+- **正则化并不总能提高测试表现**：练习里的双月数据上，Dropout / 早停不稳定地优于不加正则，所以检查只断言稳健的性质（权重范数变小、早停返回更早的轮次、准确率 > 0.8）。
+- **ReLU 在 0 处的折点会让有限差分出错**：偏置初始化为 0 时，某行输入全被 Dropout 丢掉，预激活恰好是 0。梯度检查前把偏置设成非零随机数。
+- **早停与岭回归的对应 α = 1/(ηt) 只是近似**：两条路径几乎重合（最远相距不到 ‖w*‖ 的 1/10），但同一时刻对应的两点最多差 ‖w*‖ 的 1/4。说明文字要写清楚是哪一种“接近”。
+- **深色主题下“颜色越深”可能反了**：用 `fillOpacity` 叠加 `--accent` 的热图，在深色背景上损失大的地方更亮。写“颜色越浓”。
 
 ### 第 07–16 章期间新踩到的坑（写新章时注意）
 
@@ -97,8 +98,8 @@ python3 scripts/new_chapter.py 18 --widget EarlyStopRidge
 ## 5. 推送前检查清单
 
 ```bash
-cd site && npx tsc --noEmit -p . && npx vitest run && npx astro build      # 207 tests, 78 pages
-cd .. && python -m pytest -q tests && python3 scripts/build_outline.py --check   # 108 tests
+cd site && npx tsc --noEmit -p . && npx vitest run && npx astro build      # 228 tests, 82 pages
+cd .. && python -m pytest -q tests && python3 scripts/build_outline.py --check   # 114 tests
 cd site && node scripts/verify/course.mjs walk zh <slug> && node scripts/verify/course.mjs walk en <slug>
 node scripts/verify/chapter.mjs <slug> zh dark     # 本地默认从 CDN 加载 Pyodide
 node scripts/verify/hydration.mjs /zh/chapters/<slug>/   # 出现水合报错时定位组件
@@ -108,7 +109,7 @@ node scripts/verify/pages.mjs <slug>
 ## 6. 压缩上下文用的关键词 / Context-compression keywords
 
 Learning_ML · BOIIIKa/Learning_ML · boiiika.github.io/Learning_ML · 看得见的机器学习 / Visible ML · ISL + UDL(Prince) + 李航 · 重写不复制 · 中英双语 · 非商用 CC BY-NC-SA + MIT ·
-18/30 章完成（00–17），全部已合并 · 本地开发见 docs/LOCAL_DEV.md · 下一步 18 深度网络的泛化（slug dl-generalization）· 19 卷积与残差 · 20 Transformer · 21 图网络（第五部分：网络架构与归纳偏置） ·
+19/30 章完成（00–18；18 在 PR 中）· 本地开发见 docs/LOCAL_DEV.md · 下一步 19 卷积与残差（slug cnn-resnet） · 20 Transformer · 21 图网络（第五部分：网络架构与归纳偏置） ·
 竖版讲义 = 蓝图风格（不改）· 横版动画课程 = 3B1B / manim · **点一下播完一页再暂停**（连播按钮 / A 键）· 翻页 = 新旧两页同时滑动 · 按钮：上一页 / 上一拍 / 播放 / 下一拍 / 下一页 / 重播本页 / 连播 / 倍速 / 页面总览 / 全屏 · 朗读已注释掉 · 学生拖动控件时 drive 脚本停下（takeover）· 课程忽略 prefers-reduced-motion ·
 六段结构（情景 / 方法 / 数学 / 例题拓展 / 课后训练 / 实战手册）+ 一页纸 recap · 情景人物：老师和学生（第 01–03、14、15 章）、医院初筛（第 07 章）·
 Astro 7 + React 19 + MDX + KaTeX + Pyodide 0.29.3（sklearn 1.7）· src/manim（Clock、Write、Morph、createSvg）· drive DSL（s1=11/4、s1=80%、click:chip2、wait:1）· `<Morph>` 推导变形 ·

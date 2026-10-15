@@ -50,6 +50,6 @@ cd site && npm run verify:hydration -- /zh/chapters/<slug>/   # locate a hydrati
 
 ## Status
 
-Done: chapters 00–17 (notes, course, recap, widgets, exercises, handbook).
-Next in order: 18 dl-generalization (regularization and the generalization puzzle), then 19–21; reuse `site/src/engines/backprop-init.ts` (fast flat-array ReLU MLP training, `trainDeep`), `optimization.ts` (optimizers, `detCos`) and `mlp.ts`.
+Done: chapters 00–18 (notes, course, recap, widgets, exercises, handbook).
+Next in order: 19 cnn-resnet (convolutional and residual networks), then 20–21; reuse `site/src/engines/backprop-init.ts` (fast flat-array ReLU MLP training, `trainDeep`), `optimization.ts` (optimizers, `detCos`), `mlp.ts`, and the precompute pattern of `scripts/precompute_ch18.py` for experiments too slow for the browser.
 See `docs/PROJECT_SUMMARY.md` for the full picture and roadmap, and `docs/HANDOFF.md` for the user's preferences, environment notes and the concrete plan for the next chapter.
