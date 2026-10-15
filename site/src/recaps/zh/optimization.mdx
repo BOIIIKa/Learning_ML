@@ -1,0 +1,8 @@
+- **步长与稳定**：二次函数上误差沿特征方向每步乘以 $1 - \eta\lambda$；稳定需要 $\eta \lt 2/L$，最优 $\eta = 2/(L + \mu)$，收缩率 $(\kappa - 1)/(\kappa + 1)$。
+- **线性收敛**：$L$-光滑、$\mu$-强凸、$\eta = 1/L$ 时，$f(x_t) - f^* \le (1 - \mu/L)^t (f(x_0) - f^*)$（下降引理 + 梯度下界），步数 $\approx \kappa \ln(1/\varepsilon)$。
+- **条件数**：$\kappa = L/\mu$ 决定快慢；特征标准化就是预条件（场景中 $\kappa$ 从 169 变成 1）。
+- **动量**：重球 $x_{t+1} = x_t - \eta \nabla f + \beta(x_t - x_{t-1})$ 是阻尼振子 $m\ddot x + c\dot x + \nabla f = 0$ 的离散化；收缩率变成 $(\sqrt\kappa - 1)/(\sqrt\kappa + 1)$；有效步长 $\eta/(1 - \beta)$。Nesterov 在前瞻点取梯度。
+- **牛顿法**：$x - H^{-1}\nabla f$，二次函数一步到位、仿射不变、平方收敛；代价是 $O(p^3)$，鞍点附近会被吸引。
+- **Adam**：$m, v$ 滑动平均 + 偏差修正 $\hat m = m/(1 - \beta_1^t)$；每步约移动 $\eta$，与梯度尺度无关。**AdamW** 把权重衰减 $\lambda\theta$ 移出 $\hat m/\sqrt{\hat v}$。
+- **SGD 与调度**：常数步长停在噪声地板（$\propto \eta\sigma^2$）；先大后小（阶梯 / 余弦）+ 预热；鞍点附近会出现平台。
+- **例题**：$\kappa = 10$ 时 66 / 35 / 15 步；无修正的 Adam 第一步 $3.16\eta$；鞍点 GD 67 步、Adam 10 步；$\beta = 0.9$ 步长 $\times 10$。

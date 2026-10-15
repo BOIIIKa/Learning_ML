@@ -1,0 +1,40 @@
+---
+title: "Optimizers in practice: learning rates, AdamW and schedules"
+summary: "Setting up optimizers correctly in PyTorch / scikit-learn / SciPy, finding a learning rate, AdamW's weight decay, warm-up and cosine schedules, and the usual causes of divergence."
+chapters: ["16"]
+---
+
+### Go-to code
+
+```python
+import torch
+opt = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=0.01)   # the default starting point for networks
+opt = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, nesterov=True, weight_decay=5e-4)
+sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=3e-3, total_steps=T, pct_start=0.1)  # warm-up + cosine
+# in the loop: loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step(); sched.step(); opt.zero_grad()
+
+from scipy.optimize import minimize          # small smooth problems: L-BFGS-B / BFGS / Newton-CG
+res = minimize(f, x0, jac=grad, method="L-BFGS-B")
+from sklearn.neural_network import MLPClassifier
+MLPClassifier(solver="adam", learning_rate_init=1e-3)   # or solver="sgd", momentum=0.9, nesterovs_momentum=True
+```
+
+### Traps that bite
+
+- **Standardise features first**: gradient descent is extremely sensitive to scale (in this chapter's scenario the condition number goes from 169 to 1). Trees do not care; linear models and networks do.
+- **Finding a learning rate**: start tiny, multiply the rate by a constant every step, plot the loss, and take about 1/10 of the rate where the loss falls fastest (the LR range test). When training diverges, divide the rate by 3 before switching optimizers.
+- **Adam's `weight_decay` is L2; AdamW's is decoupled decay**: PyTorch's `Adam(weight_decay=…)` adds $\lambda\theta$ to the gradient, where $\sqrt v$ dilutes it; use `AdamW`. Biases and LayerNorm parameters are usually not decayed.
+- **Switching from SGD to momentum**: momentum 0.9 makes the effective step 10× longer; shrink the learning rate to match.
+- **Larger batches**: scale the learning rate with the batch and add warm-up; with tiny batches, raising Adam's $\epsilon$ (default 1e-8) to 1e-6 sometimes stabilises training.
+- **Schedule per step, not per epoch**: `OneCycleLR` and cosine schedules usually expect `sched.step()` once per minibatch; calling it once per epoch makes the warm-up absurdly long.
+- **Gradient clipping**: the occasional huge gradient in RNN / Transformer training can throw the parameters far away; `clip_grad_norm_` is cheap insurance.
+- **NaN losses**: check the data first (division by zero, log 0), then the learning rate, and only then numerical precision (use a GradScaler with mixed precision).
+
+### Frontier reading
+
+- Kingma & Ba (2015): Adam.
+- Loshchilov & Hutter (2019): AdamW, decoupled weight decay; (2017) SGDR, cosine annealing with warm restarts.
+- Goyal et al. (2017): the linear scaling rule and warm-up for large-batch training.
+- Cohen et al. (2021): gradient descent on networks operates at the edge of stability.
+- Foret et al. (2021): Sharpness-Aware Minimization.
+- Chen et al. (2023): Lion, a sign-momentum optimizer; Defazio et al. (2024): schedule-free optimization.

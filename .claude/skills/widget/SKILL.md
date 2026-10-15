@@ -57,6 +57,9 @@ Both plots draw a CAD crosshair with coordinates on hover and "draw in" their cu
      copies of a shared plot, and `url(#id)` resolves to the first one in the document (a fixed
      `cp-clip` once clipped a tall CurvePlot to a short one's height). Use `useId()`; Astro gives each
      island its own prefix, so the ids stay unique across islands and hydrate cleanly.
+   - Browsers' `Math.cos` / `Math.sin` can differ from Node's in the last bit. Round data with `r6`,
+     and when a computation is chaotic (an unstable training run) avoid them entirely (`detCos` in
+     `engines/optimization.ts`), or the SSR curve will not match the client's.
    - Don't mutate island DOM before hydration (the course's animations use the Web Animations API
      and CSS for exactly this reason).
 2. **Colours only from CSS variables**: `var(--accent)`, `--accent-2`, `--accent-3`, `--ink`,

@@ -1,0 +1,8 @@
+- **Step size and stability**: on a quadratic the error along each eigen-direction is multiplied by $1 - \eta\lambda$ per step; stability needs $\eta \lt 2/L$; the best $\eta = 2/(L + \mu)$ gives the rate $(\kappa - 1)/(\kappa + 1)$.
+- **Linear convergence**: for $L$-smooth, $\mu$-strongly convex $f$ and $\eta = 1/L$, $f(x_t) - f^* \le (1 - \mu/L)^t (f(x_0) - f^*)$ (descent lemma + gradient lower bound); about $\kappa \ln(1/\varepsilon)$ steps.
+- **Condition number**: $\kappa = L/\mu$ sets the speed; standardising features is preconditioning ($\kappa$ drops from 169 to 1 in the scenario).
+- **Momentum**: the heavy ball $x_{t+1} = x_t - \eta \nabla f + \beta(x_t - x_{t-1})$ discretises the damped oscillator $m\ddot x + c\dot x + \nabla f = 0$; the rate becomes $(\sqrt\kappa - 1)/(\sqrt\kappa + 1)$; the effective step is $\eta/(1 - \beta)$. Nesterov takes the gradient at the look-ahead point.
+- **Newton's method**: $x - H^{-1}\nabla f$: one step on a quadratic, affine invariant, quadratic convergence; costs $O(p^3)$ and is attracted to saddles.
+- **Adam**: moving averages $m, v$ + bias correction $\hat m = m/(1 - \beta_1^t)$; each step moves about $\eta$, whatever the gradient's scale. **AdamW** moves the weight decay $\lambda\theta$ out of $\hat m/\sqrt{\hat v}$.
+- **SGD and schedules**: a constant step stalls at a noise floor ($\propto \eta\sigma^2$); go large first, small later (step / cosine) with warm-up; saddles show up as plateaus.
+- **Examples**: 66 / 35 / 15 steps at $\kappa = 10$; uncorrected Adam's first step is $3.16\eta$; at the saddle GD needs 67 steps, Adam 10; $\beta = 0.9$ makes the step $\times 10$.

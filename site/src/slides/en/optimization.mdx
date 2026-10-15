@@ -1,0 +1,255 @@
+import Slide from "../../components/course/Slide.astro";
+import Step from "../../components/course/Step.astro";
+import Morph from "../../components/course/Morph.astro";
+import LrDial from "../../components/chapters/ch16/LrDial";
+import ConditionZigzag from "../../components/chapters/ch16/ConditionZigzag";
+import OptimizerRace from "../../components/chapters/ch16/OptimizerRace";
+import LrSchedules from "../../components/chapters/ch16/LrSchedules";
+
+<Slide lang="en" part="intro" layout="title" kicker="Chapter 16 · Animated course" title="Optimization: From Gradient Descent to Adam" say="The loss is written down. How do we bring it down? Step sizes, condition numbers, momentum and Adam.">
+
+Step size · condition number · momentum · Adam · schedules
+
+</Slide>
+
+<Slide lang="en" part="scenario" title="The learning-rate dial" say="The teacher fits the score line by gradient descent: start at w equals zero, take a hundred steps.">
+
+<Step drive="s1=-2.5/2" say="Learning rate 0.003: after a hundred steps the loss is still three times the best, and the intercept has barely moved.">Too small: the intercept barely moves</Step>
+
+<Step drive="s1=-1.25/2.5" say="Turn it up to 0.056, the largest rate that does not diverge. After a hundred steps the intercept is still too low.">Largest stable rate: intercept still low</Step>
+
+<Step drive="s1=-1.15/1.5" say="A touch more, and it diverges.">A touch more: diverges</Step>
+
+<Step drive="click:chip2; s1=0/2" say="Standardise the hours: now the rate can be one, and a single step lands on the least-squares line.">Standardised: $\eta = 1$, one step</Step>
+
+<div slot="visual"><LrDial client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="scenario" layout="center" title="Three questions" say="Three questions.">
+
+<Step effect="focus" say="First: how large can the learning rate be, and what sets the speed?">
+<p class="big-q sm">What sets the step size and the speed?</p>
+</Step>
+
+<Step say="Second: which flaw of gradient descent do momentum, Nesterov and Adam each fix?">What do momentum, Nesterov and Adam fix?</Step>
+
+<Step say="Third: non-convex landscapes have saddles and plateaus. How should the learning rate change over time?">Saddles, plateaus and schedules</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="One step on a quadratic bowl" say="Start with the simplest landscape: a quadratic.">
+
+<Morph>
+
+<Step effect="morph" say="One step of gradient descent.">
+
+$$
+x_{t+1} = x_t - \eta \nabla f(x_t)
+$$
+
+</Step>
+
+<Step effect="morph" say="A quadratic's gradient is H times x minus x star.">
+
+$$
+x_{t+1} - x^* = (I - \eta H)(x_t - x^*)
+$$
+
+</Step>
+
+<Step effect="morph" say="Along each eigen-direction of H, the error is multiplied by one minus eta lambda.">
+
+$$
+e_{t+1} = (1 - \eta\lambda)\, e_t
+$$
+
+</Step>
+
+</Morph>
+
+<Step effect="focus" say="The steep direction needs eta below two over L; the flat one shrinks only a little per step.">
+<p class="big-q sm">Stable: $\eta \lt 2/L$　Speed: set by $\kappa = L/\mu$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="math" title="Condition number and zig-zags" say="Stretch the bowl and watch gradient descent.">
+
+<Step drive="s1=10/1.5; s2=1/1" say="Condition number ten, step one over L: the steep direction is done in one step, the flat one shrinks ten percent a step. Sixty-six steps.">$\kappa = 10$, $\eta = 1/L$: 66 steps</Step>
+
+<Step drive="click:chip3; wait:1" say="The best step, two over L plus mu, balances the two ends: thirty-five steps.">$\eta = 2/(L+\mu)$: 35 steps</Step>
+
+<Step drive="s2=2.05/1.5" say="Past two over L, the steep direction bounces back and forth, further each time.">$\eta \gt 2/L$: diverges</Step>
+
+<Step drive="s1=100/2; click:chip3; wait:1" say="Condition number a hundred: even the best step needs three hundred forty-six steps, zig-zagging.">$\kappa = 100$: 346 steps</Step>
+
+<Step drive="click:chip2; wait:1" say="Switch to the heavy ball: fifty-two.">Heavy ball: 52 steps</Step>
+
+<div slot="visual"><ConditionZigzag client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Linear convergence" say="And for a general smooth, strongly convex function? Two inequalities are enough.">
+
+<Morph>
+
+<Step effect="morph" say="The descent lemma: with step one over L, each step drops at least the squared gradient over two L.">
+
+$$
+f(x_{t+1}) \le f(x_t) - \frac{1}{2L}\|\nabla f(x_t)\|^2
+$$
+
+</Step>
+
+<Step effect="morph" say="Strong convexity bounds the gradient from below.">
+
+$$
+\|\nabla f(x_t)\|^2 \ge 2\mu\,\big(f(x_t) - f^*\big)
+$$
+
+</Step>
+
+<Step effect="morph" say="Together: each step multiplies the gap by one minus mu over L.">
+
+$$
+f(x_{t+1}) - f^* \le \Big(1 - \frac{\mu}{L}\Big)\big(f(x_t) - f^*\big)
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="Shrinking by a factor epsilon takes about kappa times log one over epsilon steps.">Steps $\approx \kappa \ln(1/\varepsilon)$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Momentum: a damped heavy ball" say="Give the ball some inertia.">
+
+<Morph>
+
+<Step effect="morph" say="A ball with mass and friction, rolling down the slope.">
+
+$$
+m \ddot x + c \dot x + \nabla f(x) = 0
+$$
+
+</Step>
+
+<Step effect="morph" say="Discretise with step h.">
+
+$$
+x_{t+1} = x_t - \frac{h^2}{m}\nabla f(x_t) + \Big(1 - \frac{ch}{m}\Big)(x_t - x_{t-1})
+$$
+
+</Step>
+
+<Step effect="morph" say="That is the heavy-ball method, with eta equal to h squared over m and beta equal to one minus c h over m.">
+
+$$
+x_{t+1} = x_t - \eta \nabla f(x_t) + \beta (x_t - x_{t-1})
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="Velocity builds up along consistent directions, one over one minus beta times; back-and-forth swings cancel.">Rate $\frac{\kappa - 1}{\kappa + 1} \to \frac{\sqrt\kappa - 1}{\sqrt\kappa + 1}$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" title="Optimizer race" say="Four optimizers from the same start: gradient descent, momentum, Nesterov and Adam.">
+
+<Step drive="click:chip1; s2=0/0.3; s2=150/5" say="In the narrow valley, gradient descent crawls along the floor; momentum and Nesterov ride their inertia and arrive first.">Valley: momentum first</Step>
+
+<Step drive="click:chip2; s2=0/0.3; s2=150/5" say="Rosenbrock's banana: after a hundred fifty steps, gradient descent still has not arrived.">Banana: GD not there</Step>
+
+<Step drive="click:chip3; s2=0/0.3; s2=150/5" say="Near the saddle the gradient is almost zero. Gradient descent lingers for over sixty steps; Adam escapes in ten.">Saddle: Adam escapes first</Step>
+
+<Step drive="click:chip1; s1=2/2" say="Four times the learning rate: Nesterov diverges first, gradient descent bounces between the walls.">×4: Nesterov diverges first</Step>
+
+<div slot="visual"><OptimizerRace client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="math" layout="center" title="Adam's bias correction" say="Adam uses moving averages of the gradient. But they start at zero.">
+
+<Morph>
+
+<Step effect="morph" say="Unroll the first-moment recursion.">
+
+$$
+m_t = (1 - \beta_1) \sum_{i=1}^{t} \beta_1^{t-i} g_i
+$$
+
+</Step>
+
+<Step effect="morph" say="If every gradient has mean g, the sum is geometric.">
+
+$$
+\mathbb E\, m_t = (1 - \beta_1^t)\, g
+$$
+
+</Step>
+
+<Step effect="morph" say="So divide by one minus beta one to the t. The same for the second moment.">
+
+$$
+\hat m_t = \frac{m_t}{1 - \beta_1^t}, \qquad \hat v_t = \frac{v_t}{1 - \beta_2^t}
+$$
+
+</Step>
+
+</Morph>
+
+<Step say="Without the correction the first step is 3.16 times the learning rate; with it, exactly the learning rate.">First step: $3.16\,\eta \to \eta$</Step>
+
+</Slide>
+
+<Slide lang="en" part="method" layout="center" title="Adam and AdamW" say="How big are Adam's steps?">
+
+<Step say="m hat over root v hat is of order one: each parameter moves about eta per step, whatever the scale of its gradient.">$\theta \leftarrow \theta - \eta\, \hat m / (\sqrt{\hat v} + \epsilon)$: about $\eta$ per step</Step>
+
+<Step say="Put L2 into Adam and the penalty is divided by root v too: parameters with large gradients barely decay.">Adam + L2: decay diluted by $\sqrt{\hat v}$</Step>
+
+<Step effect="focus" say="AdamW moves the decay out of the ratio: every step multiplies by one minus eta lambda.">
+<p class="big-q sm">AdamW: $\theta \leftarrow \theta - \eta\big(\hat m/\sqrt{\hat v} + \lambda\theta\big)$</p>
+</Step>
+
+</Slide>
+
+<Slide lang="en" part="cases" title="Learning-rate schedules" say="The same small network, the same sixty epochs; only the learning rate's rhythm changes.">
+
+<Step drive="click:chip3; wait:1.5" say="Peak 0.3: a constant rate keeps bouncing around the floor, and the loss will not come down.">Peak 0.3: constant stalls</Step>
+
+<Step drive="wait:1.5" say="Step and cosine take big steps first, then small ones, and settle in. Warm-up also calms the first epochs.">Large first, small later, plus warm-up</Step>
+
+<Step drive="click:chip1; wait:1.5" say="At a peak of only 0.03, decaying early just slows training down.">Peak 0.03: decay slows it down</Step>
+
+<Step effect="focus" say="Schedules are for taming large learning rates.">
+<p class="big-q sm">Schedules tame large learning rates</p>
+</Step>
+
+<div slot="visual"><LrSchedules client:visible lang="en" /></div>
+
+</Slide>
+
+<Slide lang="en" part="cases" layout="center" title="Worked numbers" say="A few numbers you can check by hand.">
+
+<Step say="The bowl with condition number ten: sixty-six steps at one over L, thirty-five at the best step, fifteen for the heavy ball.">$\kappa = 10$: 66 / 35 / 15 steps</Step>
+
+<Step say="Beside the saddle, y grows by 1.1 a step: from a thousandth to one half takes sixty-seven steps. Adam takes ten.">Saddle: GD 67 steps, Adam 10</Step>
+
+<Step say="With a constant gradient, momentum 0.9 makes the step ten times longer.">$\beta = 0.9$: effective step $\times 10$</Step>
+
+</Slide>
+
+<Slide lang="en" part="practice" layout="center" title="Your turn" say="Practice is on the notes page: four derivations, momentum and Adam from scratch, then SciPy and scikit-learn optimizers side by side.">
+
+<Step say="After running the code, replay how the boundary of a logistic regression turns into place under Adam.">✎ 4 derivations · ⌨ momentum + Adam / AdamW · ⚙ SciPy quasi-Newton + MLP with SGD / Adam</Step>
+
+<Step effect="pop" say="Hit the button to practise.">
+<a class="btn btn-primary btn-xl" href="../../chapters/optimization/#s-practice">Practise →</a>
+</Step>
+
+</Slide>

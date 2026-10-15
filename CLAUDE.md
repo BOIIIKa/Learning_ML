@@ -47,6 +47,6 @@ python3 scripts/new_chapter.py <id>          # scaffold the next chapter
 
 ## Status
 
-Done: chapters 00–15 (notes, course, recap, widgets, exercises, handbook).
-Next in order: 16 optimization (gradient descent to Adam), then 17–21; reuse `site/src/engines/mlp.ts` (forward + backprop, gradient-checked).
+Done: chapters 00–16 (notes, course, recap, widgets, exercises, handbook).
+Next in order: 17 backprop-init (backpropagation and initialization), then 18–21; reuse `site/src/engines/mlp.ts` (forward + backprop, gradient-checked) and `optimization.ts` (optimizers, `detCos`).
 See `docs/PROJECT_SUMMARY.md` for the full picture and roadmap, and `docs/HANDOFF.md` for the user's preferences, environment notes and the concrete plan for the next chapter.
